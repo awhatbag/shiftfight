@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const MEDS = [
-  { name: "Zolvarin", color: "bg-alarm", pill: "🔴" },
-  { name: "Brenupax", color: "bg-calm", pill: "🟢" },
-  { name: "Corvidyne", color: "bg-gold", pill: "🟡" },
-  { name: "Mellodex", color: "bg-primary", pill: "🔵" },
-  { name: "Pantorine", color: "bg-accent", pill: "🟣" },
+  { name: "Zolvarin", color: "bg-alarm" },
+  { name: "Brenupax", color: "bg-calm" },
+  { name: "Corvidyne", color: "bg-gold" },
+  { name: "Mellodex", color: "bg-primary" },
+  { name: "Pantorine", color: "bg-accent" },
 ];
 
 type Props = { onDone: (score: number, perfect: boolean) => void };
@@ -95,7 +95,7 @@ export function MedMatchGame({ onDone }: Props) {
               )}
             >
               <span className="w-4 text-xs">{i + 1}.</span>
-              <span>{m.pill}</span>
+              <span className={cn("h-3.5 w-3.5 rounded-full", m.color)} />
               <span>{m.name}</span>
             </li>
           ))}
@@ -116,7 +116,12 @@ export function MedMatchGame({ onDone }: Props) {
                 bad === m.name && "animate-shake border-alarm bg-alarm/20",
               )}
             >
-              <span className="text-4xl">{m.pill}</span>
+              <span
+                className={cn(
+                  "h-14 w-14 rounded-full border-4 border-card shadow-[var(--shadow-card)]",
+                  m.color,
+                )}
+              />
               <span className="font-display text-xs font-black uppercase">{m.name}</span>
             </button>
           );
