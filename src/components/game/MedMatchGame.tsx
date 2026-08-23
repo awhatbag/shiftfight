@@ -1,36 +1,40 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { FICTIONAL_MEDS } from "@/game/config";
+import { Pill, PillCup, pillLookFor } from "./Pill";
+import { playBad, playPop } from "@/lib/sfx";
 
-const MEDS = [
-  { name: "Zolvarin", color: "bg-alarm" },
-  { name: "Brenupax", color: "bg-calm" },
-  { name: "Corvidyne", color: "bg-gold" },
-  { name: "Mellodex", color: "bg-primary" },
-  { name: "Pantorine", color: "bg-accent" },
-];
+type Props = { level: number; onDone: (score: number, perfect: boolean) => void };
 
-type Props = { onDone: (score: number, perfect: boolean) => void };
+type Flying = { id: number; name: string; from: { x: number; y: number } };
 
-export function MedMatchGame({ onDone }: Props) {
+export function MedMatchGame({ level, onDone }: Props) {
+  // difficulty: more orders + more choices as level rises
+  const orders = Math.min(6, 2 + Math.floor(level / 2));
+  const choices = Math.min(8, Math.max(4, orders + 2 + Math.floor(level / 3)));
+  const totalMs = 9000 + orders * 3200;
+
   const round = useMemo(() => {
-    const picks = [...MEDS].sort(() => Math.random() - 0.5).slice(0, 4);
-    return {
-      order: picks,
-      cups: [...picks].sort(() => Math.random() - 0.5),
-    };
-  }, []);
+    const pool = [...FICTIONAL_MEDS].sort(() => Math.random() - 0.5).slice(0, choices);
+    const order = [...pool].sort(() => Math.random() - 0.5).slice(0, orders);
+    return { pool, order };
+  }, [choices, orders]);
 
   const [step, setStep] = useState(0);
   const [wrong, setWrong] = useState(0);
   const [bad, setBad] = useState<string | null>(null);
   const [time, setTime] = useState(1);
+  const [flying, setFlying] = useState<Flying[]>([]);
+  const flyId = useRef(1);
   const done = useRef(false);
+  const timeRef = useRef(1);
+  const cupRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const total = 14000;
     const start = Date.now();
     const id = setInterval(() => {
-      const left = 1 - (Date.now() - start) / total;
+      const left = 1 - (Date.now() - start) / totalMs;
+      timeRef.current = left;
       setTime(left);
       if (left <= 0) finish(false);
     }, 60);
@@ -41,36 +45,57 @@ export function MedMatchGame({ onDone }: Props) {
   function finish(complete: boolean) {
     if (done.current) return;
     done.current = true;
-    const score = complete ? Math.round(60 + time * 140 - wrong * 25) : 20;
-    onDone(Math.max(10, score), complete && wrong === 0);
+    const base = complete
+      ? Math.round(50 + orders * 25 + timeRef.current * 140 - wrong * 25)
+      : 20;
+    onDone(Math.max(10, base), complete && wrong === 0);
   }
 
-  function tapCup(name: string) {
+  function tapCup(name: string, el: HTMLElement) {
     if (done.current) return;
-    if (name === round.order[step]?.name) {
+    if (name === round.order[step]) {
+      playPop();
+      const box = el.getBoundingClientRect();
+      const cup = cupRef.current?.getBoundingClientRect();
+      const id = flyId.current++;
+      setFlying((f) => [
+        ...f,
+        {
+          id,
+          name,
+          from: {
+            x: box.left + box.width / 2 - (cup ? cup.left + cup.width / 2 : 0),
+            y: box.top + box.height / 2 - (cup ? cup.top + cup.height / 2 : 0),
+          },
+        },
+      ]);
+      setTimeout(() => setFlying((f) => f.filter((x) => x.id !== id)), 460);
       const next = step + 1;
       setStep(next);
-      if (next >= round.order.length) setTimeout(() => finish(true), 220);
+      if (next >= round.order.length) setTimeout(() => finish(true), 480);
     } else {
+      playBad();
       setWrong((w) => w + 1);
       setBad(name);
       setTimeout(() => setBad(null), 320);
     }
   }
 
+  const current = round.order[step];
+
   return (
-    <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-3 bg-background/98 p-4">
+    <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-2 bg-background/98 p-3">
       <div className="text-center">
-        <p className="font-display text-xs font-bold uppercase tracking-widest text-primary">
-          Mini-game
+        <p className="font-display text-[11px] font-bold uppercase tracking-widest text-primary">
+          Mini-game · Level {level + 1}
         </p>
-        <h2 className="font-display text-2xl font-black">MED TROLLEY DASH</h2>
-        <p className="text-xs text-muted-foreground">
-          Tap the cups in list order. (Fictional meds!)
+        <h2 className="font-display text-2xl font-black leading-none">MED TROLLEY DASH</h2>
+        <p className="text-[11px] text-muted-foreground">
+          Tap the pills in chart order. Fictional meds only!
         </p>
       </div>
 
-      <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+      <div className="h-3.5 overflow-hidden rounded-full bg-muted">
         <div
           className={cn(
             "h-full rounded-full transition-[width] duration-75 ease-linear",
@@ -80,49 +105,68 @@ export function MedMatchGame({ onDone }: Props) {
         />
       </div>
 
-      <div className="rounded-2xl border-2 border-border bg-card p-3 shadow-[var(--shadow-card)]">
-        <p className="font-display mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-          Drug chart
-        </p>
-        <ol className="space-y-1">
-          {round.order.map((m, i) => (
-            <li
-              key={m.name}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-2 py-1 font-display text-sm font-bold transition-all",
-                i < step && "text-muted-foreground line-through opacity-50",
-                i === step && "scale-[1.02] bg-gold/25 ring-2 ring-gold",
-              )}
+      <div className="flex items-center gap-3 rounded-2xl border-2 border-border bg-card p-2 shadow-[var(--shadow-card)]">
+        <div ref={cupRef} className="relative shrink-0">
+          <PillCup filled={step} label={`${step}/${round.order.length}`} />
+          {flying.map((f) => (
+            <span
+              key={f.id}
+              className="pointer-events-none absolute left-1/2 top-1/2 z-40"
+              style={{
+                animation: "pill-fly 0.45s cubic-bezier(0.4,0,0.3,1) forwards",
+                // @ts-expect-error custom props
+                "--fx": `${f.from.x}px`,
+                "--fy": `${f.from.y}px`,
+              }}
             >
-              <span className="w-4 text-xs">{i + 1}.</span>
-              <span className={cn("h-3.5 w-3.5 rounded-full", m.color)} />
-              <span>{m.name}</span>
-            </li>
+              <Pill look={pillLookFor(f.name)} size={40} />
+            </span>
           ))}
-        </ol>
-      </div>
-
-      <div className="grid flex-1 grid-cols-2 content-center gap-3">
-        {round.cups.map((m) => {
-          const taken = round.order.findIndex((o) => o.name === m.name) < step;
-          return (
-            <button
-              key={m.name}
-              onClick={() => tapCup(m.name)}
-              disabled={taken}
-              className={cn(
-                "chunky chunky-press flex aspect-square flex-col items-center justify-center gap-1 rounded-3xl border-2 border-border bg-card",
-                taken && "opacity-30",
-                bad === m.name && "animate-shake border-alarm bg-alarm/20",
-              )}
-            >
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Next on chart
+          </p>
+          <p className="font-display truncate text-xl font-black leading-tight">
+            {current ? current : "DONE!"}
+          </p>
+          <div className="mt-1 flex gap-1">
+            {round.order.map((m, i) => (
               <span
+                key={m}
                 className={cn(
-                  "h-14 w-14 rounded-full border-4 border-card shadow-[var(--shadow-card)]",
-                  m.color,
+                  "h-1.5 flex-1 rounded-full",
+                  i < step ? "bg-calm" : i === step ? "bg-gold" : "bg-muted",
                 )}
               />
-              <span className="font-display text-xs font-black uppercase">{m.name}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={cn(
+          "grid flex-1 content-center gap-2",
+          choices > 6 ? "grid-cols-4" : "grid-cols-3",
+        )}
+      >
+        {round.pool.map((m) => {
+          const taken = round.order.indexOf(m) > -1 && round.order.indexOf(m) < step;
+          return (
+            <button
+              key={m}
+              onClick={(e) => tapCup(m, e.currentTarget)}
+              disabled={taken}
+              className={cn(
+                "chunky chunky-press flex flex-col items-center justify-center gap-0.5 rounded-2xl border-2 border-border bg-card p-1.5",
+                taken && "opacity-25",
+                bad === m && "animate-shake border-alarm bg-alarm/20",
+              )}
+            >
+              <Pill look={pillLookFor(m)} size={choices > 6 ? 40 : 52} />
+              <span className="font-display text-[10px] font-black uppercase leading-tight">
+                {m}
+              </span>
             </button>
           );
         })}
