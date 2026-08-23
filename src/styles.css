@@ -223,3 +223,22 @@
     box-shadow: 0 2px 0 0 color-mix(in oklab, var(--foreground) 18%, transparent);
   }
 }
+
+@keyframes pill-fly {
+  0% {
+    transform: translate(calc(-50% + var(--fx)), calc(-50% + var(--fy))) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.35) rotate(220deg);
+    opacity: 0;
+  }
+}
+@keyframes banner-in {
+  0% { transform: scale(0.5) rotate(-6deg); opacity: 0; }
+  55% { transform: scale(1.12) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}

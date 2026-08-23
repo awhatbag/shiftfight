@@ -53,7 +53,7 @@ export function MedMatchGame({ level, onDone }: Props) {
 
   function tapCup(name: string, el: HTMLElement) {
     if (done.current) return;
-    if (name === round.order[step]?.name) {
+    if (name === round.order[step]) {
       playPop();
       const box = el.getBoundingClientRect();
       const cup = cupRef.current?.getBoundingClientRect();
