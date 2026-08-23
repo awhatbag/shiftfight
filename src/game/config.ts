@@ -179,7 +179,7 @@ export const FICTIONAL_MEDS = [
   "Ferrodyne",
   "Nimbucaine",
   "Trazolen",
-  "Ваlmoxin".replace("В", "B"),
+  "Balmoxin",
   "Crestapine",
   "Dovaxol",
   "Elmoridan",
