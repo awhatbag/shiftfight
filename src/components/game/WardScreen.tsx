@@ -4,10 +4,13 @@ import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
 import { MedMatchGame } from "./MedMatchGame";
 import { CannulaGame } from "./CannulaGame";
+import { playBad, playCallBell, playGood, primeAudio } from "@/lib/sfx";
 import {
+  ACTION_META,
   EVENTS,
   PATIENT_NAMES,
   SHIFT_MS,
+  WARMUP_MS,
   damageMult,
   payMult,
   travelMs,
@@ -38,12 +41,18 @@ type ActiveEvent = {
   ttl: number;
 };
 
-type Toast = { id: number; text: string; good: boolean };
+type Banner = { id: number; title: string; sub: string; good: boolean };
 
-const ACTIONS: { key: ActionKind; icon: string; hint: string }[] = [
-  { key: "ASSESS", icon: "👀", hint: "look & reassure" },
-  { key: "INTERVENE", icon: "💪", hint: "do the thing" },
-  { key: "ESCALATE", icon: "📟", hint: "get help fast" },
+const ACTIONS: ActionKind[] = ["ASSESS", "INTERVENE", "ESCALATE"];
+
+/** bed layout in ward-percentage coords; corridor runs down the middle */
+const BED_SLOTS = [
+  { x: 0.19, y: 0.17 },
+  { x: 0.81, y: 0.17 },
+  { x: 0.19, y: 0.5 },
+  { x: 0.81, y: 0.5 },
+  { x: 0.19, y: 0.83 },
+  { x: 0.81, y: 0.83 },
 ];
 
 export function WardScreen({
@@ -68,15 +77,24 @@ export function WardScreen({
   const [now, setNow] = useState(Date.now());
   const startRef = useRef(Date.now());
   const [pausedAt, setPausedAt] = useState<number | null>(null);
+  const [manualPause, setManualPause] = useState(false);
   const [events, setEvents] = useState<ActiveEvent[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
-  const [nurseBed, setNurseBed] = useState<number | null>(null);
-  const [moving, setMoving] = useState(false);
   const [flash, setFlash] = useState<Record<number, "good" | "bad" | null>>({});
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [banner, setBanner] = useState<Banner | null>(null);
   const [combo, setCombo] = useState(0);
   const [stability, setStability] = useState(100);
   const [mini, setMini] = useState<null | "med" | "cannula">(null);
+  const [miniLevel, setMiniLevel] = useState(0);
+
+  /* nurse position, fractional coords inside the ward box */
+  const wardRef = useRef<HTMLDivElement | null>(null);
+  const [nurse, setNurse] = useState({ x: 0.5, y: 0.9 });
+  const nurseRef = useRef(nurse);
+  nurseRef.current = nurse;
+  const [dragging, setDragging] = useState(false);
+  const [gliding, setGliding] = useState(false);
+
   const stats = useRef<ShiftStats>({
     points: 0,
     cash: 0,
@@ -93,9 +111,10 @@ export function WardScreen({
   const hcaUsed = useRef(false);
   const uid = useRef(1);
   const ended = useRef(false);
+  const bannerId = useRef(1);
   const [, force] = useState(0);
 
-  const paused = mini !== null;
+  const paused = mini !== null || manualPause;
 
   const finish = useCallback(
     (collapsed: boolean) => {
@@ -106,11 +125,11 @@ export function WardScreen({
     [onEnd],
   );
 
-  const say = (text: string, good: boolean) => {
-    const id = uid.current++;
-    setToasts((t) => [...t.slice(-2), { id, text, good }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 900);
-  };
+  const say = useCallback((title: string, sub: string, good: boolean) => {
+    const id = bannerId.current++;
+    setBanner({ id, title, sub, good });
+    setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 1500);
+  }, []);
 
   /* clock */
   useEffect(() => {
@@ -128,30 +147,35 @@ export function WardScreen({
       startRef.current += delta;
       setEvents((evs) => evs.map((e) => ({ ...e, born: e.born + delta })));
       setPausedAt(null);
+      setNow(Date.now());
     }
   }, [paused, pausedAt]);
 
   const elapsed = (pausedAt ?? now) - startRef.current;
   const shiftLeft = Math.max(0, 1 - elapsed / SHIFT_MS);
+  const secondsLeft = Math.max(0, Math.ceil((SHIFT_MS - elapsed) / 1000));
   const elapsedRef = useRef(0);
   elapsedRef.current = elapsed;
 
-  /* spawner */
+  /* spawner — gentle warm-up, ramps later */
   useEffect(() => {
     if (paused) return;
     const tick = setInterval(() => {
       setEvents((cur) => {
-        const heat = Math.min(1, elapsedRef.current / SHIFT_MS);
-        const cap = 2 + Math.round(heat * 2);
+        const e = elapsedRef.current;
+        const heat =
+          e < WARMUP_MS ? 0 : Math.min(1, (e - WARMUP_MS) / (SHIFT_MS - WARMUP_MS));
+        const cap = e < WARMUP_MS ? 1 : 2 + Math.round(heat * 2);
         if (cur.length >= Math.min(cap, bedCount)) return cur;
         const free = Array.from({ length: bedCount }, (_, i) => i).filter(
-          (b) => !cur.some((e) => e.bed === b),
+          (b) => !cur.some((ev) => ev.bed === b),
         );
         if (!free.length) return cur;
-        if (Math.random() > 0.5 + heat * 0.3) return cur;
+        if (Math.random() > 0.3 + heat * 0.5) return cur;
         const bed = free[Math.floor(Math.random() * free.length)]!;
-        const pool = EVENTS.filter((e) => (heat > 0.25 ? true : e.severity < 3));
+        const pool = EVENTS.filter((ev) => (heat > 0.3 ? true : ev.severity < 3));
         const def = pool[Math.floor(Math.random() * pool.length)]!;
+        if (def.callBell) playCallBell();
         return [
           ...cur,
           {
@@ -159,14 +183,16 @@ export function WardScreen({
             bed,
             def,
             born: Date.now(),
-            ttl: def.ttl * ttlMult(upgrades) * (1 - Math.min(0.3, heat * 0.3)),
+            ttl:
+              def.ttl *
+              ttlMult(upgrades) *
+              (e < WARMUP_MS ? 1.8 : 1.5 - Math.min(0.55, heat * 0.55)),
           },
         ];
       });
-    }, 850);
+    }, 1100);
     return () => clearInterval(tick);
   }, [paused, bedCount, upgrades]);
-
 
   /* expiry + shift end */
   useEffect(() => {
@@ -180,14 +206,15 @@ export function WardScreen({
           hcaUsed.current = true;
           stats.current.callBells++;
           stats.current.handled++;
-          say("Barry got it 🧹", true);
+          say("BARRY GOT IT", "Your HCA is a hero", true);
           continue;
         }
         dmg += (5 + e.def.severity * 5) * damageMult(upgrades);
         stats.current.mistakes++;
-        say(e.def.fail, false);
+        say("TOO SLOW", e.def.fail, false);
       }
       if (dmg) {
+        playBad();
         setCombo(0);
         streak.current = 0;
         setStability((s) => Math.max(0, s - dmg));
@@ -196,34 +223,80 @@ export function WardScreen({
     }
     if (shiftLeft <= 0) finish(false);
     if (stability <= 0) finish(true);
-  }, [now, events, paused, shiftLeft, stability, upgrades, hasHca, selected, finish]);
+  }, [now, events, paused, shiftLeft, stability, upgrades, hasHca, selected, finish, say]);
 
   const selectedEvent = events.find((e) => e.bed === selected);
 
-  function tapBed(bed: number) {
+  /* ---- movement ---- */
+  const nearestBed = useCallback(
+    (x: number, y: number) => {
+      let best = -1;
+      let bd = 1;
+      for (let i = 0; i < bedCount; i++) {
+        const s = BED_SLOTS[i]!;
+        const d = Math.hypot((s.x - x) * 1.1, s.y - y);
+        if (d < bd) {
+          bd = d;
+          best = i;
+        }
+      }
+      return bd < 0.2 ? best : -1;
+    },
+    [bedCount],
+  );
+
+  /* auto-select whichever bed the nurse is standing at */
+  useEffect(() => {
+    const b = nearestBed(nurse.x, nurse.y);
+    setSelected(b >= 0 && events.some((e) => e.bed === b) ? b : null);
+  }, [nurse, events, nearestBed]);
+
+  function moveFromPointer(clientX: number, clientY: number) {
+    const box = wardRef.current?.getBoundingClientRect();
+    if (!box) return;
+    const x = Math.min(0.94, Math.max(0.06, (clientX - box.left) / box.width));
+    const y = Math.min(0.95, Math.max(0.05, (clientY - box.top) / box.height));
+    setNurse({ x, y });
+  }
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (paused) return;
+    primeAudio();
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    setGliding(false);
+    setDragging(true);
+    moveFromPointer(e.clientX, e.clientY);
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (!dragging || paused) return;
+    moveFromPointer(e.clientX, e.clientY);
+  }
+  function onPointerUp() {
+    setDragging(false);
+  }
+
+  /** tap-to-bed fallback: glide the nurse over */
+  function walkTo(bed: number) {
     if (paused || beds[bed]?.locked) return;
-    const ev = events.find((e) => e.bed === bed);
-    setMoving(true);
-    setNurseBed(bed);
-    setTimeout(() => setMoving(false), travelMs(upgrades));
-    if (!ev) {
-      setSelected(null);
-      return;
-    }
-    setTimeout(() => setSelected(bed), travelMs(upgrades));
+    primeAudio();
+    const s = BED_SLOTS[bed]!;
+    setGliding(true);
+    setNurse({ x: s.x, y: s.y });
+    setTimeout(() => setGliding(false), travelMs(upgrades) + 60);
   }
 
   function doAction(action: ActionKind) {
     const ev = selectedEvent;
-    if (!ev) return;
+    if (!ev || paused) return;
     const correct = ev.def.correct === action;
     setEvents((cur) => cur.filter((e) => e.id !== ev.id));
     setSelected(null);
     setFlash((f) => ({ ...f, [ev.bed]: correct ? "good" : "bad" }));
-    setTimeout(() => setFlash((f) => ({ ...f, [ev.bed]: null })), 450);
+    setTimeout(() => setFlash((f) => ({ ...f, [ev.bed]: null })), 500);
 
     stats.current.handled++;
     if (correct) {
+      playGood();
       const isTop = !events.some((e) => e.id !== ev.id && e.def.severity > ev.def.severity);
       const newCombo = combo + 1;
       setCombo(newCombo);
@@ -236,18 +309,22 @@ export function WardScreen({
       stats.current.helped++;
       if (ev.def.callBell) stats.current.callBells++;
       setStability((s) => Math.min(100, s + 3));
-      say(`${isTop ? "PRIORITY! " : ""}+${gain} ${ev.def.win}`, true);
+      say(isTop ? "GREAT CALL!" : "PATIENT STABLE", `+${gain} · ${ev.def.win}`, true);
       streak.current++;
-      if (streak.current % 4 === 0) {
-        stats.current.miniGames++;
-        setMini(stats.current.miniGames % 2 === 1 ? "med" : "cannula");
+      const gap = streak.current <= 6 ? 2 : 3;
+      if (streak.current % gap === 0) {
+        const n = stats.current.miniGames;
+        stats.current.miniGames = n + 1;
+        setMiniLevel(Math.floor(n / 2));
+        setMini(n % 2 === 0 ? "med" : "cannula");
       }
     } else {
+      playBad();
       setCombo(0);
       streak.current = 0;
       stats.current.mistakes++;
       setStability((s) => Math.max(0, s - 10 * damageMult(upgrades)));
-      say(`Wrong call! ${ev.def.correct} was it`, false);
+      say("WRONG PRIORITY", `${ev.def.correct} was the move`, false);
     }
     force((n) => n + 1);
   }
@@ -257,112 +334,187 @@ export function WardScreen({
     stats.current.points += gain;
     stats.current.cash += Math.round(gain / 5);
     stats.current.xp += 25;
-    say(perfect ? `FLAWLESS +${gain}` : `+${gain}`, true);
+    say(perfect ? "FLAWLESS!" : "NICE ONE", `+${gain} points`, true);
     setStability((s) => Math.min(100, s + (perfect ? 15 : 6)));
     setMini(null);
   }
 
-  const nurseCol = nurseBed === null ? 0.5 : nurseBed % 2 === 0 ? 0.28 : 0.78;
-  const nurseRow = nurseBed === null ? 0.93 : (Math.floor(nurseBed / 2) + 0.72) / 3.35;
+  const lowTime = secondsLeft <= 15;
 
   return (
     <div className="relative flex h-full w-full flex-col bg-[image:var(--gradient-sky)]">
       {/* HUD */}
-      <div className="z-10 space-y-1.5 px-3 pt-3">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="font-display shrink-0 rounded-lg bg-card px-2 py-1 text-sm font-black">
-              ⭐ {stats.current.points}
-            </span>
-            <span className="font-display shrink-0 rounded-lg bg-card px-2 py-1 text-sm font-black text-gold-foreground">
-              💷 {stats.current.cash}
-            </span>
+      <div className="z-10 space-y-2 px-3 pt-2">
+        <div className="flex items-stretch gap-2">
+          {/* big shift timer */}
+          <div
+            className={cn(
+              "flex flex-1 items-center gap-2 rounded-2xl border-2 border-border bg-card px-3 py-1.5",
+              lowTime && "animate-throb border-alarm",
+            )}
+          >
+            <span className="text-2xl leading-none">⏱️</span>
+            <div className="min-w-0 flex-1">
+              <p
+                className={cn(
+                  "font-display text-3xl font-black leading-none tabular-nums",
+                  lowTime && "text-alarm",
+                )}
+              >
+                {Math.floor(secondsLeft / 60)}:
+                {String(secondsLeft % 60).padStart(2, "0")}
+              </p>
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-[width] duration-100 ease-linear",
+                    lowTime ? "bg-alarm" : "bg-primary",
+                  )}
+                  style={{ width: `${shiftLeft * 100}%` }}
+                />
+              </div>
+            </div>
           </div>
+
+          <button
+            onClick={() => setManualPause((p) => !p)}
+            aria-label={manualPause ? "Resume shift" : "Pause shift"}
+            className="chunky chunky-press grid w-16 shrink-0 place-items-center rounded-2xl bg-secondary text-3xl text-secondary-foreground"
+          >
+            {manualPause ? "▶️" : "⏸️"}
+          </button>
+        </div>
+
+        <div className="flex items-stretch gap-2">
+          <div className="flex flex-1 items-center gap-2 rounded-2xl border-2 border-border bg-card px-2.5 py-1.5">
+            <span className="text-xl leading-none">❤️</span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Ward stability
+              </p>
+              <div className="mt-0.5 h-3 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-200",
+                    stability > 55 ? "bg-calm" : stability > 25 ? "bg-gold" : "bg-alarm",
+                  )}
+                  style={{ width: `${stability}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          <span className="font-display grid place-items-center rounded-2xl border-2 border-border bg-card px-2 text-sm font-black">
+            ⭐{stats.current.points}
+          </span>
           <span
             className={cn(
-              "font-display shrink-0 rounded-lg px-2 py-1 text-sm font-black",
+              "font-display grid place-items-center rounded-2xl border-2 border-border px-2 text-sm font-black",
               combo > 2 ? "animate-throb bg-gold text-gold-foreground" : "bg-card",
             )}
           >
-            🔥 x{combo}
+            🔥x{combo}
           </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-display w-10 shrink-0 text-[10px] font-bold uppercase text-muted-foreground">
-            Shift
-          </span>
-          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-card">
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-100 ease-linear"
-              style={{ width: `${shiftLeft * 100}%` }}
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-display w-10 shrink-0 text-[10px] font-bold uppercase text-muted-foreground">
-            Ward
-          </span>
-          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-card">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all duration-200",
-                stability > 55 ? "bg-calm" : stability > 25 ? "bg-gold" : "bg-alarm",
-              )}
-              style={{ width: `${stability}%` }}
-            />
-          </div>
         </div>
       </div>
 
-      {/* WARD */}
-      <div className="relative flex-1 px-3 py-3">
-        <div className="grid h-full grid-cols-2 grid-rows-[1fr_1fr_1fr] gap-2.5">
-          {beds.map((b) => {
-            const ev = events.find((e) => e.bed === b.id);
-            return (
+      {/* WARD with wide central corridor */}
+      <div
+        ref={wardRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        className="relative flex-1 touch-none select-none overflow-hidden px-2 py-2"
+      >
+        {/* corridor floor */}
+        <div className="pointer-events-none absolute inset-y-0 left-1/2 w-[34%] -translate-x-1/2 rounded-3xl bg-floor shadow-[inset_0_0_0_2px_var(--color-border)]">
+          <div className="absolute inset-x-[42%] inset-y-3 rounded-full bg-primary/15" />
+          <span className="font-display absolute inset-x-0 bottom-1 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+            corridor · drag me
+          </span>
+        </div>
+
+        {/* beds pinned each side of the corridor */}
+        {beds.map((b) => {
+          const slot = BED_SLOTS[b.id]!;
+          const ev = events.find((e) => e.bed === b.id);
+          const here = nearestBed(nurse.x, nurse.y) === b.id;
+          return (
+            <div
+              key={b.id}
+              className="absolute h-[29%] w-[31%]"
+              style={{
+                left: `${slot.x * 100}%`,
+                top: `${slot.y * 100}%`,
+                transform: "translate(-50%,-50%)",
+              }}
+            >
               <Bed
-                key={b.id}
                 bed={b}
                 event={ev?.def}
                 progress={ev ? 1 - (now - ev.born) / ev.ttl : 0}
                 flash={flash[b.id] ?? null}
                 active={selected === b.id}
-                onTap={() => tapBed(b.id)}
+                nurseHere={here}
+                onTap={() => walkTo(b.id)}
               />
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
 
         {/* nurse */}
         <div
-          className="pointer-events-none absolute h-14 w-11 transition-all ease-out"
+          className={cn(
+            "pointer-events-none absolute z-20 h-16 w-12",
+            gliding && "transition-all ease-out",
+            dragging && "scale-110",
+          )}
           style={{
-            left: `${nurseCol * 100}%`,
-            top: `${nurseRow * 100}%`,
-            transform: "translate(-50%,-50%)",
-            transitionDuration: `${travelMs(upgrades)}ms`,
+            left: `${nurse.x * 100}%`,
+            top: `${nurse.y * 100}%`,
+            transform: "translate(-50%,-60%)",
+            transitionDuration: gliding ? `${travelMs(upgrades)}ms` : undefined,
           }}
         >
-          <Nurse moving={moving} />
+          <Nurse moving={dragging || gliding} />
         </div>
 
-        {/* toasts */}
-        <div className="pointer-events-none absolute inset-x-0 top-1/3 flex flex-col items-center gap-1">
-          {toasts.map((t) => (
-            <span
-              key={t.id}
+        {/* BIG feedback banner */}
+        {banner && (
+          <div className="pointer-events-none absolute inset-x-2 top-[38%] z-30 flex justify-center">
+            <div
               className={cn(
-                "font-display animate-rise rounded-full px-3 py-1 text-xs font-black shadow-[var(--shadow-card)]",
-                t.good ? "bg-calm text-calm-foreground" : "bg-alarm text-alarm-foreground",
+                "rounded-3xl border-4 px-5 py-3 text-center shadow-2xl",
+                "animate-[banner-in_0.35s_cubic-bezier(0.34,1.56,0.64,1)]",
+                banner.good
+                  ? "border-calm-foreground/20 bg-calm text-calm-foreground"
+                  : "border-alarm-foreground/20 bg-alarm text-alarm-foreground",
               )}
             >
-              {t.text}
-            </span>
-          ))}
-        </div>
+              <p className="font-display text-3xl font-black uppercase leading-none">
+                {banner.title}
+              </p>
+              <p className="font-display mt-1 text-sm font-bold">{banner.sub}</p>
+            </div>
+          </div>
+        )}
+
+        {/* pause veil */}
+        {manualPause && (
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3 bg-background/85 backdrop-blur-sm">
+            <p className="font-display text-4xl font-black uppercase">Paused</p>
+            <p className="text-sm text-muted-foreground">Tea break. Nothing is ticking.</p>
+            <button
+              onClick={() => setManualPause(false)}
+              className="chunky chunky-press rounded-2xl bg-primary px-8 py-4 font-display text-xl font-black uppercase text-primary-foreground"
+            >
+              Resume ▶
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* station / action bar */}
+      {/* action bar */}
       <div className="z-10 rounded-t-3xl border-t-2 border-border bg-card px-3 pb-4 pt-3 shadow-[0_-10px_24px_-16px_oklch(0_0_0/0.5)]">
         {selectedEvent ? (
           <div className="animate-slide-up space-y-2">
@@ -372,18 +524,26 @@ export function WardScreen({
                 <p className="font-display truncate text-sm font-black uppercase">
                   {beds[selectedEvent.bed]?.name} — {selectedEvent.def.label}
                 </p>
-                <p className="text-[11px] text-muted-foreground">Pick your move, fast.</p>
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  {selectedEvent.def.brief}
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {ACTIONS.map((a) => (
                 <button
-                  key={a.key}
-                  onClick={() => doAction(a.key)}
-                  className="chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl bg-primary px-1 py-2.5 text-primary-foreground"
+                  key={a}
+                  onClick={() => doAction(a)}
+                  className={cn(
+                    "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2 text-primary-foreground",
+                    ACTION_META[a].color,
+                  )}
                 >
-                  <span className="text-xl leading-none">{a.icon}</span>
-                  <span className="font-display text-[11px] font-black">{a.key}</span>
+                  <span className="text-xl leading-none">{ACTION_META[a].icon}</span>
+                  <span className="font-display text-[11px] font-black">{a}</span>
+                  <span className="text-[9px] font-bold leading-tight opacity-90">
+                    {selectedEvent.def.options[a]}
+                  </span>
                 </button>
               ))}
             </div>
@@ -396,15 +556,15 @@ export function WardScreen({
             <div className="min-w-0">
               <p className="font-display text-sm font-black uppercase">Nurses station</p>
               <p className="truncate text-[11px] text-muted-foreground">
-                Tap the bed that needs you most.
+                Drag your nurse down the corridor to a flashing bay.
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {mini === "med" && <MedMatchGame onDone={miniDone} />}
-      {mini === "cannula" && <CannulaGame onDone={miniDone} />}
+      {mini === "med" && <MedMatchGame level={miniLevel} onDone={miniDone} />}
+      {mini === "cannula" && <CannulaGame level={miniLevel} onDone={miniDone} />}
     </div>
   );
 }
