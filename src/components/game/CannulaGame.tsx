@@ -1,73 +1,127 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { playBad, playGood, playPop } from "@/lib/sfx";
 
-type Props = { onDone: (score: number, perfect: boolean) => void };
+type Props = { level: number; onDone: (score: number, perfect: boolean) => void };
+
+type Band = { x: number; w: number; kind: "vein" | "artery" };
 
 const ROUNDS = 3;
 
-export function CannulaGame({ onDone }: Props) {
-  const [pos, setPos] = useState(0); // 0..1 sweep
-  const [dir, setDir] = useState(1);
+function buildBands(level: number, round: number): Band[] {
+  const rnd = () => Math.random();
+  const veinW = Math.max(0.09, 0.3 - level * 0.03 - round * 0.015);
+  const bands: Band[] = [];
+  const veins = level >= 4 ? 3 : level >= 2 ? 2 : 1;
+  const arteries = level >= 1 ? Math.min(2, Math.ceil(level / 2)) : 0;
+
+  const slots = [0.14, 0.3, 0.46, 0.62, 0.78].sort(() => rnd() - 0.5);
+  let i = 0;
+  for (let v = 0; v < veins; v++) {
+    const x = slots[i++] ?? 0.5;
+    bands.push({ x, w: veinW, kind: "vein" });
+  }
+  for (let a = 0; a < arteries; a++) {
+    const x = slots[i++] ?? 0.9;
+    bands.push({ x, w: Math.max(0.07, veinW * 0.8), kind: "artery" });
+  }
+  return bands;
+}
+
+export function CannulaGame({ level, onDone }: Props) {
   const [round, setRound] = useState(0);
+  const [pos, setPos] = useState(0);
+  const dir = useRef(1);
   const [results, setResults] = useState<number[]>([]);
   const [hit, setHit] = useState<{ x: number; label: string; good: boolean } | null>(null);
   const running = useRef(true);
-  const speed = 0.016 + round * 0.006;
+  const posRef = useRef(0);
+  const speed = 0.011 + level * 0.0022 + round * 0.0035;
+
+  const bands = useMemo(() => buildBands(level, round), [level, round]);
+  const bandsRef = useRef(bands);
+  bandsRef.current = bands;
 
   useEffect(() => {
     const id = setInterval(() => {
       if (!running.current) return;
       setPos((p) => {
-        let n = p + dir * speed;
+        let n = p + dir.current * speed;
         if (n >= 1) {
           n = 1;
-          setDir(-1);
+          dir.current = -1;
         } else if (n <= 0) {
           n = 0;
-          setDir(1);
+          dir.current = 1;
         }
+        posRef.current = n;
         return n;
       });
     }, 16);
     return () => clearInterval(id);
-  }, [dir, speed]);
+  }, [speed]);
 
   function tap() {
     if (!running.current) return;
     running.current = false;
-    const dist = Math.abs(pos - 0.5);
-    const good = dist < 0.16;
-    const points = Math.max(0, Math.round((1 - dist * 2.6) * 100));
-    setHit({
-      x: pos,
-      label: dist < 0.05 ? "PERFECT VEIN!" : good ? "FLASHBACK!" : "OW. TISSUED.",
-      good,
-    });
-    setTimeout(() => {
-      const next = [...results, points];
-      setResults(next);
-      setHit(null);
-      if (round + 1 >= ROUNDS) {
-        const total = next.reduce((a, b) => a + b, 0);
-        onDone(total, next.every((p) => p > 80));
-      } else {
-        setRound((r) => r + 1);
-        setPos(0);
-        setDir(1);
-        running.current = true;
-      }
-    }, 750);
+    const p = posRef.current;
+    const artery = bandsRef.current.find(
+      (b) => b.kind === "artery" && Math.abs(p - b.x) < b.w / 2,
+    );
+    if (artery) {
+      playBad();
+      setHit({ x: p, label: "ARTERY! ABORT!", good: false });
+      setTimeout(() => next(0), 1100);
+      return;
+    }
+    const vein = bandsRef.current
+      .filter((b) => b.kind === "vein")
+      .map((b) => ({ b, d: Math.abs(p - b.x) }))
+      .sort((a, z) => a.d - z.d)[0];
+    if (vein && vein.d < vein.b.w / 2) {
+      const acc = 1 - vein.d / (vein.b.w / 2);
+      playGood();
+      const pts = Math.round(40 + acc * 90);
+      setHit({
+        x: p,
+        label: acc > 0.65 ? "PERFECT VEIN!" : "FLASHBACK!",
+        good: true,
+      });
+      setTimeout(() => next(pts), 900);
+    } else {
+      playPop();
+      setHit({ x: p, label: "OW. TISSUED.", good: false });
+      setTimeout(() => next(5), 900);
+    }
+  }
+
+  function next(points: number) {
+    const all = [...results, points];
+    setResults(all);
+    setHit(null);
+    if (round + 1 >= ROUNDS) {
+      onDone(
+        all.reduce((a, b) => a + b, 0),
+        all.every((p) => p > 100),
+      );
+    } else {
+      setRound((r) => r + 1);
+      setPos(0);
+      posRef.current = 0;
+      dir.current = 1;
+      running.current = true;
+    }
   }
 
   return (
     <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-3 bg-background/98 p-4">
       <div className="text-center">
-        <p className="font-display text-xs font-bold uppercase tracking-widest text-primary">
-          Mini-game
+        <p className="font-display text-[11px] font-bold uppercase tracking-widest text-primary">
+          Mini-game · Level {level + 1}
         </p>
-        <h2 className="font-display text-2xl font-black">CANNULA CHALLENGE</h2>
-        <p className="text-xs text-muted-foreground">
-          Tap in the green zone. Arcade, not clinical!
+        <h2 className="font-display text-2xl font-black leading-none">CANNULA CHALLENGE</h2>
+        <p className="text-[11px] text-muted-foreground">
+          Blue = vein. Red = artery, never that. Arcade, not clinical!
         </p>
       </div>
 
@@ -76,7 +130,7 @@ export function CannulaGame({ onDone }: Props) {
           <span
             key={i}
             className={cn(
-              "h-2 w-8 rounded-full",
+              "h-2 w-10 rounded-full",
               i < results.length ? "bg-calm" : i === round ? "bg-gold" : "bg-muted",
             )}
           />
@@ -85,35 +139,90 @@ export function CannulaGame({ onDone }: Props) {
 
       <button
         onClick={tap}
-        className="relative flex flex-1 flex-col items-center justify-center rounded-3xl border-2 border-border bg-card p-4"
+        className="relative flex flex-1 flex-col items-center justify-center rounded-3xl border-2 border-border bg-card p-3"
       >
-        {/* cartoon arm */}
-        <div className="relative h-32 w-full overflow-hidden rounded-2xl bg-[oklch(0.87_0.06_60)]">
-          <div className="absolute inset-x-0 top-1/2 h-3 -translate-y-1/2 rotate-[-4deg] bg-[oklch(0.62_0.09_270)]/70" />
-          <div className="absolute inset-x-6 top-1/2 h-1.5 translate-y-4 rotate-[3deg] rounded-full bg-[oklch(0.62_0.09_270)]/40" />
-          {/* target zone */}
-          <div className="absolute left-1/2 top-0 h-full w-[32%] -translate-x-1/2 border-x-2 border-dashed border-calm bg-calm/25" />
-          <div className="absolute left-1/2 top-0 h-full w-[10%] -translate-x-1/2 bg-gold/50" />
-          {/* needle */}
-          <div
-            className="absolute top-0 h-full w-1 -translate-x-1/2 bg-foreground"
-            style={{ left: `${pos * 100}%` }}
-          >
-            <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-lg">💉</span>
-          </div>
+        <div className="relative w-full overflow-hidden rounded-3xl">
+          <svg viewBox="0 0 200 130" className="w-full">
+            {/* forearm */}
+            <defs>
+              <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="oklch(0.9 0.06 62)" />
+                <stop offset="100%" stopColor="oklch(0.79 0.08 55)" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M2 30 Q30 14 70 16 L150 20 Q186 24 196 44 Q198 66 190 96 Q170 116 132 114 L64 110 Q22 106 4 88 Z"
+              fill="url(#skin)"
+              stroke="oklch(0.62 0.09 50)"
+              strokeWidth="2.5"
+            />
+            {/* hand hint */}
+            <path
+              d="M188 40 q12 8 8 26 q-4 16 -14 20"
+              fill="none"
+              stroke="oklch(0.62 0.09 50)"
+              strokeWidth="2"
+              opacity="0.5"
+            />
+            {/* bands / vessels */}
+            {bands.map((b, i) => {
+              const cx = 6 + b.x * 188;
+              const isV = b.kind === "vein";
+              return (
+                <g key={i}>
+                  <rect
+                    x={cx - (b.w * 188) / 2}
+                    y={18}
+                    width={b.w * 188}
+                    height={94}
+                    rx={6}
+                    fill={isV ? "oklch(0.65 0.14 250 / 0.18)" : "oklch(0.62 0.22 22 / 0.2)"}
+                    stroke={isV ? "oklch(0.55 0.14 255)" : "oklch(0.6 0.22 22)"}
+                    strokeWidth="1.5"
+                    strokeDasharray="5 4"
+                  />
+                  <path
+                    d={`M${cx - 5} 20 C ${cx + 8} 48, ${cx - 10} 76, ${cx + 4} 110`}
+                    fill="none"
+                    stroke={isV ? "oklch(0.5 0.13 258)" : "oklch(0.55 0.23 22)"}
+                    strokeWidth={isV ? 6 : 7}
+                    strokeLinecap="round"
+                    opacity="0.85"
+                  />
+                  <text
+                    x={cx}
+                    y={126}
+                    textAnchor="middle"
+                    fontSize="9"
+                    fontWeight="800"
+                    fill={isV ? "oklch(0.45 0.13 258)" : "oklch(0.5 0.22 22)"}
+                  >
+                    {isV ? "VEIN" : "ARTERY"}
+                  </text>
+                </g>
+              );
+            })}
+            {/* needle */}
+            <g transform={`translate(${6 + pos * 188} 0)`}>
+              <rect x="-1.5" y="6" width="3" height="104" rx="1.5" fill="oklch(0.3 0.02 250)" />
+              <rect x="-7" y="0" width="14" height="12" rx="3" fill="oklch(0.62 0.15 195)" />
+            </g>
+          </svg>
+
           {hit && (
             <span
               className={cn(
-                "font-display absolute top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pop whitespace-nowrap rounded-full px-2 py-1 text-xs font-black",
+                "font-display absolute top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pop whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-black shadow-lg",
                 hit.good ? "bg-calm text-calm-foreground" : "bg-alarm text-alarm-foreground",
               )}
-              style={{ left: `${hit.x * 100}%` }}
+              style={{ left: `${Math.min(80, Math.max(20, hit.x * 100))}%` }}
             >
               {hit.label}
             </span>
           )}
         </div>
-        <span className="font-display mt-6 rounded-full bg-primary px-8 py-3 text-lg font-black uppercase text-primary-foreground chunky">
+
+        <span className="font-display chunky mt-5 rounded-full bg-primary px-8 py-3.5 text-lg font-black uppercase text-primary-foreground">
           TAP TO STICK
         </span>
       </button>
