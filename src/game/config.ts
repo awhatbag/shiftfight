@@ -303,3 +303,139 @@ export const RATINGS: { min: number; title: string; line: string }[] = [
   { min: 150, title: "SURVIVED, BARELY", line: "Your ID badge is on backwards." },
   { min: 0, title: "SEEN THINGS", line: "You are now legally a beeping sound." },
 ];
+
+/* ------------------------------------------------------------------ */
+/* URGENCY                                                             */
+/* ------------------------------------------------------------------ */
+
+export type Urgency = "routine" | "urgent" | "critical";
+
+export const URGENCY_META: Record<
+  Urgency,
+  { label: string; ring: string; chip: string; bar: string; mult: number }
+> = {
+  routine: {
+    label: "ROUTINE",
+    ring: "ring-calm",
+    chip: "bg-calm text-calm-foreground",
+    bar: "bg-calm",
+    mult: 1.55,
+  },
+  urgent: {
+    label: "URGENT",
+    ring: "ring-gold",
+    chip: "bg-gold text-gold-foreground",
+    bar: "bg-gold",
+    mult: 1,
+  },
+  critical: {
+    label: "CRITICAL",
+    ring: "ring-alarm",
+    chip: "bg-alarm text-alarm-foreground",
+    bar: "bg-alarm",
+    mult: 0.62,
+  },
+};
+
+export const urgencyOf = (def: EventDef): Urgency =>
+  def.severity === 3 ? "critical" : def.severity === 2 ? "urgent" : "routine";
+
+/* ------------------------------------------------------------------ */
+/* LEVELS 1..10                                                        */
+/* ------------------------------------------------------------------ */
+
+export const MAX_LEVEL = 10;
+
+export type LevelConfig = {
+  level: number;
+  name: string;
+  /** beds in play this level (capped by unlocked beds) */
+  beds: number;
+  /** max simultaneous events */
+  maxEvents: number;
+  /** chance an eligible spawn tick actually spawns */
+  spawnChance: number;
+  /** multiplies event ttl — high = generous */
+  timeMult: number;
+  /** deterioration damage multiplier */
+  damage: number;
+  /** highest event severity allowed */
+  maxSeverity: 1 | 2 | 3;
+};
+
+export function levelConfig(levelRaw: number): LevelConfig {
+  const level = Math.max(1, Math.min(MAX_LEVEL, levelRaw));
+  const t = (level - 1) / (MAX_LEVEL - 1); // 0..1
+  const names = [
+    "Day One Jitters",
+    "Gentle Bay",
+    "Getting Busy",
+    "Proper Shift",
+    "Bells Everywhere",
+    "Short Staffed",
+    "Full House",
+    "Winter Pressures",
+    "Absolute Chaos",
+    "Ward Legend Run",
+  ];
+  return {
+    level,
+    name: names[level - 1] ?? "Ward",
+    beds: Math.min(6, 2 + Math.floor(t * 4 + 0.5)),
+    maxEvents: Math.min(5, 1 + Math.round(t * 4)),
+    spawnChance: 0.28 + t * 0.55,
+    timeMult: 1.85 - t * 0.95,
+    damage: 0.7 + t * 0.8,
+    maxSeverity: level <= 2 ? 1 : level <= 4 ? 2 : 3,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* STAFF BEHAVIOUR                                                     */
+/* ------------------------------------------------------------------ */
+
+export const STAFF_BEHAVIOUR: Record<
+  string,
+  { responseMs: number; cooldownMs: number; handles: "bells" | "any"; line: string }
+> = {
+  hca: {
+    responseMs: 4200,
+    cooldownMs: 11000,
+    handles: "bells",
+    line: "Barry got the bell!",
+  },
+  student: {
+    responseMs: 6200,
+    cooldownMs: 14000,
+    handles: "any",
+    line: "Priya handled it (and asked 4 questions)",
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* SILLY SUMMARY MODIFIERS                                             */
+/* ------------------------------------------------------------------ */
+
+export type Quirk = { label: string; pts: number };
+
+const QUIRKS: Quirk[] = [
+  { label: "Found a pen that actually works", pts: 40 },
+  { label: "Drank an entire hot tea", pts: 60 },
+  { label: "Tea went cold. Again.", pts: -35 },
+  { label: "Correctly guessed the lunch order", pts: 25 },
+  { label: "Squeaky shoe incident", pts: -20 },
+  { label: "Restocked the glove box unprompted", pts: 45 },
+  { label: "Called a doctor by the wrong name", pts: -30 },
+  { label: "Survived the printer", pts: 50 },
+  { label: "Left the linen trolley somewhere odd", pts: -25 },
+  { label: "Fixed the telly for bay 3", pts: 35 },
+  { label: "Alarm went off in your pocket", pts: -15 },
+  { label: "Handover finished on time", pts: 70 },
+  { label: "Ate a biscuit from the mystery tin", pts: 20 },
+  { label: "Lost your favourite pen", pts: -40 },
+  { label: "Complimented on your lanyard", pts: 30 },
+];
+
+export function rollQuirks(count = 3): Quirk[] {
+  return [...QUIRKS].sort(() => Math.random() - 0.5).slice(0, count);
+}
