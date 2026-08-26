@@ -3,7 +3,11 @@ import { useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
-import { BED_UNLOCK_COST, type Upgrades } from "@/game/config";
+import { BED_UNLOCK_COST, MAX_LEVEL, type Upgrades } from "@/game/config";
+import {
+  setHapticsEnabled,
+  setSoundEnabled,
+} from "@/lib/sfx";
 
 const TITLE = "Shift Happens — Hospital Ward Arcade";
 const DESC =
@@ -38,6 +42,9 @@ function Game() {
   const [staff, setStaff] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
   const [runKey, setRunKey] = useState(0);
+  const [level, setLevel] = useState(1);
+  const [soundOn, setSoundOn] = useState(true);
+  const [hapticsOn, setHapticsOn] = useState(true);
 
   const staffBonus = staff.includes("student") ? 0.15 : 0;
 
@@ -45,7 +52,22 @@ function Game() {
     setLast(s);
     setCash((c) => c + s.cash);
     setXp((x) => x + s.xp);
+    if (!s.collapsed) setLevel((l) => Math.min(MAX_LEVEL, l + 1));
     setPhase("summary");
+  }
+
+  function toggleSound() {
+    setSoundOn((on) => {
+      setSoundEnabled(!on);
+      return !on;
+    });
+  }
+
+  function toggleHaptics() {
+    setHapticsOn((on) => {
+      setHapticsEnabled(!on);
+      return !on;
+    });
   }
 
   function play() {
@@ -57,15 +79,29 @@ function Game() {
     <main className="flex min-h-dvh justify-center bg-ward-deep">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
         {phase === "intro" && (
-          <IntroScreen xp={xp} cash={cash} onPlay={play} />
+          <IntroScreen
+            xp={xp}
+            cash={cash}
+            level={level}
+            soundOn={soundOn}
+            hapticsOn={hapticsOn}
+            onToggleSound={toggleSound}
+            onToggleHaptics={toggleHaptics}
+            onPlay={play}
+          />
         )}
         {phase === "shift" && (
           <WardScreen
             key={runKey}
+            level={level}
             upgrades={upgrades}
             bedCount={bedCount}
             staffBonus={staffBonus}
-            hasHca={staff.includes("hca")}
+            staff={staff}
+            soundOn={soundOn}
+            hapticsOn={hapticsOn}
+            onToggleSound={toggleSound}
+            onToggleHaptics={toggleHaptics}
             onEnd={endShift}
           />
         )}
@@ -101,10 +137,20 @@ function Game() {
 function IntroScreen({
   xp,
   cash,
+  level,
+  soundOn,
+  hapticsOn,
+  onToggleSound,
+  onToggleHaptics,
   onPlay,
 }: {
   xp: number;
   cash: number;
+  level: number;
+  soundOn: boolean;
+  hapticsOn: boolean;
+  onToggleSound: () => void;
+  onToggleHaptics: () => void;
   onPlay: () => void;
 }) {
   return (
@@ -134,11 +180,24 @@ function IntroScreen({
         ))}
       </div>
 
-      {(xp > 0 || cash > 0) && (
-        <p className="font-display text-xs font-black uppercase text-muted-foreground">
-          💷 {cash} · ✨ {xp} XP
-        </p>
-      )}
+      <p className="font-display text-xs font-black uppercase text-muted-foreground">
+        Level {level} · 💷 {cash} · ✨ {xp} XP
+      </p>
+
+      <div className="grid w-full grid-cols-2 gap-2">
+        <button
+          onClick={onToggleSound}
+          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+        >
+          🔊 Sound {soundOn ? "ON" : "OFF"}
+        </button>
+        <button
+          onClick={onToggleHaptics}
+          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+        >
+          📳 Haptics {hapticsOn ? "ON" : "OFF"}
+        </button>
+      </div>
 
       <button
         onClick={onPlay}

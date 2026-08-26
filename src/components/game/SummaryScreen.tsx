@@ -8,7 +8,8 @@ export function SummaryScreen({
   stats: ShiftStats;
   onNext: () => void;
 }) {
-  const rating = RATINGS.find((r) => stats.points >= r.min)!;
+  const rating = RATINGS.find((r) => stats.points >= r.min) ?? RATINGS[RATINGS.length - 1];
+  if (!rating) return null;
   const rows = [
     { label: "Patients helped", value: stats.helped, icon: "🧑‍🦽" },
     { label: "Events handled", value: stats.handled, icon: "⚡" },
@@ -53,6 +54,22 @@ export function SummaryScreen({
               <span className="truncate text-muted-foreground">{r.label}</span>
             </span>
             <span className="font-display shrink-0 text-base font-black">{r.value}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-1.5 rounded-2xl border-2 border-border bg-card p-3">
+        <p className="font-display text-xs font-black uppercase text-muted-foreground">
+          Shift modifiers
+        </p>
+        {stats.quirks.map((quirk) => (
+          <div key={quirk.label} className="flex items-center justify-between gap-2 text-sm">
+            <span className="min-w-0 truncate">{quirk.label}</span>
+            <span
+              className={quirk.pts >= 0 ? "font-display font-black text-calm-foreground" : "font-display font-black text-alarm"}
+            >
+              {quirk.pts >= 0 ? "+" : ""}{quirk.pts}
+            </span>
           </div>
         ))}
       </div>

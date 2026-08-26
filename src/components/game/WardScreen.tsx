@@ -141,9 +141,11 @@ export function WardScreen({
   /* nurse */
   const wardRef = useRef<HTMLDivElement | null>(null);
   const [nurse, setNurse] = useState<Point>({ ...STATION });
-  const [walkMs, setWalkMs] = useState(0);
   const [walking, setWalking] = useState(false);
-  const walkTimers = useRef<number[]>([]);
+  const nurseRef = useRef<Point>({ ...STATION });
+  const journey = useRef<Point[]>([]);
+  const journeyBed = useRef<number | null>(null);
+  const lastMoveT = useRef(0);
   const [atBed, setAtBed] = useState<number | null>(null);
 
   const stats = useRef<ShiftStats>({
@@ -238,20 +240,24 @@ export function WardScreen({
     if (phase !== "play") return;
     if (elapsed < SHIFT_MS) return;
     setPhase("ending");
-    setEndCount(3);
-    const t1 = window.setTimeout(() => setEndCount(2), 700);
-    const t2 = window.setTimeout(() => setEndCount(1), 1400);
-    const t3 = window.setTimeout(() => finish(false), 2200);
-    return () => [t1, t2, t3].forEach(window.clearTimeout);
-  }, [phase, elapsed, finish]);
+  }, [phase, elapsed]);
 
   useEffect(() => {
     if (stability <= 0 && phase === "play") {
+      stats.current.collapsed = true;
       setPhase("ending");
-      const t = window.setTimeout(() => finish(true), 900);
-      return () => window.clearTimeout(t);
     }
+    return undefined;
   }, [stability, phase, finish]);
+
+  useEffect(() => {
+    if (phase !== "ending") return;
+    setEndCount(3);
+    const t1 = window.setTimeout(() => setEndCount(2), 700);
+    const t2 = window.setTimeout(() => setEndCount(1), 1400);
+    const t3 = window.setTimeout(() => finish(stats.current.collapsed), 2200);
+    return () => [t1, t2, t3].forEach(window.clearTimeout);
+  }, [phase, finish]);
 
   /* ---------------- spawner ---------------- */
   useEffect(() => {
@@ -314,6 +320,7 @@ export function WardScreen({
       setStaffFlash(key);
       window.setTimeout(() => setStaffFlash((s) => (s === key ? null : s)), 900);
       say("TEAMWORK", `${b.line} +${gain}`, true);
+      force((n) => n + 1);
       break;
     }
   }, [tick, rate, staff, events, upgrades, staffBonus, say]);
@@ -343,11 +350,6 @@ export function WardScreen({
   const nurseHereBed = atBed;
 
   /* ---------------- movement ---------------- */
-  const clearWalk = () => {
-    walkTimers.current.forEach(window.clearTimeout);
-    walkTimers.current = [];
-  };
-
   const routeTo = useCallback(
     (dest: Point, from: Point): Point[] => {
       const pts: Point[] = [];
@@ -371,40 +373,44 @@ export function WardScreen({
 
   const walkTo = useCallback(
     (dest: Point, bed: number | null) => {
-      clearWalk();
       setAtBed(null);
-      const pts = routeTo(dest, nurse);
-      const perUnit = MS_PER_UNIT(upgrades);
-      let acc = 0;
-      let prev = nurse;
+      journey.current = routeTo(dest, nurseRef.current);
+      journeyBed.current = bed;
+      lastMoveT.current = gameT.current;
       setWalking(true);
-      pts.forEach((p, i) => {
-        const d = Math.hypot((p.x - prev.x) * 0.8, p.y - prev.y);
-        const ms = Math.max(90, d * perUnit);
-        const at = acc;
-        walkTimers.current.push(
-          window.setTimeout(() => {
-            setWalkMs(ms);
-            setNurse(p);
-            if (i === pts.length - 1) {
-              walkTimers.current.push(
-                window.setTimeout(() => {
-                  setWalking(false);
-                  setAtBed(bed);
-                }, ms),
-              );
-            }
-          }, at),
-        );
-        acc += ms;
-        prev = p;
-      });
-      stats.current.steps += Math.round(acc / 90);
     },
-    [nurse, routeTo, upgrades],
+    [routeTo],
   );
 
-  useEffect(() => clearWalk, []);
+  useEffect(() => {
+    if (rate === 0 || !journey.current.length) return;
+    let remaining = (gameT.current - lastMoveT.current) / MS_PER_UNIT(upgrades);
+    lastMoveT.current = gameT.current;
+    let current = nurseRef.current;
+    while (remaining > 0 && journey.current.length) {
+      const target = journey.current[0];
+      if (!target) break;
+      const dx = target.x - current.x;
+      const dy = target.y - current.y;
+      const distance = Math.hypot(dx * 0.8, dy);
+      if (distance <= remaining) {
+        current = target;
+        journey.current.shift();
+        remaining -= distance;
+      } else {
+        const ratio = remaining / distance;
+        current = { x: current.x + dx * ratio, y: current.y + dy * ratio };
+        remaining = 0;
+      }
+    }
+    nurseRef.current = current;
+    setNurse(current);
+    stats.current.steps++;
+    if (!journey.current.length) {
+      setWalking(false);
+      setAtBed(journeyBed.current);
+    }
+  }, [tick, rate, upgrades]);
 
   function tapBed(bed: number) {
     if (rate === 0 || beds[bed]?.locked) return;
@@ -497,7 +503,12 @@ export function WardScreen({
   const lowTime = secondsLeft <= 15;
 
   return (
-    <div className="relative flex h-full w-full flex-col bg-[image:var(--gradient-sky)]">
+    <div
+      className={cn(
+        "relative flex h-full w-full flex-col bg-[image:var(--gradient-sky)]",
+        (manualPause || settingsOpen) && "game-frozen",
+      )}
+    >
       {/* HUD */}
       <div className="z-10 space-y-2 px-3 pt-2">
         <div className="flex items-stretch gap-2">
@@ -671,7 +682,7 @@ export function WardScreen({
             left: `${nurse.x * 100}%`,
             top: `${nurse.y * 100}%`,
             transform: "translate(-50%,-60%)",
-            transitionDuration: `${walkMs}ms`,
+            transitionDuration: "80ms",
           }}
         >
           <Nurse moving={walking} />
@@ -864,9 +875,9 @@ export function WardScreen({
       {mini && (
         <>
           {mini.kind === "med" ? (
-            <MedMatchGame level={mini.lvl} onDone={miniDone} />
+            <MedMatchGame level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
           ) : (
-            <CannulaGame level={mini.lvl} onDone={miniDone} />
+            <CannulaGame level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
           )}
           <div className="absolute inset-x-0 top-1 z-40 flex justify-center gap-2 px-3">
             <button
@@ -874,6 +885,13 @@ export function WardScreen({
               className="chunky chunky-press rounded-xl bg-secondary px-3 py-1.5 font-display text-xs font-black uppercase text-secondary-foreground"
             >
               ⏸️ Pause
+            </button>
+            <button
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Mini-game settings"
+              className="chunky chunky-press rounded-xl bg-secondary px-3 py-1.5 font-display text-xs font-black uppercase text-secondary-foreground"
+            >
+              ⚙️
             </button>
             <span className="font-display grid place-items-center rounded-xl border-2 border-border bg-card px-3 text-xs font-black tabular-nums">
               ⏱️ {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
