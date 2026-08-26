@@ -4,11 +4,15 @@ import { FICTIONAL_MEDS } from "@/game/config";
 import { Pill, PillCup, pillLookFor } from "./Pill";
 import { playBad, playPop } from "@/lib/sfx";
 
-type Props = { level: number; onDone: (score: number, perfect: boolean) => void };
+type Props = {
+  level: number;
+  paused: boolean;
+  onDone: (score: number, perfect: boolean) => void;
+};
 
 type Flying = { id: number; name: string; from: { x: number; y: number } };
 
-export function MedMatchGame({ level, onDone }: Props) {
+export function MedMatchGame({ level, paused, onDone }: Props) {
   // difficulty: more orders + more choices as level rises
   const orders = Math.min(6, 2 + Math.floor(level / 2));
   const choices = Math.min(8, Math.max(4, orders + 2 + Math.floor(level / 3)));
@@ -29,11 +33,17 @@ export function MedMatchGame({ level, onDone }: Props) {
   const done = useRef(false);
   const timeRef = useRef(1);
   const cupRef = useRef<HTMLDivElement | null>(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   useEffect(() => {
-    const start = Date.now();
+    let last = performance.now();
+    let elapsed = 0;
     const id = setInterval(() => {
-      const left = 1 - (Date.now() - start) / totalMs;
+      const now = performance.now();
+      if (!pausedRef.current) elapsed += now - last;
+      last = now;
+      const left = 1 - elapsed / totalMs;
       timeRef.current = left;
       setTime(left);
       if (left <= 0) finish(false);

@@ -57,6 +57,22 @@ export function SummaryScreen({
         ))}
       </div>
 
+      <div className="space-y-1.5 rounded-2xl border-2 border-border bg-card p-3">
+        <p className="font-display text-xs font-black uppercase text-muted-foreground">
+          Shift modifiers
+        </p>
+        {stats.quirks.map((quirk) => (
+          <div key={quirk.label} className="flex items-center justify-between gap-2 text-sm">
+            <span className="min-w-0 truncate">{quirk.label}</span>
+            <span
+              className={quirk.pts >= 0 ? "font-display font-black text-calm-foreground" : "font-display font-black text-alarm"}
+            >
+              {quirk.pts >= 0 ? "+" : ""}{quirk.pts}
+            </span>
+          </div>
+        ))}
+      </div>
+
       <button
         onClick={onNext}
         className="chunky chunky-press mt-auto w-full rounded-2xl bg-primary py-4 font-display text-lg font-black uppercase text-primary-foreground"

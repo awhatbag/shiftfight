@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { playBad, playGood, playPop } from "@/lib/sfx";
 
-type Props = { level: number; onDone: (score: number, perfect: boolean) => void };
+type Props = {
+  level: number;
+  paused: boolean;
+  onDone: (score: number, perfect: boolean) => void;
+};
 
 type Band = { x: number; w: number; kind: "vein" | "artery" };
 
@@ -28,7 +32,7 @@ function buildBands(level: number, round: number): Band[] {
   return bands;
 }
 
-export function CannulaGame({ level, onDone }: Props) {
+export function CannulaGame({ level, paused, onDone }: Props) {
   const [round, setRound] = useState(0);
   const [pos, setPos] = useState(0);
   const dir = useRef(1);
@@ -36,6 +40,8 @@ export function CannulaGame({ level, onDone }: Props) {
   const [hit, setHit] = useState<{ x: number; label: string; good: boolean } | null>(null);
   const running = useRef(true);
   const posRef = useRef(0);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
   const speed = 0.011 + level * 0.0022 + round * 0.0035;
 
   const bands = useMemo(() => buildBands(level, round), [level, round]);
@@ -44,7 +50,7 @@ export function CannulaGame({ level, onDone }: Props) {
 
   useEffect(() => {
     const id = setInterval(() => {
-      if (!running.current) return;
+      if (!running.current || pausedRef.current) return;
       setPos((p) => {
         let n = p + dir.current * speed;
         if (n >= 1) {

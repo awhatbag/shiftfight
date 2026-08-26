@@ -224,6 +224,13 @@
   }
 }
 
+.game-frozen *,
+.game-frozen *::before,
+.game-frozen *::after {
+  animation-play-state: paused !important;
+  transition-play-state: paused !important;
+}
+
 @keyframes pill-fly {
   0% {
     transform: translate(calc(-50% + var(--fx)), calc(-50% + var(--fy))) scale(1) rotate(0deg);
