@@ -240,12 +240,7 @@ export function WardScreen({
     if (phase !== "play") return;
     if (elapsed < SHIFT_MS) return;
     setPhase("ending");
-    setEndCount(3);
-    const t1 = window.setTimeout(() => setEndCount(2), 700);
-    const t2 = window.setTimeout(() => setEndCount(1), 1400);
-    const t3 = window.setTimeout(() => finish(false), 2200);
-    return () => [t1, t2, t3].forEach(window.clearTimeout);
-  }, [phase, elapsed, finish]);
+  }, [phase, elapsed]);
 
   useEffect(() => {
     if (stability <= 0 && phase === "play") {

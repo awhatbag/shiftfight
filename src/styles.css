@@ -228,7 +228,6 @@
 .game-frozen *::before,
 .game-frozen *::after {
   animation-play-state: paused !important;
-  transition-play-state: paused !important;
 }
 
 @keyframes pill-fly {

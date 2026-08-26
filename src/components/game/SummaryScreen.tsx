@@ -8,7 +8,8 @@ export function SummaryScreen({
   stats: ShiftStats;
   onNext: () => void;
 }) {
-  const rating = RATINGS.find((r) => stats.points >= r.min)!;
+  const rating = RATINGS.find((r) => stats.points >= r.min) ?? RATINGS[RATINGS.length - 1];
+  if (!rating) return null;
   const rows = [
     { label: "Patients helped", value: stats.helped, icon: "🧑‍🦽" },
     { label: "Events handled", value: stats.handled, icon: "⚡" },
