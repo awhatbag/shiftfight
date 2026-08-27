@@ -457,7 +457,7 @@ export function WardScreen({
       setStability((s) => Math.min(100, s + 3));
       say(isTop ? "GREAT CALL!" : "PATIENT STABLE", `+${gain} · ${ev.def.win}`, true);
       streak.current++;
-      const gap = streak.current <= 6 ? 2 : 3;
+      const gap = streak.current <= 8 ? 4 : 5;
       if (streak.current % gap === 0) {
         const n = stats.current.miniGames;
         const lvl = Math.min(9, Math.floor(n / 2) + Math.floor(level / 3));
@@ -608,33 +608,44 @@ export function WardScreen({
           />
         ))}
 
-        {/* nurses station + staff */}
-        <div className="pointer-events-none absolute bottom-1 left-1/2 flex -translate-x-1/2 items-end gap-1">
-          <div className="rounded-xl border-2 border-border bg-card px-2 py-1 text-center">
+        {/* nurses station desk */}
+        <div className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2">
+          <div className="rounded-xl border-2 border-border bg-card px-4 py-1 text-center">
             <p className="font-display text-[9px] font-black uppercase tracking-widest text-muted-foreground">
               Station
             </p>
-            <div className="flex items-center justify-center gap-1 text-lg">
-              {staff.length === 0 && <span className="opacity-40">🪑</span>}
-              {staff.map((k) => {
-                const info = STAFF.find((s) => s.key === k);
-                const busy = (staffBusy.current[k] ?? 0) > gameT.current;
-                return (
-                  <span
-                    key={k}
-                    title={info?.name}
-                    className={cn(
-                      staffFlash === k && "animate-pop",
-                      busy ? "opacity-50" : "animate-bob",
-                    )}
-                  >
-                    {info?.icon ?? "🧑‍⚕️"}
-                  </span>
-                );
-              })}
-            </div>
+            {staff.length === 0 && <span className="text-lg opacity-40">🪑</span>}
           </div>
         </div>
+
+        {/* staff characters */}
+        {staff.map((k) => {
+          const info = STAFF.find((s) => s.key === k);
+          const rt = staffRt.current[k];
+          const pos = staffPos[k] ?? staffHome(k);
+          const onJob = !!rt && (rt.eventId !== null || rt.path.length > 0);
+          const activated = !onJob && redAlert;
+          return (
+            <button
+              key={k}
+              onClick={() => tapStaff(k)}
+              aria-label={`Send ${info?.name ?? "staff"}`}
+              className="absolute z-20 grid h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center"
+              style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%` }}
+            >
+              <span
+                className={cn(
+                  "grid h-10 w-10 place-items-center rounded-full border-2 border-border bg-card text-xl shadow-md",
+                  onJob && "animate-throb border-primary",
+                  activated && "animate-throb border-alarm ring-4 ring-alarm/40",
+                  staffFlash === k && "animate-pop",
+                )}
+              >
+                {info?.icon ?? "🧑‍⚕️"}
+              </span>
+            </button>
+          );
+        })}
 
         {/* beds */}
         {beds.map((b) => {
@@ -720,16 +731,16 @@ export function WardScreen({
           </div>
         )}
 
-        {/* end countdown */}
-        {phase === "ending" && (
-          <div className="absolute inset-0 z-50 grid place-items-center bg-background/85 backdrop-blur-sm">
+        {/* end countdown — floats over the ward, synced to the real timer */}
+        {endCount !== null && (
+          <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center">
             <div className="text-center">
-              <p className="font-display text-xl font-black uppercase tracking-widest">
+              <p className="font-display text-xl font-black uppercase tracking-widest text-primary drop-shadow-[0_2px_0_var(--color-background)]">
                 Shift finishes in
               </p>
               <p
                 key={endCount}
-                className="font-display animate-pop text-8xl font-black leading-none text-primary"
+                className="font-display animate-pop text-[7rem] font-black leading-none text-primary drop-shadow-[0_4px_0_var(--color-background)]"
               >
                 {endCount}
               </p>
@@ -773,9 +784,9 @@ export function WardScreen({
 
         {/* pause veil */}
         {manualPause && (
-          <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-background/85 backdrop-blur-sm">
+          <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-background/85 px-6 text-center backdrop-blur-sm">
             <p className="font-display text-4xl font-black uppercase">Paused</p>
-            <p className="text-sm text-muted-foreground">Tea break. Nothing is ticking.</p>
+            <p className="text-sm font-semibold text-muted-foreground">{pauseLine}</p>
             <button
               onClick={() => setManualPause(false)}
               className="chunky chunky-press rounded-2xl bg-primary px-8 py-4 font-display text-xl font-black uppercase text-primary-foreground"
