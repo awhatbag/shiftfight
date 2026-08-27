@@ -249,21 +249,21 @@ export const UPGRADE_INFO = [
     name: "Nurse Speed",
     icon: "👟",
     blurb: "Sprint between beds",
-    cost: (l: number) => 60 + l * 45,
+    cost: (l: number) => 1200 + l * 900,
   },
   {
     key: "response" as const,
     name: "Response Time",
     icon: "⏱️",
     blurb: "Patients wait longer",
-    cost: (l: number) => 70 + l * 50,
+    cost: (l: number) => 1400 + l * 1000,
   },
   {
     key: "equipment" as const,
     name: "Equipment",
     icon: "🩺",
     blurb: "Bigger payouts, softer hits",
-    cost: (l: number) => 80 + l * 55,
+    cost: (l: number) => 1600 + l * 1100,
   },
 ];
 
@@ -272,19 +272,19 @@ export const STAFF = [
     key: "hca",
     name: "Barry the HCA",
     icon: "🧹",
-    bonus: "Auto-answers 1 call bell per shift",
-    cost: 220,
+    bonus: "Walks the ward, grabs call bells & criticals",
+    cost: 4500,
   },
   {
     key: "student",
     name: "Priya, Student Nurse",
     icon: "🎓",
-    bonus: "+15% shift points, asks 400 questions",
-    cost: 300,
+    bonus: "+15% points, handles anything (slowly)",
+    cost: 6000,
   },
 ];
 
-export const BED_UNLOCK_COST = 400;
+export const BED_UNLOCK_COST = 8000;
 
 export const travelMs = (u: Upgrades) => Math.max(140, 520 - u.speed * 85);
 export const ttlMult = (u: Upgrades) => 1 + u.response * 0.16;
