@@ -879,26 +879,27 @@ export function WardScreen({
           ) : (
             <CannulaGame level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
           )}
-          <div className="absolute inset-x-0 top-1 z-40 flex justify-center gap-2 px-3">
+          <div className="absolute inset-x-0 bottom-0 z-40 flex items-stretch gap-2 border-t-2 border-border bg-card px-3 pb-4 pt-3">
             <button
               onClick={() => setManualPause(true)}
-              className="chunky chunky-press rounded-xl bg-secondary px-3 py-1.5 font-display text-xs font-black uppercase text-secondary-foreground"
+              aria-label="Pause"
+              className="chunky chunky-press grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
             >
-              ⏸️ Pause
+              ⏸️
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
               aria-label="Mini-game settings"
-              className="chunky chunky-press rounded-xl bg-secondary px-3 py-1.5 font-display text-xs font-black uppercase text-secondary-foreground"
+              className="chunky chunky-press grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
             >
               ⚙️
             </button>
-            <span className="font-display grid place-items-center rounded-xl border-2 border-border bg-card px-3 text-xs font-black tabular-nums">
+            <span className="font-display grid h-14 flex-1 place-items-center rounded-2xl border-2 border-border bg-background text-lg font-black tabular-nums">
               ⏱️ {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
             </span>
             <button
               onClick={abandonMini}
-              className="chunky chunky-press rounded-xl bg-alarm px-3 py-1.5 font-display text-xs font-black uppercase text-alarm-foreground"
+              className="chunky chunky-press h-14 shrink-0 rounded-2xl bg-alarm px-4 font-display text-base font-black uppercase text-alarm-foreground"
             >
               Abandon
             </button>
