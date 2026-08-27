@@ -384,7 +384,8 @@ export function levelConfig(levelRaw: number): LevelConfig {
     beds: Math.min(6, 2 + Math.floor(t * 4 + 0.5)),
     maxEvents: Math.min(5, 1 + Math.round(t * 4)),
     spawnChance: 0.28 + t * 0.55,
-    timeMult: 1.85 - t * 0.95,
+    /** response windows tighten steadily with level (urgency tiers preserved) */
+    timeMult: 1.9 - t * 1.25,
     damage: 0.7 + t * 0.8,
     maxSeverity: level <= 2 ? 1 : level <= 4 ? 2 : 3,
   };
