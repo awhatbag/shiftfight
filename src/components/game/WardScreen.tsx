@@ -24,6 +24,7 @@ import {
   damageMult,
   levelConfig,
   payMult,
+  randomPauseLine,
   rollQuirks,
   ttlMult,
   urgencyOf,
@@ -36,7 +37,6 @@ import {
 export type ShiftStats = {
   level: number;
   points: number;
-  cash: number;
   xp: number;
   helped: number;
   handled: number;
@@ -107,7 +107,8 @@ export function WardScreen({
   onEnd: (s: ShiftStats) => void;
 }) {
   const cfg = useMemo(() => levelConfig(level), [level]);
-  const activeBeds = Math.min(bedCount, cfg.beds);
+  /** every bed the player owns is a live bed — purchased beds unlock immediately */
+  const activeBeds = Math.max(1, bedCount);
 
   const beds: BedState[] = Array.from({ length: 6 }, (_, i) => ({
     id: i,
@@ -115,11 +116,11 @@ export function WardScreen({
     locked: i >= activeBeds,
   }));
 
+
   /* ---------------- phases ---------------- */
   type Phase = "ready" | "play" | "ending";
   const [phase, setPhase] = useState<Phase>("ready");
   const [cue, setCue] = useState<string>("READY...");
-  const [endCount, setEndCount] = useState(3);
 
   const [manualPause, setManualPause] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -151,7 +152,6 @@ export function WardScreen({
   const stats = useRef<ShiftStats>({
     level,
     points: 0,
-    cash: 0,
     xp: 0,
     helped: 0,
     handled: 0,
@@ -170,9 +170,42 @@ export function WardScreen({
   const bannerId = useRef(1);
   const [, force] = useState(0);
 
-  /* staff readiness (real-time cooldown clocks in game ms) */
-  const staffBusy = useRef<Record<string, number>>({});
+  /* ---------------- staff runtime ---------------- */
+  type StaffRt = {
+    path: Point[];
+    eventId: number | null;
+    goingHome: boolean;
+    cooldownUntil: number;
+    lastT: number;
+  };
+  const staffRt = useRef<Record<string, StaffRt>>({});
+  const staffPosRef = useRef<Record<string, Point>>({});
+  const [staffPos, setStaffPos] = useState<Record<string, Point>>({});
   const [staffFlash, setStaffFlash] = useState<string | null>(null);
+  const [pauseLine, setPauseLine] = useState(randomPauseLine());
+
+  const staffHome = useCallback(
+    (k: string): Point => {
+      const i = Math.max(0, staff.indexOf(k));
+      return { x: i === 0 ? 0.38 : 0.62, y: 0.9 };
+    },
+    [staff],
+  );
+
+  useEffect(() => {
+    for (const k of staff) {
+      staffRt.current[k] ??= {
+        path: [],
+        eventId: null,
+        goingHome: false,
+        cooldownUntil: 0,
+        lastT: 0,
+      };
+      staffPosRef.current[k] ??= staffHome(k);
+    }
+    setStaffPos({ ...staffPosRef.current });
+  }, [staff, staffHome]);
+
 
   const rate = manualPause || settingsOpen || phase !== "play" || miniOffer ? 0 : mini ? 1 / 3 : 1;
   const rateRef = useRef(rate);
@@ -235,7 +268,10 @@ export function WardScreen({
   const shiftLeft = Math.max(0, 1 - elapsed / SHIFT_MS);
   const secondsLeft = Math.max(0, Math.ceil((SHIFT_MS - elapsed) / 1000));
 
-  /* ---------------- ending sequence ---------------- */
+  /* ---------------- ending sequence (synced to the real timer) ---------------- */
+  const endCountValue =
+    phase === "play" && secondsLeft > 0 && secondsLeft <= 3 ? secondsLeft : null;
+
   useEffect(() => {
     if (phase !== "play") return;
     if (elapsed < SHIFT_MS) return;
@@ -248,16 +284,14 @@ export function WardScreen({
       setPhase("ending");
     }
     return undefined;
-  }, [stability, phase, finish]);
+  }, [stability, phase]);
 
   useEffect(() => {
-    if (phase !== "ending") return;
-    setEndCount(3);
-    const t1 = window.setTimeout(() => setEndCount(2), 700);
-    const t2 = window.setTimeout(() => setEndCount(1), 1400);
-    const t3 = window.setTimeout(() => finish(stats.current.collapsed), 2200);
-    return () => [t1, t2, t3].forEach(window.clearTimeout);
+    if (phase !== "ending") return undefined;
+    const t = window.setTimeout(() => finish(stats.current.collapsed), 450);
+    return () => window.clearTimeout(t);
   }, [phase, finish]);
+
 
   /* ---------------- spawner ---------------- */
   useEffect(() => {
@@ -296,34 +330,8 @@ export function WardScreen({
     return () => window.clearInterval(id);
   }, [rate, activeBeds, cfg, upgrades]);
 
-  /* ---------------- staff auto-response ---------------- */
-  useEffect(() => {
-    if (rate === 0 || !staff.length || !events.length) return;
-    for (const key of staff) {
-      const b = STAFF_BEHAVIOUR[key];
-      if (!b) continue;
-      if ((staffBusy.current[key] ?? 0) > gameT.current) continue;
-      const target = events.find((e) => {
-        const age = gameT.current - e.born;
-        if (age < b.responseMs) return false;
-        return b.handles === "any" ? true : e.def.callBell || e.def.severity === 3;
-      });
-      if (!target) continue;
-      staffBusy.current[key] = gameT.current + b.cooldownMs;
-      setEvents((cur) => cur.filter((e) => e.id !== target.id));
-      const gain = Math.round(18 * target.def.severity * payMult(upgrades, staffBonus));
-      stats.current.points += gain;
-      stats.current.cash += Math.round(gain / 8);
-      stats.current.handled++;
-      stats.current.staffAssists++;
-      if (target.def.callBell) stats.current.callBells++;
-      setStaffFlash(key);
-      window.setTimeout(() => setStaffFlash((s) => (s === key ? null : s)), 900);
-      say("TEAMWORK", `${b.line} +${gain}`, true);
-      force((n) => n + 1);
-      break;
-    }
-  }, [tick, rate, staff, events, upgrades, staffBonus, say]);
+
+
 
   /* ---------------- expiry ---------------- */
   useEffect(() => {
@@ -412,6 +420,138 @@ export function WardScreen({
     }
   }, [tick, rate, upgrades]);
 
+  /* ---------------- staff: walk, work, return ---------------- */
+  const isRed = useCallback((e: ActiveEvent) => {
+    const left = 1 - (gameT.current - e.born) / e.ttl;
+    return urgencyOf(e.def) === "critical" || left < 0.4;
+  }, []);
+  const redAlert = events.some(isRed);
+
+  const dispatchStaff = useCallback(
+    (key: string, ev: ActiveEvent) => {
+      const rt = staffRt.current[key];
+      if (!rt) return;
+      rt.eventId = ev.id;
+      rt.goingHome = false;
+      rt.lastT = gameT.current;
+      rt.path = routeTo(BED_SLOTS[ev.bed]!, staffPosRef.current[key] ?? staffHome(key));
+    },
+    [routeTo, staffHome],
+  );
+
+  useEffect(() => {
+    if (rate === 0 || !staff.length) return;
+    const now = gameT.current;
+    let moved = false;
+    for (const key of staff) {
+      const b = STAFF_BEHAVIOUR[key];
+      const rt = staffRt.current[key];
+      if (!b || !rt) continue;
+
+      // idle at the station: wait for a red/critical situation
+      if (!rt.path.length && rt.eventId === null) {
+        if (now < rt.cooldownUntil) continue;
+        const target = events.find((e) => {
+          if (now - e.born < b.responseMs) return false;
+          if (b.handles === "any") return true;
+          return e.def.callBell || e.def.severity === 3 || isRed(e);
+        });
+        if (!target) continue;
+        dispatchStaff(key, target);
+      }
+
+      if (!rt.path.length) continue;
+      let remaining = (now - rt.lastT) / (MS_PER_UNIT(upgrades) * 1.3);
+      rt.lastT = now;
+      let cur = staffPosRef.current[key] ?? staffHome(key);
+      while (remaining > 0 && rt.path.length) {
+        const t = rt.path[0]!;
+        const dx = t.x - cur.x;
+        const dy = t.y - cur.y;
+        const d = Math.hypot(dx * 0.8, dy) || 0.0001;
+        if (d <= remaining) {
+          cur = t;
+          rt.path.shift();
+          remaining -= d;
+        } else {
+          const r = remaining / d;
+          cur = { x: cur.x + dx * r, y: cur.y + dy * r };
+          remaining = 0;
+        }
+      }
+      staffPosRef.current[key] = cur;
+      moved = true;
+
+      if (!rt.path.length) {
+        if (rt.goingHome) {
+          rt.goingHome = false;
+          continue;
+        }
+        const evId = rt.eventId;
+        rt.eventId = null;
+        rt.cooldownUntil = now + b.cooldownMs;
+        const target = events.find((e) => e.id === evId);
+        if (target) {
+          setEvents((c) => c.filter((e) => e.id !== target.id));
+          const gain = Math.round(22 * target.def.severity * payMult(upgrades, staffBonus));
+          stats.current.points += gain;
+          stats.current.handled++;
+          stats.current.staffAssists++;
+          stats.current.xp += 3;
+          if (target.def.callBell) stats.current.callBells++;
+          setStability((s) => Math.min(100, s + 2));
+          setStaffFlash(key);
+          window.setTimeout(() => setStaffFlash((s) => (s === key ? null : s)), 900);
+          say("TEAMWORK", `${b.line} +${gain}`, true);
+          force((n) => n + 1);
+        }
+        rt.goingHome = true;
+        rt.lastT = now;
+        rt.path = routeTo(staffHome(key), cur);
+      }
+    }
+    if (moved) setStaffPos({ ...staffPosRef.current });
+  }, [
+    tick,
+    rate,
+    staff,
+    events,
+    upgrades,
+    staffBonus,
+    say,
+    isRed,
+    dispatchStaff,
+    routeTo,
+    staffHome,
+  ]);
+
+  /** manual assignment: tap a staff member to send them to the worst bay */
+  function tapStaff(key: string) {
+    if (rate === 0) return;
+    const rt = staffRt.current[key];
+    const info = STAFF.find((s) => s.key === key);
+    if (!rt) return;
+    if (rt.path.length || rt.eventId !== null) {
+      say("ON IT", `${info?.name ?? "Staff"} is already going`, true);
+      return;
+    }
+    const pick = [...events].sort(
+      (a, z) =>
+        z.def.severity - a.def.severity ||
+        (gameT.current - z.born) / z.ttl - (gameT.current - a.born) / a.ttl,
+    )[0];
+    if (!pick) {
+      say("STANDING BY", `${info?.name ?? "Staff"} has nothing to do`, true);
+      return;
+    }
+    buzz(10);
+    rt.cooldownUntil = 0;
+    dispatchStaff(key, pick);
+    say("DELEGATED", `${info?.name ?? "Staff"} → ${beds[pick.bed]?.name}`, true);
+  }
+
+
+
   function tapBed(bed: number) {
     if (rate === 0 || beds[bed]?.locked) return;
     primeAudio();
@@ -450,7 +590,6 @@ export function WardScreen({
         base * (1 + newCombo * 0.12) * payMult(upgrades, staffBonus) * (1 + level * 0.05),
       );
       stats.current.points += gain;
-      stats.current.cash += Math.round(gain / 6);
       stats.current.xp += 8 * ev.def.severity;
       stats.current.helped++;
       if (ev.def.callBell) stats.current.callBells++;
@@ -488,7 +627,6 @@ export function WardScreen({
   function miniDone(score: number, perfect: boolean) {
     const bonus = Math.round(score * payMult(upgrades, staffBonus));
     stats.current.points += bonus;
-    stats.current.cash += Math.round(bonus / 5);
     stats.current.xp += 25;
     say(perfect ? "FLAWLESS!" : "BONUS BANKED", `+${bonus} points`, true);
     setStability((s) => Math.min(100, s + (perfect ? 15 : 6)));
@@ -541,7 +679,12 @@ export function WardScreen({
           </div>
 
           <button
-            onClick={() => setManualPause((p) => !p)}
+            onClick={() => {
+              setManualPause((p) => {
+                if (!p) setPauseLine(randomPauseLine());
+                return !p;
+              });
+            }}
             aria-label={manualPause ? "Resume shift" : "Pause shift"}
             className="chunky chunky-press grid w-14 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
           >
@@ -732,17 +875,17 @@ export function WardScreen({
         )}
 
         {/* end countdown — floats over the ward, synced to the real timer */}
-        {endCount !== null && (
+        {endCountValue !== null && (
           <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center">
             <div className="text-center">
               <p className="font-display text-xl font-black uppercase tracking-widest text-primary drop-shadow-[0_2px_0_var(--color-background)]">
                 Shift finishes in
               </p>
               <p
-                key={endCount}
+                key={endCountValue}
                 className="font-display animate-pop text-[7rem] font-black leading-none text-primary drop-shadow-[0_4px_0_var(--color-background)]"
               >
-                {endCount}
+                {endCountValue}
               </p>
             </div>
           </div>
@@ -892,7 +1035,10 @@ export function WardScreen({
           )}
           <div className="absolute inset-x-0 bottom-0 z-40 flex items-stretch gap-2 border-t-2 border-border bg-card px-3 pb-4 pt-3">
             <button
-              onClick={() => setManualPause(true)}
+              onClick={() => {
+                setPauseLine(randomPauseLine());
+                setManualPause(true);
+              }}
               aria-label="Pause"
               className="chunky chunky-press grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
             >

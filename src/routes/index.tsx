@@ -3,7 +3,7 @@ import { useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
-import { BED_UNLOCK_COST, MAX_LEVEL, type Upgrades } from "@/game/config";
+import { BED_UNLOCK_COST, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
 import {
   setHapticsEnabled,
   setSoundEnabled,
@@ -31,7 +31,7 @@ type Phase = "intro" | "shift" | "summary" | "shop";
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
-  const [cash, setCash] = useState(0);
+  const [points, setPoints] = useState(0);
   const [xp, setXp] = useState(0);
   const [upgrades, setUpgrades] = useState<Upgrades>({
     speed: 0,
@@ -46,11 +46,13 @@ function Game() {
   const [soundOn, setSoundOn] = useState(true);
   const [hapticsOn, setHapticsOn] = useState(true);
 
+  const rank = nurseRank(xp);
+
   const staffBonus = staff.includes("student") ? 0.15 : 0;
 
   function endShift(s: ShiftStats) {
     setLast(s);
-    setCash((c) => c + s.cash);
+    setPoints((p) => p + s.points);
     setXp((x) => x + s.xp);
     if (!s.collapsed) setLevel((l) => Math.min(MAX_LEVEL, l + 1));
     setPhase("summary");
@@ -81,7 +83,7 @@ function Game() {
         {phase === "intro" && (
           <IntroScreen
             xp={xp}
-            cash={cash}
+            points={points}
             level={level}
             soundOn={soundOn}
             hapticsOn={hapticsOn}
@@ -110,20 +112,22 @@ function Game() {
         )}
         {phase === "shop" && (
           <UpgradeScreen
-            cash={cash}
+            points={points}
+            level={level}
+            rank={rank}
             upgrades={upgrades}
             bedCount={bedCount}
             staff={staff}
             onBuy={(k, cost) => {
-              setCash((c) => c - cost);
+              setPoints((p) => p - cost);
               setUpgrades((u) => ({ ...u, [k]: u[k] + 1 }));
             }}
             onUnlockBeds={() => {
-              setCash((c) => c - BED_UNLOCK_COST);
+              setPoints((p) => p - BED_UNLOCK_COST);
               setBedCount(6);
             }}
             onHire={(k, cost) => {
-              setCash((c) => c - cost);
+              setPoints((p) => p - cost);
               setStaff((s) => [...s, k]);
             }}
             onPlay={play}
@@ -136,7 +140,7 @@ function Game() {
 
 function IntroScreen({
   xp,
-  cash,
+  points,
   level,
   soundOn,
   hapticsOn,
@@ -145,7 +149,7 @@ function IntroScreen({
   onPlay,
 }: {
   xp: number;
-  cash: number;
+  points: number;
   level: number;
   soundOn: boolean;
   hapticsOn: boolean;
@@ -181,7 +185,7 @@ function IntroScreen({
       </div>
 
       <p className="font-display text-xs font-black uppercase text-muted-foreground">
-        Level {level} · 💷 {cash} · ✨ {xp} XP
+        Shift Lv {level} · ⭐ {points} · ✨ {xp} XP · {nurseRank(xp).title}
       </p>
 
       <div className="grid w-full grid-cols-2 gap-2">
