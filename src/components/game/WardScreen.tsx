@@ -24,6 +24,7 @@ import {
   damageMult,
   levelConfig,
   payMult,
+  randomPauseLine,
   rollQuirks,
   ttlMult,
   urgencyOf,
@@ -36,7 +37,6 @@ import {
 export type ShiftStats = {
   level: number;
   points: number;
-  cash: number;
   xp: number;
   helped: number;
   handled: number;
@@ -121,7 +121,6 @@ export function WardScreen({
   type Phase = "ready" | "play" | "ending";
   const [phase, setPhase] = useState<Phase>("ready");
   const [cue, setCue] = useState<string>("READY...");
-  const [endCount, setEndCount] = useState(3);
 
   const [manualPause, setManualPause] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -153,7 +152,6 @@ export function WardScreen({
   const stats = useRef<ShiftStats>({
     level,
     points: 0,
-    cash: 0,
     xp: 0,
     helped: 0,
     handled: 0,
@@ -592,7 +590,6 @@ export function WardScreen({
         base * (1 + newCombo * 0.12) * payMult(upgrades, staffBonus) * (1 + level * 0.05),
       );
       stats.current.points += gain;
-      stats.current.cash += Math.round(gain / 6);
       stats.current.xp += 8 * ev.def.severity;
       stats.current.helped++;
       if (ev.def.callBell) stats.current.callBells++;
@@ -630,7 +627,6 @@ export function WardScreen({
   function miniDone(score: number, perfect: boolean) {
     const bonus = Math.round(score * payMult(upgrades, staffBonus));
     stats.current.points += bonus;
-    stats.current.cash += Math.round(bonus / 5);
     stats.current.xp += 25;
     say(perfect ? "FLAWLESS!" : "BONUS BANKED", `+${bonus} points`, true);
     setStability((s) => Math.min(100, s + (perfect ? 15 : 6)));
@@ -683,7 +679,12 @@ export function WardScreen({
           </div>
 
           <button
-            onClick={() => setManualPause((p) => !p)}
+            onClick={() => {
+              setManualPause((p) => {
+                if (!p) setPauseLine(randomPauseLine());
+                return !p;
+              });
+            }}
             aria-label={manualPause ? "Resume shift" : "Pause shift"}
             className="chunky chunky-press grid w-14 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
           >
@@ -874,17 +875,17 @@ export function WardScreen({
         )}
 
         {/* end countdown — floats over the ward, synced to the real timer */}
-        {endCount !== null && (
+        {endCountValue !== null && (
           <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center">
             <div className="text-center">
               <p className="font-display text-xl font-black uppercase tracking-widest text-primary drop-shadow-[0_2px_0_var(--color-background)]">
                 Shift finishes in
               </p>
               <p
-                key={endCount}
+                key={endCountValue}
                 className="font-display animate-pop text-[7rem] font-black leading-none text-primary drop-shadow-[0_4px_0_var(--color-background)]"
               >
-                {endCount}
+                {endCountValue}
               </p>
             </div>
           </div>
@@ -1034,7 +1035,10 @@ export function WardScreen({
           )}
           <div className="absolute inset-x-0 bottom-0 z-40 flex items-stretch gap-2 border-t-2 border-border bg-card px-3 pb-4 pt-3">
             <button
-              onClick={() => setManualPause(true)}
+              onClick={() => {
+                setPauseLine(randomPauseLine());
+                setManualPause(true);
+              }}
               aria-label="Pause"
               className="chunky chunky-press grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
             >
