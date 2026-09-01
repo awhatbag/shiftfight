@@ -422,6 +422,138 @@ export function WardScreen({
     }
   }, [tick, rate, upgrades]);
 
+  /* ---------------- staff: walk, work, return ---------------- */
+  const isRed = useCallback((e: ActiveEvent) => {
+    const left = 1 - (gameT.current - e.born) / e.ttl;
+    return urgencyOf(e.def) === "critical" || left < 0.4;
+  }, []);
+  const redAlert = events.some(isRed);
+
+  const dispatchStaff = useCallback(
+    (key: string, ev: ActiveEvent) => {
+      const rt = staffRt.current[key];
+      if (!rt) return;
+      rt.eventId = ev.id;
+      rt.goingHome = false;
+      rt.lastT = gameT.current;
+      rt.path = routeTo(BED_SLOTS[ev.bed]!, staffPosRef.current[key] ?? staffHome(key));
+    },
+    [routeTo, staffHome],
+  );
+
+  useEffect(() => {
+    if (rate === 0 || !staff.length) return;
+    const now = gameT.current;
+    let moved = false;
+    for (const key of staff) {
+      const b = STAFF_BEHAVIOUR[key];
+      const rt = staffRt.current[key];
+      if (!b || !rt) continue;
+
+      // idle at the station: wait for a red/critical situation
+      if (!rt.path.length && rt.eventId === null) {
+        if (now < rt.cooldownUntil) continue;
+        const target = events.find((e) => {
+          if (now - e.born < b.responseMs) return false;
+          if (b.handles === "any") return true;
+          return e.def.callBell || e.def.severity === 3 || isRed(e);
+        });
+        if (!target) continue;
+        dispatchStaff(key, target);
+      }
+
+      if (!rt.path.length) continue;
+      let remaining = (now - rt.lastT) / (MS_PER_UNIT(upgrades) * 1.3);
+      rt.lastT = now;
+      let cur = staffPosRef.current[key] ?? staffHome(key);
+      while (remaining > 0 && rt.path.length) {
+        const t = rt.path[0]!;
+        const dx = t.x - cur.x;
+        const dy = t.y - cur.y;
+        const d = Math.hypot(dx * 0.8, dy) || 0.0001;
+        if (d <= remaining) {
+          cur = t;
+          rt.path.shift();
+          remaining -= d;
+        } else {
+          const r = remaining / d;
+          cur = { x: cur.x + dx * r, y: cur.y + dy * r };
+          remaining = 0;
+        }
+      }
+      staffPosRef.current[key] = cur;
+      moved = true;
+
+      if (!rt.path.length) {
+        if (rt.goingHome) {
+          rt.goingHome = false;
+          continue;
+        }
+        const evId = rt.eventId;
+        rt.eventId = null;
+        rt.cooldownUntil = now + b.cooldownMs;
+        const target = events.find((e) => e.id === evId);
+        if (target) {
+          setEvents((c) => c.filter((e) => e.id !== target.id));
+          const gain = Math.round(22 * target.def.severity * payMult(upgrades, staffBonus));
+          stats.current.points += gain;
+          stats.current.handled++;
+          stats.current.staffAssists++;
+          stats.current.xp += 3;
+          if (target.def.callBell) stats.current.callBells++;
+          setStability((s) => Math.min(100, s + 2));
+          setStaffFlash(key);
+          window.setTimeout(() => setStaffFlash((s) => (s === key ? null : s)), 900);
+          say("TEAMWORK", `${b.line} +${gain}`, true);
+          force((n) => n + 1);
+        }
+        rt.goingHome = true;
+        rt.lastT = now;
+        rt.path = routeTo(staffHome(key), cur);
+      }
+    }
+    if (moved) setStaffPos({ ...staffPosRef.current });
+  }, [
+    tick,
+    rate,
+    staff,
+    events,
+    upgrades,
+    staffBonus,
+    say,
+    isRed,
+    dispatchStaff,
+    routeTo,
+    staffHome,
+  ]);
+
+  /** manual assignment: tap a staff member to send them to the worst bay */
+  function tapStaff(key: string) {
+    if (rate === 0) return;
+    const rt = staffRt.current[key];
+    const info = STAFF.find((s) => s.key === key);
+    if (!rt) return;
+    if (rt.path.length || rt.eventId !== null) {
+      say("ON IT", `${info?.name ?? "Staff"} is already going`, true);
+      return;
+    }
+    const pick = [...events].sort(
+      (a, z) =>
+        z.def.severity - a.def.severity ||
+        (gameT.current - z.born) / z.ttl - (gameT.current - a.born) / a.ttl,
+    )[0];
+    if (!pick) {
+      say("STANDING BY", `${info?.name ?? "Staff"} has nothing to do`, true);
+      return;
+    }
+    buzz(10);
+    rt.cooldownUntil = 0;
+    dispatchStaff(key, pick);
+    say("DELEGATED", `${info?.name ?? "Staff"} → ${beds[pick.bed]?.name}`, true);
+  }
+
+
+
   function tapBed(bed: number) {
     if (rate === 0 || beds[bed]?.locked) return;
     primeAudio();
