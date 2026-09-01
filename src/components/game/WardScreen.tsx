@@ -107,13 +107,15 @@ export function WardScreen({
   onEnd: (s: ShiftStats) => void;
 }) {
   const cfg = useMemo(() => levelConfig(level), [level]);
-  const activeBeds = Math.min(bedCount, cfg.beds);
+  /** every bed the player owns is a live bed — purchased beds unlock immediately */
+  const activeBeds = Math.max(1, bedCount);
 
   const beds: BedState[] = Array.from({ length: 6 }, (_, i) => ({
     id: i,
     name: PATIENT_NAMES[i] ?? `Bay ${i + 1}`,
     locked: i >= activeBeds,
   }));
+
 
   /* ---------------- phases ---------------- */
   type Phase = "ready" | "play" | "ending";
