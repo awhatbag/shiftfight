@@ -332,34 +332,8 @@ export function WardScreen({
     return () => window.clearInterval(id);
   }, [rate, activeBeds, cfg, upgrades]);
 
-  /* ---------------- staff auto-response ---------------- */
-  useEffect(() => {
-    if (rate === 0 || !staff.length || !events.length) return;
-    for (const key of staff) {
-      const b = STAFF_BEHAVIOUR[key];
-      if (!b) continue;
-      if ((staffBusy.current[key] ?? 0) > gameT.current) continue;
-      const target = events.find((e) => {
-        const age = gameT.current - e.born;
-        if (age < b.responseMs) return false;
-        return b.handles === "any" ? true : e.def.callBell || e.def.severity === 3;
-      });
-      if (!target) continue;
-      staffBusy.current[key] = gameT.current + b.cooldownMs;
-      setEvents((cur) => cur.filter((e) => e.id !== target.id));
-      const gain = Math.round(18 * target.def.severity * payMult(upgrades, staffBonus));
-      stats.current.points += gain;
-      stats.current.cash += Math.round(gain / 8);
-      stats.current.handled++;
-      stats.current.staffAssists++;
-      if (target.def.callBell) stats.current.callBells++;
-      setStaffFlash(key);
-      window.setTimeout(() => setStaffFlash((s) => (s === key ? null : s)), 900);
-      say("TEAMWORK", `${b.line} +${gain}`, true);
-      force((n) => n + 1);
-      break;
-    }
-  }, [tick, rate, staff, events, upgrades, staffBonus, say]);
+
+
 
   /* ---------------- expiry ---------------- */
   useEffect(() => {
