@@ -569,3 +569,35 @@ export const PAUSE_LINES = [
 
 export const randomPauseLine = () =>
   PAUSE_LINES[Math.floor(Math.random() * PAUSE_LINES.length)]!;
+
+/* ------------------------------------------------------------------ */
+/* NURSE PROGRESSION (XP)                                              */
+/* ------------------------------------------------------------------ */
+
+export type NurseRank = { xp: number; title: string; perk: string };
+
+export const NURSE_RANKS: NurseRank[] = [
+  { xp: 0, title: "Bank Shift", perk: "Ward shop: upgrades unlocked" },
+  { xp: 120, title: "Staff Nurse", perk: "Unlocks hiring staff" },
+  { xp: 320, title: "Senior Nurse", perk: "Unlocks ward expansion" },
+  { xp: 650, title: "Ward Sister", perk: "Upgrades go one tier higher" },
+  { xp: 1100, title: "Matron", perk: "Total ward legend" },
+];
+
+export function nurseRank(xp: number) {
+  let index = 0;
+  NURSE_RANKS.forEach((r, i) => {
+    if (xp >= r.xp) index = i;
+  });
+  const current = NURSE_RANKS[index]!;
+  const next = NURSE_RANKS[index + 1] ?? null;
+  const span = next ? next.xp - current.xp : 1;
+  return {
+    index,
+    level: index + 1,
+    title: current.title,
+    perk: current.perk,
+    next,
+    progress: next ? Math.min(1, (xp - current.xp) / span) : 1,
+  };
+}
