@@ -7,7 +7,9 @@ import {
 } from "@/game/config";
 
 export function UpgradeScreen({
-  cash,
+  points,
+  level,
+  rank,
   upgrades,
   bedCount,
   staff,
@@ -16,7 +18,15 @@ export function UpgradeScreen({
   onHire,
   onPlay,
 }: {
-  cash: number;
+  points: number;
+  level: number;
+  rank: {
+    level: number;
+    title: string;
+    perk: string;
+    next: { xp: number; title: string } | null;
+    progress: number;
+  };
   upgrades: Upgrades;
   bedCount: number;
   staff: string[];
@@ -25,12 +35,33 @@ export function UpgradeScreen({
   onHire: (k: string, cost: number) => void;
   onPlay: () => void;
 }) {
+  const maxTier = rank.level >= 4 ? 5 : 4;
+  const staffUnlocked = rank.level >= 2;
+  const bedsUnlocked = rank.level >= 3;
+
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
+      <div className="rounded-2xl border-2 border-border bg-card p-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-display text-sm font-black uppercase">
+            ✨ Nurse Lv {rank.level} · {rank.title}
+          </p>
+          <span className="text-[11px] text-muted-foreground">
+            {rank.next ? `Next: ${rank.next.title}` : "Max rank"}
+          </span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-[image:var(--gradient-calm)]"
+            style={{ width: `${rank.progress * 100}%` }}
+          />
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">{rank.perk}</p>
+      </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <h2 className="font-display truncate text-2xl font-black uppercase">Ward Shop</h2>
         <span className="font-display shrink-0 rounded-xl bg-[image:var(--gradient-gold)] px-3 py-1.5 text-base font-black text-gold-foreground">
-          💷 {cash}
+          ⭐ {points}
         </span>
       </div>
 
@@ -38,8 +69,8 @@ export function UpgradeScreen({
         {UPGRADE_INFO.map((u) => {
           const lvl = upgrades[u.key];
           const cost = u.cost(lvl);
-          const max = lvl >= 4;
-          const can = !max && cash >= cost;
+          const max = lvl >= maxTier;
+          const can = !max && points >= cost;
           return (
             <button
               key={u.key}
@@ -59,7 +90,7 @@ export function UpgradeScreen({
                 </p>
                 <p className="truncate text-[11px] text-muted-foreground">{u.blurb}</p>
                 <div className="mt-1 flex gap-1">
-                  {Array.from({ length: 4 }).map((_, i) => (
+                  {Array.from({ length: maxTier }).map((_, i) => (
                     <span
                       key={i}
                       className={cn(
@@ -71,7 +102,7 @@ export function UpgradeScreen({
                 </div>
               </div>
               <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
-                {max ? "MAX" : `💷${cost}`}
+                {max ? "MAX" : `⭐${cost}`}
               </span>
             </button>
           );
@@ -98,14 +129,16 @@ export function UpgradeScreen({
           </div>
           {bedCount < 6 ? (
             <button
-              disabled={cash < BED_UNLOCK_COST}
+              disabled={points < BED_UNLOCK_COST || !bedsUnlocked}
               onClick={onUnlockBeds}
               className={cn(
                 "font-display shrink-0 rounded-xl bg-gold px-3 py-2 text-xs font-black text-gold-foreground",
-                cash < BED_UNLOCK_COST ? "opacity-50" : "chunky chunky-press",
+                points < BED_UNLOCK_COST || !bedsUnlocked
+                  ? "opacity-50"
+                  : "chunky chunky-press",
               )}
             >
-              +2 BEDS 💷{BED_UNLOCK_COST}
+              {bedsUnlocked ? <>+2 BEDS ⭐{BED_UNLOCK_COST}</> : "🔒 XP Lv3"}
             </button>
           ) : (
             <span className="font-display shrink-0 text-xs font-black text-calm-foreground">
@@ -121,7 +154,7 @@ export function UpgradeScreen({
         </p>
         {STAFF.map((s) => {
           const hired = staff.includes(s.key);
-          const can = !hired && cash >= s.cost;
+          const can = !hired && staffUnlocked && points >= s.cost;
           return (
             <button
               key={s.key}
@@ -142,7 +175,7 @@ export function UpgradeScreen({
                 <p className="truncate text-[11px] text-muted-foreground">{s.bonus}</p>
               </div>
               <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
-                {hired ? "ON SHIFT" : `💷${s.cost}`}
+                {hired ? "ON SHIFT" : staffUnlocked ? `⭐${s.cost}` : "🔒 XP Lv2"}
               </span>
             </button>
           );
@@ -153,7 +186,7 @@ export function UpgradeScreen({
         onClick={onPlay}
         className="chunky chunky-press mt-auto w-full rounded-2xl bg-[image:var(--gradient-calm)] py-4 font-display text-lg font-black uppercase text-primary-foreground"
       >
-        Start next shift ▶
+        Start Next Shift (Level {level})
       </button>
     </div>
   );
