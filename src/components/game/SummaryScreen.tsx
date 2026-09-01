@@ -29,11 +29,10 @@ export function SummaryScreen({
         <p className="text-xs font-semibold">{rating.line}</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {[
-          { k: "⭐", v: stats.points, l: "Points" },
-          { k: "💷", v: stats.cash, l: "Cash" },
-          { k: "✨", v: stats.xp, l: "XP" },
+          { k: "⭐", v: stats.points, l: "Points (shop)" },
+          { k: "✨", v: stats.xp, l: "XP (nurse)" },
         ].map((s) => (
           <div
             key={s.l}
