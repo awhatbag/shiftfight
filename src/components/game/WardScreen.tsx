@@ -270,7 +270,10 @@ export function WardScreen({
   const shiftLeft = Math.max(0, 1 - elapsed / SHIFT_MS);
   const secondsLeft = Math.max(0, Math.ceil((SHIFT_MS - elapsed) / 1000));
 
-  /* ---------------- ending sequence ---------------- */
+  /* ---------------- ending sequence (synced to the real timer) ---------------- */
+  const endCountValue =
+    phase === "play" && secondsLeft > 0 && secondsLeft <= 3 ? secondsLeft : null;
+
   useEffect(() => {
     if (phase !== "play") return;
     if (elapsed < SHIFT_MS) return;
@@ -283,16 +286,14 @@ export function WardScreen({
       setPhase("ending");
     }
     return undefined;
-  }, [stability, phase, finish]);
+  }, [stability, phase]);
 
   useEffect(() => {
-    if (phase !== "ending") return;
-    setEndCount(3);
-    const t1 = window.setTimeout(() => setEndCount(2), 700);
-    const t2 = window.setTimeout(() => setEndCount(1), 1400);
-    const t3 = window.setTimeout(() => finish(stats.current.collapsed), 2200);
-    return () => [t1, t2, t3].forEach(window.clearTimeout);
+    if (phase !== "ending") return undefined;
+    const t = window.setTimeout(() => finish(stats.current.collapsed), 450);
+    return () => window.clearTimeout(t);
   }, [phase, finish]);
+
 
   /* ---------------- spawner ---------------- */
   useEffect(() => {
