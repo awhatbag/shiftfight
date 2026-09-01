@@ -172,9 +172,42 @@ export function WardScreen({
   const bannerId = useRef(1);
   const [, force] = useState(0);
 
-  /* staff readiness (real-time cooldown clocks in game ms) */
-  const staffBusy = useRef<Record<string, number>>({});
+  /* ---------------- staff runtime ---------------- */
+  type StaffRt = {
+    path: Point[];
+    eventId: number | null;
+    goingHome: boolean;
+    cooldownUntil: number;
+    lastT: number;
+  };
+  const staffRt = useRef<Record<string, StaffRt>>({});
+  const staffPosRef = useRef<Record<string, Point>>({});
+  const [staffPos, setStaffPos] = useState<Record<string, Point>>({});
   const [staffFlash, setStaffFlash] = useState<string | null>(null);
+  const [pauseLine, setPauseLine] = useState(randomPauseLine());
+
+  const staffHome = useCallback(
+    (k: string): Point => {
+      const i = Math.max(0, staff.indexOf(k));
+      return { x: i === 0 ? 0.38 : 0.62, y: 0.9 };
+    },
+    [staff],
+  );
+
+  useEffect(() => {
+    for (const k of staff) {
+      staffRt.current[k] ??= {
+        path: [],
+        eventId: null,
+        goingHome: false,
+        cooldownUntil: 0,
+        lastT: 0,
+      };
+      staffPosRef.current[k] ??= staffHome(k);
+    }
+    setStaffPos({ ...staffPosRef.current });
+  }, [staff, staffHome]);
+
 
   const rate = manualPause || settingsOpen || phase !== "play" || miniOffer ? 0 : mini ? 1 / 3 : 1;
   const rateRef = useRef(rate);
