@@ -829,11 +829,12 @@ export type NurseRank = { xp: number; title: string; perk: string };
 
 export const NURSE_RANKS: NurseRank[] = [
   { xp: 0, title: "Bank Shift", perk: "Ward shop: upgrades unlocked" },
-  { xp: 120, title: "Staff Nurse", perk: "Unlocks hiring staff" },
-  { xp: 320, title: "Senior Nurse", perk: "Unlocks ward expansion" },
-  { xp: 650, title: "Ward Sister", perk: "Upgrades go one tier higher" },
-  { xp: 1100, title: "Matron", perk: "Total ward legend" },
+  { xp: 380, title: "Staff Nurse", perk: "Unlocks hiring staff" },
+  { xp: 900, title: "Senior Nurse", perk: "Unlocks ward expansion" },
+  { xp: 1700, title: "Ward Sister", perk: "Upgrades go one tier higher" },
+  { xp: 2800, title: "Matron", perk: "Total ward legend" },
 ];
+
 
 export function nurseRank(xp: number) {
   let index = 0;
