@@ -1,4 +1,12 @@
-export type ActionKind = "ASSESS" | "INTERVENE" | "ESCALATE";
+export type ActionKind =
+  | "ASSESS"
+  | "INTERVENE"
+  | "ESCALATE"
+  | "FETCH"
+  | "ADJUST"
+  | "ASSIST"
+  | "REASSURE"
+  | "RESPOND";
 
 export type EventDef = {
   key: string;
@@ -11,8 +19,8 @@ export type EventDef = {
   callBell?: boolean;
   /** one-line situation read-out shown when the bed is selected */
   brief: string;
-  /** contextual "what this button does here" copy */
-  options: Record<ActionKind, string>;
+  /** the 3 buttons offered for this event + "what this does here" copy */
+  options: Partial<Record<ActionKind, string>>;
   win: string;
   fail: string;
 };
@@ -21,12 +29,19 @@ export const ACTION_META: Record<
   ActionKind,
   { icon: string; tag: string; color: string }
 > = {
-  ASSESS: { icon: "👀", tag: "Look, ask, reassure", color: "bg-primary" },
-  INTERVENE: { icon: "💪", tag: "Hands-on fix, right now", color: "bg-calm" },
-  ESCALATE: { icon: "📟", tag: "Bleep the team, fast", color: "bg-alarm" },
+  ASSESS: { icon: "👀", tag: "Look, ask, reassure", color: "bg-primary text-primary-foreground" },
+  INTERVENE: { icon: "💪", tag: "Hands-on fix, right now", color: "bg-calm text-calm-foreground" },
+  ESCALATE: { icon: "📟", tag: "Bleep the team, fast", color: "bg-alarm text-alarm-foreground" },
+  FETCH: { icon: "🏃", tag: "Go get the thing", color: "bg-gold text-gold-foreground" },
+  ADJUST: { icon: "🔧", tag: "Nudge it into place", color: "bg-secondary text-secondary-foreground" },
+  ASSIST: { icon: "🤝", tag: "Lend a hand", color: "bg-accent text-accent-foreground" },
+  REASSURE: { icon: "💬", tag: "Kind words, calm voice", color: "bg-primary text-primary-foreground" },
+  RESPOND: { icon: "🛎️", tag: "Answer the bell", color: "bg-gold text-gold-foreground" },
 };
 
+
 export const EVENTS: EventDef[] = [
+  /* ---------- critical ---------- */
   {
     key: "sats",
     label: "SATS DIPPING",
@@ -53,23 +68,57 @@ export const EVENTS: EventDef[] = [
     brief: "Dressing is soaking through. Surgeon problem.",
     options: {
       ASSESS: "Peek and hope it stops",
-      INTERVENE: "Add yet another dressing",
+      ADJUST: "Add yet another dressing",
       ESCALATE: "Page the surgical reg NOW",
     },
     win: "Surgeon paged. Legend.",
     fail: "The linen budget weeps.",
   },
   {
+    key: "wobble",
+    label: "BIG WOBBLE",
+    icon: "😵‍💫",
+    severity: 3,
+    correct: "ASSIST",
+    ttl: 11000,
+    brief: "Standing up, going grey, about to hit the deck.",
+    options: {
+      ASSIST: "Catch them, ease them down safely",
+      REASSURE: "Say 'ooh careful' from afar",
+      FETCH: "Go find a chair. Slowly.",
+    },
+    win: "Safely down. No thud.",
+    fail: "Incident form incoming.",
+  },
+  {
+    key: "monitor",
+    label: "MONITOR MELTDOWN",
+    icon: "📉",
+    severity: 3,
+    correct: "ESCALATE",
+    ttl: 11500,
+    brief: "Numbers doing something dramatic. Get help.",
+    options: {
+      ADJUST: "Reposition the finger probe",
+      ASSESS: "Squint at the numbers",
+      ESCALATE: "Pull the team in now",
+    },
+    win: "Whole team arrives. Sorted.",
+    fail: "Everything beeps at once.",
+  },
+
+  /* ---------- urgent ---------- */
+  {
     key: "pump",
     label: "IV PUMP SCREAMING",
     icon: "🔔",
     severity: 2,
-    correct: "INTERVENE",
+    correct: "ADJUST",
     ttl: 14000,
     brief: "Kinked line. Fixable in ten seconds.",
     options: {
       ASSESS: "Watch it scream at you",
-      INTERVENE: "Unkink the line, restart pump",
+      ADJUST: "Unkink the line, restart pump",
       ESCALATE: "Bleep a doctor about a beep",
     },
     win: "Line unkinked. Blessed silence!",
@@ -84,7 +133,7 @@ export const EVENTS: EventDef[] = [
     ttl: 14500,
     brief: "Green around the gills. Bowl and anti-sick.",
     options: {
-      ASSESS: "Ask how green they feel",
+      REASSURE: "Ask how green they feel",
       INTERVENE: "Bowl, water, anti-sick",
       ESCALATE: "Crash call for a burp",
     },
@@ -97,7 +146,7 @@ export const EVENTS: EventDef[] = [
     icon: "😖",
     severity: 2,
     correct: "INTERVENE",
-    ttl: 15000,
+    ttl: 14000,
     brief: "Pain is climbing. They need comfort, not chat.",
     options: {
       ASSESS: "Ask about it. Again.",
@@ -112,11 +161,11 @@ export const EVENTS: EventDef[] = [
     label: "WANDERING",
     icon: "🌀",
     severity: 2,
-    correct: "ASSESS",
+    correct: "REASSURE",
     ttl: 14000,
     brief: "Muddled and heading for the door. Talk first.",
     options: {
-      ASSESS: "Orient, reassure, walk them back",
+      REASSURE: "Orient, reassure, walk them back",
       INTERVENE: "Grab them. Rude.",
       ESCALATE: "Bleep before you've even looked",
     },
@@ -124,16 +173,50 @@ export const EVENTS: EventDef[] = [
     fail: "They found the fire exit.",
   },
   {
+    key: "slipping",
+    label: "SLIDING DOWN THE BED",
+    icon: "🛏️",
+    severity: 2,
+    correct: "ADJUST",
+    ttl: 15000,
+    brief: "Slowly becoming horizontal jelly.",
+    options: {
+      ADJUST: "Sit them back up properly",
+      FETCH: "Get another pillow first",
+      ESCALATE: "Bleep about gravity",
+    },
+    win: "Upright and dignified.",
+    fail: "Fully melted into the mattress.",
+  },
+  {
+    key: "drip",
+    label: "DRIP RUN DRY",
+    icon: "💧",
+    severity: 2,
+    correct: "FETCH",
+    ttl: 15000,
+    brief: "Bag's empty and the pump knows it.",
+    options: {
+      FETCH: "Grab a fresh bag from the store",
+      ASSESS: "Watch the last drop fall",
+      REASSURE: "Tell it everything's fine",
+    },
+    win: "New bag up. Pump content.",
+    fail: "Alarm choir, full volume.",
+  },
+
+  /* ---------- routine / silly ---------- */
+  {
     key: "blanket",
     label: "CALL BELL: BLANKET",
     icon: "🛎️",
     severity: 1,
-    correct: "ASSESS",
+    correct: "RESPOND",
     ttl: 17000,
     callBell: true,
     brief: "Bell ringing. It's a blanket. Probably.",
     options: {
-      ASSESS: "Answer the bell, sort them out",
+      RESPOND: "Answer the bell, fetch a warm one",
       INTERVENE: "Deploy medical equipment. For a blanket.",
       ESCALATE: "Bleep the consultant. For a blanket.",
     },
@@ -145,17 +228,153 @@ export const EVENTS: EventDef[] = [
     label: "CALL BELL: TV REMOTE",
     icon: "📺",
     severity: 1,
-    correct: "ASSESS",
+    correct: "FETCH",
     ttl: 17000,
     callBell: true,
     brief: "Bell again. The remote has vanished.",
     options: {
-      ASSESS: "Answer the bell, find the remote",
-      INTERVENE: "Perform a procedure on a sofa cushion",
+      FETCH: "Dig it out from under the pillow",
+      ADJUST: "Rearrange the pillows instead",
       ESCALATE: "Escalate a television emergency",
     },
     win: "Remote located under pillow.",
     fail: "Wrong channel forever.",
+  },
+  {
+    key: "phone",
+    label: "CALL BELL: PHONE TOO FAR",
+    icon: "📱",
+    severity: 1,
+    correct: "FETCH",
+    ttl: 17000,
+    callBell: true,
+    brief: "Phone is 30cm away. Devastating.",
+    options: {
+      FETCH: "Slide the phone within reach",
+      REASSURE: "Explain the concept of arms",
+      ESCALATE: "Bleep the reg about a phone",
+    },
+    win: "Reunited. Emotional scenes.",
+    fail: "Phone rang. Nobody won.",
+  },
+  {
+    key: "spoon",
+    label: "CALL BELL: SPOON HELP",
+    icon: "🥄",
+    severity: 1,
+    correct: "ASSIST",
+    ttl: 17000,
+    callBell: true,
+    brief: "The jelly is winning. They need a hand.",
+    options: {
+      ASSIST: "Steady the spoon, save the jelly",
+      FETCH: "Fetch a bigger spoon",
+      ESCALATE: "Declare a dessert incident",
+    },
+    win: "Jelly defeated. Teamwork.",
+    fail: "Jelly on the ceiling.",
+  },
+  {
+    key: "feet",
+    label: "CALL BELL: FOOT MASSAGE",
+    icon: "🦶",
+    severity: 1,
+    correct: "REASSURE",
+    ttl: 17000,
+    callBell: true,
+    brief: "Requesting a full spa treatment. Politely decline.",
+    options: {
+      REASSURE: "Kindly explain this is not a spa",
+      INTERVENE: "Actually do it. Forty minutes gone.",
+      FETCH: "Fetch cucumber slices",
+    },
+    win: "Declined charmingly. Still friends.",
+    fail: "You are now the ward masseuse.",
+  },
+  {
+    key: "pillow",
+    label: "CALL BELL: PILLOW GEOMETRY",
+    icon: "🪶",
+    severity: 1,
+    correct: "ADJUST",
+    ttl: 17000,
+    callBell: true,
+    brief: "Pillow is at 34 degrees. They wanted 35.",
+    options: {
+      ADJUST: "Fluff and angle to specification",
+      FETCH: "Fetch four more pillows",
+      ESCALATE: "Escalate to pillow management",
+    },
+    win: "Perfect angle. Chef's kiss.",
+    fail: "Pillow now legally a rock.",
+  },
+  {
+    key: "curtain",
+    label: "CALL BELL: CURTAIN DRAMA",
+    icon: "🪟",
+    severity: 1,
+    correct: "ADJUST",
+    ttl: 17000,
+    callBell: true,
+    brief: "Curtain 4cm open. Unacceptable.",
+    options: {
+      ADJUST: "Slide the curtain the last 4cm",
+      REASSURE: "Say it looks closed to you",
+      FETCH: "Fetch a second curtain",
+    },
+    win: "Privacy restored. Five stars.",
+    fail: "The whole bay saw everything.",
+  },
+  {
+    key: "water",
+    label: "CALL BELL: WATER JUG",
+    icon: "🥤",
+    severity: 1,
+    correct: "FETCH",
+    ttl: 17000,
+    callBell: true,
+    brief: "Jug empty. Ice specifically requested.",
+    options: {
+      FETCH: "Refill with ice, obviously",
+      ADJUST: "Move the empty jug closer",
+      ESCALATE: "Bleep someone about ice",
+    },
+    win: "Ice acquired. Legend status.",
+    fail: "Jug remains tragically dry.",
+  },
+  {
+    key: "chat",
+    label: "CALL BELL: JUST A CHAT",
+    icon: "💬",
+    severity: 1,
+    correct: "REASSURE",
+    ttl: 17000,
+    callBell: true,
+    brief: "No problem at all. They're just a bit bored.",
+    options: {
+      REASSURE: "Two minutes of proper chat",
+      FETCH: "Fetch a magazine from 2011",
+      ESCALATE: "Bleep the team about boredom",
+    },
+    win: "Cheered right up. Worth it.",
+    fail: "Bell pressed eleven more times.",
+  },
+  {
+    key: "socks",
+    label: "CALL BELL: SOCK CRISIS",
+    icon: "🧦",
+    severity: 1,
+    correct: "ASSIST",
+    ttl: 17000,
+    callBell: true,
+    brief: "One sock has escaped under the bed.",
+    options: {
+      ASSIST: "Retrieve and reapply the sock",
+      REASSURE: "Talk them through sock loss",
+      ESCALATE: "Escalate the sock",
+    },
+    win: "Sock reunited with foot.",
+    fail: "Sock is now folklore.",
   },
 ];
 
@@ -249,42 +468,56 @@ export const UPGRADE_INFO = [
     name: "Nurse Speed",
     icon: "👟",
     blurb: "Sprint between beds",
-    cost: (l: number) => 1200 + l * 900,
+    cost: (l: number) => 1800 + l * 1600,
   },
   {
     key: "response" as const,
     name: "Response Time",
     icon: "⏱️",
     blurb: "Patients wait longer",
-    cost: (l: number) => 1400 + l * 1000,
+    cost: (l: number) => 2100 + l * 1800,
   },
   {
     key: "equipment" as const,
     name: "Equipment",
     icon: "🩺",
     blurb: "Bigger payouts, softer hits",
-    cost: (l: number) => 1600 + l * 1100,
+    cost: (l: number) => 2400 + l * 2000,
   },
 ];
+
+/** staff tiers: how spicy an event they're allowed to take on */
+export type StaffTier = 1 | 2 | 3;
 
 export const STAFF = [
   {
     key: "hca",
     name: "Barry the HCA",
     icon: "🧹",
-    bonus: "Walks the ward, grabs call bells & criticals",
-    cost: 4500,
+    tier: 1 as StaffTier,
+    bonus: "Tier 1 · routine call bells only",
+    cost: 3500,
   },
   {
     key: "student",
     name: "Priya, Student Nurse",
     icon: "🎓",
-    bonus: "+15% points, handles anything (slowly)",
-    cost: 6000,
+    tier: 2 as StaffTier,
+    bonus: "Tier 2 · routine + urgent, +15% points",
+    cost: 9000,
+  },
+  {
+    key: "charge",
+    name: "Dot, Charge Nurse",
+    icon: "🧑‍⚕️",
+    tier: 3 as StaffTier,
+    bonus: "Tier 3 · handles anything, even criticals",
+    cost: 18000,
   },
 ];
 
-export const BED_UNLOCK_COST = 8000;
+export const BED_UNLOCK_COST = 14000;
+
 
 export const travelMs = (u: Upgrades) => Math.max(140, 520 - u.speed * 85);
 export const ttlMult = (u: Upgrades) => 1 + u.response * 0.16;
@@ -333,7 +566,7 @@ export const URGENCY_META: Record<
     ring: "ring-alarm",
     chip: "bg-alarm text-alarm-foreground",
     bar: "bg-alarm",
-    mult: 0.62,
+    mult: 0.45,
   },
 };
 
@@ -361,6 +594,8 @@ export type LevelConfig = {
   damage: number;
   /** highest event severity allowed */
   maxSeverity: 1 | 2 | 3;
+  /** relative chance of picking a severity 1 / 2 / 3 event */
+  sevWeights: [number, number, number];
 };
 
 export function levelConfig(levelRaw: number): LevelConfig {
@@ -382,12 +617,15 @@ export function levelConfig(levelRaw: number): LevelConfig {
     level,
     name: names[level - 1] ?? "Ward",
     beds: Math.min(6, 2 + Math.floor(t * 4 + 0.5)),
-    maxEvents: Math.min(5, 1 + Math.round(t * 4)),
-    spawnChance: 0.28 + t * 0.55,
+    /** level 1 already juggles a few things — busy, but forgiving */
+    maxEvents: Math.min(5, 2 + Math.round(t * 3)),
+    spawnChance: 0.5 + t * 0.4,
     /** response windows tighten steadily with level (urgency tiers preserved) */
-    timeMult: 1.9 - t * 1.25,
-    damage: 0.7 + t * 0.8,
-    maxSeverity: level <= 2 ? 1 : level <= 4 ? 2 : 3,
+    timeMult: 1.75 - t * 1.1,
+    damage: 0.55 + t * 0.9,
+    /** urgent + critical exist from level 1, just rarely */
+    maxSeverity: 3,
+    sevWeights: [0.7 - t * 0.45, 0.24 + t * 0.11, 0.06 + t * 0.34],
   };
 }
 
@@ -397,21 +635,34 @@ export function levelConfig(levelRaw: number): LevelConfig {
 
 export const STAFF_BEHAVIOUR: Record<
   string,
-  { responseMs: number; cooldownMs: number; handles: "bells" | "any"; line: string }
+  {
+    responseMs: number;
+    cooldownMs: number;
+    /** highest event severity this tier is allowed to resolve */
+    maxSeverity: 1 | 2 | 3;
+    line: string;
+  }
 > = {
   hca: {
     responseMs: 4200,
-    cooldownMs: 11000,
-    handles: "bells",
+    cooldownMs: 12000,
+    maxSeverity: 1,
     line: "Barry got the bell!",
   },
   student: {
     responseMs: 6200,
     cooldownMs: 14000,
-    handles: "any",
+    maxSeverity: 2,
     line: "Priya handled it (and asked 4 questions)",
   },
+  charge: {
+    responseMs: 5000,
+    cooldownMs: 15000,
+    maxSeverity: 3,
+    line: "Dot sorted it before you blinked",
+  },
 };
+
 
 /* ------------------------------------------------------------------ */
 /* SILLY SUMMARY MODIFIERS                                             */
@@ -578,11 +829,12 @@ export type NurseRank = { xp: number; title: string; perk: string };
 
 export const NURSE_RANKS: NurseRank[] = [
   { xp: 0, title: "Bank Shift", perk: "Ward shop: upgrades unlocked" },
-  { xp: 120, title: "Staff Nurse", perk: "Unlocks hiring staff" },
-  { xp: 320, title: "Senior Nurse", perk: "Unlocks ward expansion" },
-  { xp: 650, title: "Ward Sister", perk: "Upgrades go one tier higher" },
-  { xp: 1100, title: "Matron", perk: "Total ward legend" },
+  { xp: 380, title: "Staff Nurse", perk: "Unlocks hiring staff" },
+  { xp: 900, title: "Senior Nurse", perk: "Unlocks ward expansion" },
+  { xp: 1700, title: "Ward Sister", perk: "Upgrades go one tier higher" },
+  { xp: 2800, title: "Matron", perk: "Total ward legend" },
 ];
+
 
 export function nurseRank(xp: number) {
   let index = 0;
