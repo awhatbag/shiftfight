@@ -61,8 +61,6 @@ type ActiveEvent = {
 type Banner = { id: number; title: string; sub: string; good: boolean };
 type Point = { x: number; y: number };
 
-const ACTIONS: ActionKind[] = ["ASSESS", "INTERVENE", "ESCALATE"];
-
 /** bed layout in ward-percentage coords; corridor runs down the middle */
 const BED_SLOTS: Point[] = [
   { x: 0.16, y: 0.16 },
@@ -144,6 +142,7 @@ export function WardScreen({
   const [nurse, setNurse] = useState<Point>({ ...STATION });
   const [walking, setWalking] = useState(false);
   const nurseRef = useRef<Point>({ ...STATION });
+  const returning = useRef(false);
   const journey = useRef<Point[]>([]);
   const journeyBed = useRef<number | null>(null);
   const lastMoveT = useRef(0);
@@ -207,6 +206,9 @@ export function WardScreen({
   }, [staff, staffHome]);
 
 
+  const eventsRef = useRef<ActiveEvent[]>([]);
+  eventsRef.current = events;
+
   const rate = manualPause || settingsOpen || phase !== "play" || miniOffer ? 0 : mini ? 1 / 3 : 1;
   const rateRef = useRef(rate);
   rateRef.current = rate;
@@ -256,7 +258,8 @@ export function WardScreen({
       stats.current.quirks = rollQuirks(3);
       stats.current.points = Math.max(
         0,
-        stats.current.points + stats.current.quirks.reduce((a, q) => a + q.pts, 0),
+        stats.current.points +
+          Math.round(stats.current.quirks.reduce((a, q) => a + q.pts, 0) * 0.3),
       );
       playWhistle();
       onEnd({ ...stats.current });
@@ -297,41 +300,40 @@ export function WardScreen({
   useEffect(() => {
     if (rate === 0) return;
     const id = window.setInterval(() => {
-      setEvents((cur) => {
-        const heat = Math.min(1, gameT.current / SHIFT_MS);
-        if (cur.length >= Math.min(cfg.maxEvents, activeBeds)) return cur;
-        const free = Array.from({ length: activeBeds }, (_, i) => i).filter(
-          (b) => !cur.some((ev) => ev.bed === b),
-        );
-        if (!free.length) return cur;
-        if (Math.random() > cfg.spawnChance * (0.7 + heat * 0.5)) return cur;
-        const bed = free[Math.floor(Math.random() * free.length)]!;
-        const pool = EVENTS.filter((ev) => ev.severity <= cfg.maxSeverity);
-        const def = pool[Math.floor(Math.random() * pool.length)]!;
-        if (def.callBell) playCallBell();
-        const u = URGENCY_META[urgencyOf(def)];
-        return [
-          ...cur,
-          {
-            id: uid.current++,
-            bed,
-            def,
-            born: gameT.current,
-            ttl:
-              def.ttl *
-              ttlMult(upgrades) *
-              u.mult *
-              cfg.timeMult *
-              (1 - heat * 0.18),
-          },
-        ];
-      });
+      const heat = Math.min(1, gameT.current / SHIFT_MS);
+      const cur = eventsRef.current;
+      if (cur.length >= Math.min(cfg.maxEvents, activeBeds)) return;
+      const free = Array.from({ length: activeBeds }, (_, i) => i).filter(
+        (b) => !cur.some((ev) => ev.bed === b),
+      );
+      if (!free.length) return;
+      if (Math.random() > cfg.spawnChance * (0.7 + heat * 0.5)) return;
+      const bed = free[Math.floor(Math.random() * free.length)]!;
+
+      // pick a severity band first, so urgent/critical show up even early on
+      const w = cfg.sevWeights;
+      const total = w[0] + w[1] + w[2];
+      let roll = Math.random() * total;
+      let sev: 1 | 2 | 3 = 1;
+      if (roll > w[0]) sev = 2;
+      roll -= w[0];
+      if (roll > w[1]) sev = 3;
+      const pool = EVENTS.filter((ev) => ev.severity === sev);
+      const def = pool[Math.floor(Math.random() * pool.length)]!;
+      const u = URGENCY_META[urgencyOf(def)];
+      const ev: ActiveEvent = {
+        id: uid.current++,
+        bed,
+        def,
+        born: gameT.current,
+        ttl: def.ttl * ttlMult(upgrades) * u.mult * cfg.timeMult * (1 - heat * 0.18),
+      };
+      // the bell only ever rings because this patient is ringing it
+      if (def.callBell) playCallBell();
+      setEvents((c) => [...c, ev]);
     }, 1200);
     return () => window.clearInterval(id);
   }, [rate, activeBeds, cfg, upgrades]);
-
-
-
 
   /* ---------------- expiry ---------------- */
   useEffect(() => {
@@ -380,7 +382,8 @@ export function WardScreen({
   );
 
   const walkTo = useCallback(
-    (dest: Point, bed: number | null) => {
+    (dest: Point, bed: number | null, slow = false) => {
+      returning.current = slow;
       setAtBed(null);
       journey.current = routeTo(dest, nurseRef.current);
       journeyBed.current = bed;
@@ -392,7 +395,9 @@ export function WardScreen({
 
   useEffect(() => {
     if (rate === 0 || !journey.current.length) return;
-    let remaining = (gameT.current - lastMoveT.current) / MS_PER_UNIT(upgrades);
+    let remaining =
+      (gameT.current - lastMoveT.current) /
+      (MS_PER_UNIT(upgrades) * (returning.current ? 1.9 : 1));
     lastMoveT.current = gameT.current;
     let current = nurseRef.current;
     while (remaining > 0 && journey.current.length) {
@@ -453,8 +458,7 @@ export function WardScreen({
         if (now < rt.cooldownUntil) continue;
         const target = events.find((e) => {
           if (now - e.born < b.responseMs) return false;
-          if (b.handles === "any") return true;
-          return e.def.callBell || e.def.severity === 3 || isRed(e);
+          return e.def.severity <= b.maxSeverity;
         });
         if (!target) continue;
         dispatchStaff(key, target);
@@ -493,11 +497,11 @@ export function WardScreen({
         const target = events.find((e) => e.id === evId);
         if (target) {
           setEvents((c) => c.filter((e) => e.id !== target.id));
-          const gain = Math.round(22 * target.def.severity * payMult(upgrades, staffBonus));
+          const gain = Math.round(8 * target.def.severity * payMult(upgrades, staffBonus));
           stats.current.points += gain;
           stats.current.handled++;
           stats.current.staffAssists++;
-          stats.current.xp += 3;
+          stats.current.xp += 2;
           if (target.def.callBell) stats.current.callBells++;
           setStability((s) => Math.min(100, s + 2));
           setStaffFlash(key);
@@ -535,13 +539,14 @@ export function WardScreen({
       say("ON IT", `${info?.name ?? "Staff"} is already going`, true);
       return;
     }
-    const pick = [...events].sort(
+    const b = STAFF_BEHAVIOUR[key];
+    const pick = [...events].filter((e) => !b || e.def.severity <= b.maxSeverity).sort(
       (a, z) =>
         z.def.severity - a.def.severity ||
         (gameT.current - z.born) / z.ttl - (gameT.current - a.born) / a.ttl,
     )[0];
     if (!pick) {
-      say("STANDING BY", `${info?.name ?? "Staff"} has nothing to do`, true);
+      say("STANDING BY", `${info?.name ?? "Staff"} can't take those`, true);
       return;
     }
     buzz(10);
@@ -585,12 +590,12 @@ export function WardScreen({
       const newCombo = combo + 1;
       setCombo(newCombo);
       stats.current.maxCombo = Math.max(stats.current.maxCombo, newCombo);
-      const base = 40 * ev.def.severity * (isTop ? 1.5 : 1);
+      const base = 14 * ev.def.severity * (isTop ? 1.4 : 1);
       const gain = Math.round(
-        base * (1 + newCombo * 0.12) * payMult(upgrades, staffBonus) * (1 + level * 0.05),
+        base * (1 + newCombo * 0.1) * payMult(upgrades, staffBonus) * (1 + level * 0.05),
       );
       stats.current.points += gain;
-      stats.current.xp += 8 * ev.def.severity;
+      stats.current.xp += 4 * ev.def.severity;
       stats.current.helped++;
       if (ev.def.callBell) stats.current.callBells++;
       setStability((s) => Math.min(100, s + 3));
@@ -614,6 +619,10 @@ export function WardScreen({
       setStability((s) => Math.max(0, s - 10 * damageMult(upgrades) * cfg.damage));
       say("WRONG PRIORITY", `${ev.def.correct} was the move`, false);
     }
+    window.setTimeout(() => {
+      if (journey.current.length) return; // player already sent her elsewhere
+      walkTo(STATION, null, true);
+    }, 350);
     force((n) => n + 1);
   }
 
@@ -625,9 +634,9 @@ export function WardScreen({
   }
 
   function miniDone(score: number, perfect: boolean) {
-    const bonus = Math.round(score * payMult(upgrades, staffBonus));
+    const bonus = Math.round(score * 0.4 * payMult(upgrades, staffBonus));
     stats.current.points += bonus;
-    stats.current.xp += 25;
+    stats.current.xp += 12;
     say(perfect ? "FLAWLESS!" : "BONUS BANKED", `+${bonus} points`, true);
     setStability((s) => Math.min(100, s + (perfect ? 15 : 6)));
     setMini(null);
@@ -985,13 +994,13 @@ export function WardScreen({
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {ACTIONS.map((a) => (
+              {(Object.keys(selectedEvent.def.options) as ActionKind[]).map((a) => (
                 <button
                   key={a}
                   onClick={() => doAction(a)}
                   disabled={nurseHereBed !== selectedEvent.bed}
                   className={cn(
-                    "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2 text-primary-foreground",
+                    "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2",
                     ACTION_META[a].color,
                     nurseHereBed !== selectedEvent.bed && "opacity-40",
                   )}
