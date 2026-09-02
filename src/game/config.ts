@@ -566,7 +566,7 @@ export const URGENCY_META: Record<
     ring: "ring-alarm",
     chip: "bg-alarm text-alarm-foreground",
     bar: "bg-alarm",
-    mult: 0.62,
+    mult: 0.45,
   },
 };
 
@@ -594,6 +594,8 @@ export type LevelConfig = {
   damage: number;
   /** highest event severity allowed */
   maxSeverity: 1 | 2 | 3;
+  /** relative chance of picking a severity 1 / 2 / 3 event */
+  sevWeights: [number, number, number];
 };
 
 export function levelConfig(levelRaw: number): LevelConfig {
@@ -615,12 +617,15 @@ export function levelConfig(levelRaw: number): LevelConfig {
     level,
     name: names[level - 1] ?? "Ward",
     beds: Math.min(6, 2 + Math.floor(t * 4 + 0.5)),
-    maxEvents: Math.min(5, 1 + Math.round(t * 4)),
-    spawnChance: 0.28 + t * 0.55,
+    /** level 1 already juggles a few things — busy, but forgiving */
+    maxEvents: Math.min(5, 2 + Math.round(t * 3)),
+    spawnChance: 0.5 + t * 0.4,
     /** response windows tighten steadily with level (urgency tiers preserved) */
-    timeMult: 1.9 - t * 1.25,
-    damage: 0.7 + t * 0.8,
-    maxSeverity: level <= 2 ? 1 : level <= 4 ? 2 : 3,
+    timeMult: 1.75 - t * 1.1,
+    damage: 0.55 + t * 0.9,
+    /** urgent + critical exist from level 1, just rarely */
+    maxSeverity: 3,
+    sevWeights: [0.7 - t * 0.45, 0.24 + t * 0.11, 0.06 + t * 0.34],
   };
 }
 
@@ -630,21 +635,34 @@ export function levelConfig(levelRaw: number): LevelConfig {
 
 export const STAFF_BEHAVIOUR: Record<
   string,
-  { responseMs: number; cooldownMs: number; handles: "bells" | "any"; line: string }
+  {
+    responseMs: number;
+    cooldownMs: number;
+    /** highest event severity this tier is allowed to resolve */
+    maxSeverity: 1 | 2 | 3;
+    line: string;
+  }
 > = {
   hca: {
     responseMs: 4200,
-    cooldownMs: 11000,
-    handles: "bells",
+    cooldownMs: 12000,
+    maxSeverity: 1,
     line: "Barry got the bell!",
   },
   student: {
     responseMs: 6200,
     cooldownMs: 14000,
-    handles: "any",
+    maxSeverity: 2,
     line: "Priya handled it (and asked 4 questions)",
   },
+  charge: {
+    responseMs: 5000,
+    cooldownMs: 15000,
+    maxSeverity: 3,
+    line: "Dot sorted it before you blinked",
+  },
 };
+
 
 /* ------------------------------------------------------------------ */
 /* SILLY SUMMARY MODIFIERS                                             */
