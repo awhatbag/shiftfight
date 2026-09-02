@@ -1,4 +1,12 @@
-export type ActionKind = "ASSESS" | "INTERVENE" | "ESCALATE";
+export type ActionKind =
+  | "ASSESS"
+  | "INTERVENE"
+  | "ESCALATE"
+  | "FETCH"
+  | "ADJUST"
+  | "ASSIST"
+  | "REASSURE"
+  | "RESPOND";
 
 export type EventDef = {
   key: string;
@@ -11,8 +19,8 @@ export type EventDef = {
   callBell?: boolean;
   /** one-line situation read-out shown when the bed is selected */
   brief: string;
-  /** contextual "what this button does here" copy */
-  options: Record<ActionKind, string>;
+  /** the 3 buttons offered for this event + "what this does here" copy */
+  options: Partial<Record<ActionKind, string>>;
   win: string;
   fail: string;
 };
@@ -21,10 +29,16 @@ export const ACTION_META: Record<
   ActionKind,
   { icon: string; tag: string; color: string }
 > = {
-  ASSESS: { icon: "👀", tag: "Look, ask, reassure", color: "bg-primary" },
-  INTERVENE: { icon: "💪", tag: "Hands-on fix, right now", color: "bg-calm" },
-  ESCALATE: { icon: "📟", tag: "Bleep the team, fast", color: "bg-alarm" },
+  ASSESS: { icon: "👀", tag: "Look, ask, reassure", color: "bg-primary text-primary-foreground" },
+  INTERVENE: { icon: "💪", tag: "Hands-on fix, right now", color: "bg-calm text-calm-foreground" },
+  ESCALATE: { icon: "📟", tag: "Bleep the team, fast", color: "bg-alarm text-alarm-foreground" },
+  FETCH: { icon: "🏃", tag: "Go get the thing", color: "bg-gold text-gold-foreground" },
+  ADJUST: { icon: "🔧", tag: "Nudge it into place", color: "bg-secondary text-secondary-foreground" },
+  ASSIST: { icon: "🤝", tag: "Lend a hand", color: "bg-accent text-accent-foreground" },
+  REASSURE: { icon: "💬", tag: "Kind words, calm voice", color: "bg-primary text-primary-foreground" },
+  RESPOND: { icon: "🛎️", tag: "Answer the bell", color: "bg-gold text-gold-foreground" },
 };
+
 
 export const EVENTS: EventDef[] = [
   {
