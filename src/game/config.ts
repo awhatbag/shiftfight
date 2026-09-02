@@ -468,42 +468,56 @@ export const UPGRADE_INFO = [
     name: "Nurse Speed",
     icon: "👟",
     blurb: "Sprint between beds",
-    cost: (l: number) => 1200 + l * 900,
+    cost: (l: number) => 1800 + l * 1600,
   },
   {
     key: "response" as const,
     name: "Response Time",
     icon: "⏱️",
     blurb: "Patients wait longer",
-    cost: (l: number) => 1400 + l * 1000,
+    cost: (l: number) => 2100 + l * 1800,
   },
   {
     key: "equipment" as const,
     name: "Equipment",
     icon: "🩺",
     blurb: "Bigger payouts, softer hits",
-    cost: (l: number) => 1600 + l * 1100,
+    cost: (l: number) => 2400 + l * 2000,
   },
 ];
+
+/** staff tiers: how spicy an event they're allowed to take on */
+export type StaffTier = 1 | 2 | 3;
 
 export const STAFF = [
   {
     key: "hca",
     name: "Barry the HCA",
     icon: "🧹",
-    bonus: "Walks the ward, grabs call bells & criticals",
-    cost: 4500,
+    tier: 1 as StaffTier,
+    bonus: "Tier 1 · routine call bells only",
+    cost: 3500,
   },
   {
     key: "student",
     name: "Priya, Student Nurse",
     icon: "🎓",
-    bonus: "+15% points, handles anything (slowly)",
-    cost: 6000,
+    tier: 2 as StaffTier,
+    bonus: "Tier 2 · routine + urgent, +15% points",
+    cost: 9000,
+  },
+  {
+    key: "charge",
+    name: "Dot, Charge Nurse",
+    icon: "🧑‍⚕️",
+    tier: 3 as StaffTier,
+    bonus: "Tier 3 · handles anything, even criticals",
+    cost: 18000,
   },
 ];
 
-export const BED_UNLOCK_COST = 8000;
+export const BED_UNLOCK_COST = 14000;
+
 
 export const travelMs = (u: Upgrades) => Math.max(140, 520 - u.speed * 85);
 export const ttlMult = (u: Upgrades) => 1 + u.response * 0.16;
