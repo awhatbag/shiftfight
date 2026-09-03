@@ -52,6 +52,7 @@ export function Bed({
   onTap,
   active,
   nurseHere,
+  revealed = true,
 }: {
   bed: BedState;
   event?: EventDef | undefined;
@@ -60,6 +61,8 @@ export function Bed({
   onTap: () => void;
   active: boolean;
   nurseHere?: boolean;
+  /** only show what the patient actually wants once the nurse is there */
+  revealed?: boolean;
 }) {
   const urgent = !!event && progress < 0.35;
   return (
