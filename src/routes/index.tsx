@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
+import { WalletScreen } from "@/components/game/WalletScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { BED_UNLOCK_COST, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
 import {
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/")({
   component: Game,
 });
 
-type Phase = "intro" | "shift" | "summary" | "shop";
+type Phase = "intro" | "shift" | "summary" | "wallet" | "shop";
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
@@ -108,7 +109,19 @@ function Game() {
           />
         )}
         {phase === "summary" && last && (
-          <SummaryScreen stats={last} onNext={() => setPhase("shop")} />
+          <SummaryScreen stats={last} onNext={() => setPhase("wallet")} />
+        )}
+        {phase === "wallet" && (
+          <WalletScreen
+            points={points}
+            xp={xp}
+            level={level}
+            rank={rank}
+            lastPoints={last?.points ?? 0}
+            lastXp={last?.xp ?? 0}
+            onShop={() => setPhase("shop")}
+            onPlay={play}
+          />
         )}
         {phase === "shop" && (
           <UpgradeScreen
@@ -131,6 +144,7 @@ function Game() {
               setStaff((s) => [...s, k]);
             }}
             onPlay={play}
+            onBack={() => setPhase("wallet")}
           />
         )}
       </div>
