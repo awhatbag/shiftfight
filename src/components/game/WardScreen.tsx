@@ -832,6 +832,7 @@ export function WardScreen({
                 flash={flash[b.id] ?? null}
                 active={selected === b.id}
                 nurseHere={nurseHereBed === b.id}
+                revealed={nurseHereBed === b.id}
                 onTap={() => tapBed(b.id)}
               />
             </div>
