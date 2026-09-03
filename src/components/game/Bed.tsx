@@ -109,9 +109,9 @@ export function Bed({
                   urgent ? "bg-alarm text-alarm-foreground" : "bg-gold text-gold-foreground",
                 )}
               >
-                <span className="text-sm leading-none">{event.icon}</span>
+                <span className="text-sm leading-none">{revealed ? event.icon : "🛎️"}</span>
                 <span className="font-display truncate text-[10px] font-extrabold uppercase">
-                  {event.label}
+                  {revealed ? event.label : "Needs you"}
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
