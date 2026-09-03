@@ -17,6 +17,7 @@ export function UpgradeScreen({
   onUnlockBeds,
   onHire,
   onPlay,
+  onBack,
 }: {
   points: number;
   level: number;
@@ -34,6 +35,7 @@ export function UpgradeScreen({
   onUnlockBeds: () => void;
   onHire: (k: string, cost: number) => void;
   onPlay: () => void;
+  onBack: () => void;
 }) {
   const maxTier = rank.level >= 4 ? 5 : 4;
   const staffUnlocked = rank.level >= 2;
@@ -182,12 +184,20 @@ export function UpgradeScreen({
         })}
       </div>
 
-      <button
-        onClick={onPlay}
-        className="chunky chunky-press mt-auto w-full rounded-2xl bg-[image:var(--gradient-calm)] py-4 font-display text-lg font-black uppercase text-primary-foreground"
-      >
-        Start Next Shift (Level {level})
-      </button>
+      <div className="mt-auto space-y-2">
+        <button
+          onClick={onPlay}
+          className="chunky chunky-press w-full rounded-2xl bg-[image:var(--gradient-calm)] py-4 font-display text-lg font-black uppercase text-primary-foreground"
+        >
+          Continue to Next Shift (Level {level})
+        </button>
+        <button
+          onClick={onBack}
+          className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+        >
+          ← Back to Points &amp; XP
+        </button>
+      </div>
     </div>
   );
 }

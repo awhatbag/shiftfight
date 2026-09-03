@@ -832,6 +832,7 @@ export function WardScreen({
                 flash={flash[b.id] ?? null}
                 active={selected === b.id}
                 nurseHere={nurseHereBed === b.id}
+                revealed={nurseHereBed === b.id}
                 onTap={() => tapBed(b.id)}
               />
             </div>
@@ -980,39 +981,59 @@ export function WardScreen({
       <div className="z-10 rounded-t-3xl border-t-2 border-border bg-card px-3 pb-4 pt-3 shadow-[0_-10px_24px_-16px_oklch(0_0_0/0.5)]">
         {selectedEvent ? (
           <div className="animate-slide-up space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">{selectedEvent.def.icon}</span>
-              <div className="min-w-0">
-                <p className="font-display truncate text-sm font-black uppercase">
-                  {beds[selectedEvent.bed]?.name} — {selectedEvent.def.label}
-                </p>
-                <p className="text-[11px] font-semibold text-muted-foreground">
-                  {nurseHereBed === selectedEvent.bed
-                    ? selectedEvent.def.brief
-                    : "Walking over…"}
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {(Object.keys(selectedEvent.def.options) as ActionKind[]).map((a) => (
-                <button
-                  key={a}
-                  onClick={() => doAction(a)}
-                  disabled={nurseHereBed !== selectedEvent.bed}
-                  className={cn(
-                    "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2",
-                    ACTION_META[a].color,
-                    nurseHereBed !== selectedEvent.bed && "opacity-40",
+            {(() => {
+              const here = nurseHereBed === selectedEvent.bed;
+              return (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{here ? selectedEvent.def.icon : "🚶‍♀️"}</span>
+                    <div className="min-w-0">
+                      <p className="font-display truncate text-sm font-black uppercase">
+                        {beds[selectedEvent.bed]?.name}
+                        {here ? ` — ${selectedEvent.def.label}` : " — on my way"}
+                      </p>
+                      <p className="text-[11px] font-semibold text-muted-foreground">
+                        {here ? selectedEvent.def.brief : "Walking over… you'll see what they want on arrival."}
+                      </p>
+                    </div>
+                  </div>
+                  {here ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {(Object.keys(selectedEvent.def.options) as ActionKind[]).map((a) => (
+                        <button
+                          key={a}
+                          onClick={() => doAction(a)}
+                          className={cn(
+                            "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2",
+                            ACTION_META[a].color,
+                          )}
+                        >
+                          <span className="text-xl leading-none">{ACTION_META[a].icon}</span>
+                          <span className="font-display text-[11px] font-black">{a}</span>
+                          <span className="text-[9px] font-bold leading-tight opacity-90">
+                            {selectedEvent.def.options[a]}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="flex flex-col items-center gap-0.5 rounded-2xl bg-muted px-1 py-2 opacity-70"
+                        >
+                          <span className="text-xl leading-none">❓</span>
+                          <span className="font-display text-[11px] font-black text-muted-foreground">
+                            ???
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                >
-                  <span className="text-xl leading-none">{ACTION_META[a].icon}</span>
-                  <span className="font-display text-[11px] font-black">{a}</span>
-                  <span className="text-[9px] font-bold leading-tight opacity-90">
-                    {selectedEvent.def.options[a]}
-                  </span>
-                </button>
-              ))}
-            </div>
+                </>
+              );
+            })()}
           </div>
         ) : (
           <button

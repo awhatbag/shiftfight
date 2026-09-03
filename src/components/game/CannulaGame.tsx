@@ -127,8 +127,17 @@ export function CannulaGame({ level, paused, onDone }: Props) {
         </p>
         <h2 className="font-display text-2xl font-black leading-none">CANNULA CHALLENGE</h2>
         <p className="text-[11px] text-muted-foreground">
-          Blue = vein. Red = artery, never that. Arcade, not clinical!
+          INSERT THE CANNULA INTO THE VEIN.
         </p>
+        <div className="mt-1.5 flex justify-center gap-2">
+          <span className="font-display rounded-full bg-calm px-3 py-1 text-[11px] font-black uppercase text-calm-foreground">
+            🟢 Green = vein · success
+          </span>
+          <span className="font-display rounded-full bg-alarm px-3 py-1 text-[11px] font-black uppercase text-alarm-foreground">
+            🔴 Red = artery · fail
+          </span>
+        </div>
+        <p className="mt-1 text-[10px] text-muted-foreground">Arcade fun, not clinical instruction.</p>
       </div>
 
       <div className="flex justify-center gap-1.5">
@@ -182,15 +191,15 @@ export function CannulaGame({ level, paused, onDone }: Props) {
                     width={b.w * 188}
                     height={94}
                     rx={6}
-                    fill={isV ? "oklch(0.65 0.14 250 / 0.18)" : "oklch(0.62 0.22 22 / 0.2)"}
-                    stroke={isV ? "oklch(0.55 0.14 255)" : "oklch(0.6 0.22 22)"}
+                    fill={isV ? "oklch(0.72 0.18 150 / 0.25)" : "oklch(0.62 0.22 22 / 0.2)"}
+                    stroke={isV ? "oklch(0.5 0.16 150)" : "oklch(0.6 0.22 22)"}
                     strokeWidth="1.5"
                     strokeDasharray="5 4"
                   />
                   <path
                     d={`M${cx - 5} 20 C ${cx + 8} 48, ${cx - 10} 76, ${cx + 4} 110`}
                     fill="none"
-                    stroke={isV ? "oklch(0.5 0.13 258)" : "oklch(0.55 0.23 22)"}
+                    stroke={isV ? "oklch(0.48 0.16 150)" : "oklch(0.55 0.23 22)"}
                     strokeWidth={isV ? 6 : 7}
                     strokeLinecap="round"
                     opacity="0.85"
@@ -201,7 +210,7 @@ export function CannulaGame({ level, paused, onDone }: Props) {
                     textAnchor="middle"
                     fontSize="9"
                     fontWeight="800"
-                    fill={isV ? "oklch(0.45 0.13 258)" : "oklch(0.5 0.22 22)"}
+                    fill={isV ? "oklch(0.42 0.15 150)" : "oklch(0.5 0.22 22)"}
                   >
                     {isV ? "VEIN" : "ARTERY"}
                   </text>
