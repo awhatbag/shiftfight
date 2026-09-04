@@ -33,6 +33,10 @@ function buildBands(level: number, round: number): Band[] {
 }
 
 export function CannulaGame({ level, paused, onDone }: Props) {
+  const [intro, setIntro] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("shift-cannula-seen") !== "yes";
+  });
   const [round, setRound] = useState(0);
   const [pos, setPos] = useState(0);
   const dir = useRef(1);
@@ -49,6 +53,7 @@ export function CannulaGame({ level, paused, onDone }: Props) {
   bandsRef.current = bands;
 
   useEffect(() => {
+    if (intro) return;
     const id = setInterval(() => {
       if (!running.current || pausedRef.current) return;
       setPos((p) => {
@@ -65,7 +70,7 @@ export function CannulaGame({ level, paused, onDone }: Props) {
       });
     }, 16);
     return () => clearInterval(id);
-  }, [speed]);
+  }, [speed, intro]);
 
   function tap() {
     if (!running.current) return;
