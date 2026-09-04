@@ -814,7 +814,7 @@ export function WardScreen({
                 transform: "translate(-50%,-50%)",
               }}
             >
-              {urg && (
+              {urg && urg !== "routine" && (
                 <span
                   className={cn(
                     "font-display absolute -top-1 left-1/2 z-20 -translate-x-1/2 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
