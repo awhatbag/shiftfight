@@ -33,6 +33,10 @@ function buildBands(level: number, round: number): Band[] {
 }
 
 export function CannulaGame({ level, paused, onDone }: Props) {
+  const [intro, setIntro] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("shift-cannula-seen") !== "yes";
+  });
   const [round, setRound] = useState(0);
   const [pos, setPos] = useState(0);
   const dir = useRef(1);
@@ -49,6 +53,7 @@ export function CannulaGame({ level, paused, onDone }: Props) {
   bandsRef.current = bands;
 
   useEffect(() => {
+    if (intro) return;
     const id = setInterval(() => {
       if (!running.current || pausedRef.current) return;
       setPos((p) => {
@@ -65,7 +70,7 @@ export function CannulaGame({ level, paused, onDone }: Props) {
       });
     }, 16);
     return () => clearInterval(id);
-  }, [speed]);
+  }, [speed, intro]);
 
   function tap() {
     if (!running.current) return;
@@ -119,6 +124,48 @@ export function CannulaGame({ level, paused, onDone }: Props) {
     }
   }
 
+  function dismissIntro() {
+    window.localStorage.setItem("shift-cannula-seen", "yes");
+    setIntro(false);
+  }
+
+  if (intro) {
+    return (
+      <div className="absolute inset-0 z-30 flex animate-slide-up flex-col items-center justify-center gap-5 bg-background/98 p-6 text-center">
+        <p className="font-display text-[11px] font-bold uppercase tracking-widest text-primary">
+          Mini-game · Level {level + 1}
+        </p>
+        <h2 className="font-display text-3xl font-black leading-none">CANNULA CHALLENGE</h2>
+        <div className="space-y-3 rounded-3xl border-2 border-border bg-card p-5 text-left">
+          <p className="text-sm font-semibold">INSERT THE CANNULA INTO THE VEIN.</p>
+          <div className="flex items-center gap-3">
+            <span
+              className="font-display inline-block h-4 w-4 shrink-0 rounded-full"
+              style={{ backgroundColor: "oklch(0.55 0.18 240)" }}
+            />
+            <p className="text-sm font-semibold">BLUE = VEIN · success</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span
+              className="font-display inline-block h-4 w-4 shrink-0 rounded-full"
+              style={{ backgroundColor: "oklch(0.55 0.22 22)" }}
+            />
+            <p className="text-sm font-semibold">RED = ARTERY · fail</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Tap when the needle is over a blue vein. Avoid the red arteries.
+          </p>
+        </div>
+        <button
+          onClick={dismissIntro}
+          className="font-display chunky chunky-press w-full rounded-2xl bg-primary py-4 text-lg font-black uppercase tracking-wide text-primary-foreground"
+        >
+          GOT IT ▶
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-3 bg-background/98 p-4">
       <div className="text-center">
@@ -126,12 +173,13 @@ export function CannulaGame({ level, paused, onDone }: Props) {
           Mini-game · Level {level + 1}
         </p>
         <h2 className="font-display text-2xl font-black leading-none">CANNULA CHALLENGE</h2>
-        <p className="text-[11px] text-muted-foreground">
-          INSERT THE CANNULA INTO THE VEIN.
-        </p>
+        <p className="text-[11px] text-muted-foreground">INSERT THE CANNULA INTO THE VEIN.</p>
         <div className="mt-1.5 flex justify-center gap-2">
-          <span className="font-display rounded-full bg-calm px-3 py-1 text-[11px] font-black uppercase text-calm-foreground">
-            🟢 Green = vein · success
+          <span
+            className="font-display rounded-full px-3 py-1 text-[11px] font-black uppercase text-white"
+            style={{ backgroundColor: "oklch(0.55 0.18 240)" }}
+          >
+            🔵 Blue = vein · success
           </span>
           <span className="font-display rounded-full bg-alarm px-3 py-1 text-[11px] font-black uppercase text-alarm-foreground">
             🔴 Red = artery · fail
@@ -191,15 +239,15 @@ export function CannulaGame({ level, paused, onDone }: Props) {
                     width={b.w * 188}
                     height={94}
                     rx={6}
-                    fill={isV ? "oklch(0.72 0.18 150 / 0.25)" : "oklch(0.62 0.22 22 / 0.2)"}
-                    stroke={isV ? "oklch(0.5 0.16 150)" : "oklch(0.6 0.22 22)"}
+                    fill={isV ? "oklch(0.65 0.18 240 / 0.25)" : "oklch(0.62 0.22 22 / 0.2)"}
+                    stroke={isV ? "oklch(0.45 0.16 240)" : "oklch(0.6 0.22 22)"}
                     strokeWidth="1.5"
                     strokeDasharray="5 4"
                   />
                   <path
                     d={`M${cx - 5} 20 C ${cx + 8} 48, ${cx - 10} 76, ${cx + 4} 110`}
                     fill="none"
-                    stroke={isV ? "oklch(0.48 0.16 150)" : "oklch(0.55 0.23 22)"}
+                    stroke={isV ? "oklch(0.4 0.16 240)" : "oklch(0.55 0.23 22)"}
                     strokeWidth={isV ? 6 : 7}
                     strokeLinecap="round"
                     opacity="0.85"
@@ -210,7 +258,7 @@ export function CannulaGame({ level, paused, onDone }: Props) {
                     textAnchor="middle"
                     fontSize="9"
                     fontWeight="800"
-                    fill={isV ? "oklch(0.42 0.15 150)" : "oklch(0.5 0.22 22)"}
+                    fill={isV ? "oklch(0.35 0.15 240)" : "oklch(0.5 0.22 22)"}
                   >
                     {isV ? "VEIN" : "ARTERY"}
                   </text>
