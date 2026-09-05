@@ -25,6 +25,7 @@ import {
   levelConfig,
   payMult,
   randomPauseLine,
+  rollOutcomes,
   rollQuirks,
   ttlMult,
   urgencyOf,
@@ -56,6 +57,8 @@ type ActiveEvent = {
   def: EventDef;
   born: number; // game-time ms
   ttl: number;
+  /** payout multiplier per offered action, randomised at spawn */
+  scores: Partial<Record<ActionKind, number>>;
 };
 
 type Banner = { id: number; title: string; sub: string; good: boolean };
@@ -326,6 +329,7 @@ export function WardScreen({
         bed,
         def,
         born: gameT.current,
+        scores: rollOutcomes(def),
         ttl: def.ttl * ttlMult(upgrades) * u.mult * cfg.timeMult * (1 - heat * 0.18),
       };
       // the bell only ever rings because this patient is ringing it
@@ -575,7 +579,8 @@ export function WardScreen({
   function doAction(action: ActionKind) {
     const ev = selectedEvent;
     if (!ev || rate === 0 || nurseHereBed !== ev.bed) return;
-    const correct = ev.def.correct === action;
+    const mult = ev.scores[action] ?? 0;
+    const correct = mult === 1;
     setEvents((cur) => cur.filter((e) => e.id !== ev.id));
     setSelected(null);
     setFlash((f) => ({ ...f, [ev.bed]: correct ? "good" : "bad" }));
@@ -612,12 +617,29 @@ export function WardScreen({
         });
       }
     } else {
-      playBad();
+      const base = 14 * ev.def.severity;
+      const raw = Math.round(
+        base * payMult(upgrades, staffBonus) * (1 + level * 0.05) * mult,
+      );
+      stats.current.points = Math.max(0, stats.current.points + raw);
       setCombo(0);
       streak.current = 0;
-      stats.current.mistakes++;
-      setStability((s) => Math.max(0, s - 10 * damageMult(upgrades) * cfg.damage));
-      say("WRONG PRIORITY", `${ev.def.correct} was the move`, false);
+      if (mult > 0) {
+        playGood();
+        stats.current.xp += 2;
+        stats.current.helped++;
+        say("SORT OF WORKED", `+${raw} · half marks for effort`, true);
+      } else if (mult === 0) {
+        playBad();
+        stats.current.mistakes++;
+        setStability((s) => Math.max(0, s - 6 * damageMult(upgrades) * cfg.damage));
+        say("NOTHING HAPPENED", `0 points · ${ev.def.correct} was the move`, false);
+      } else {
+        playBad();
+        stats.current.mistakes++;
+        setStability((s) => Math.max(0, s - 10 * damageMult(upgrades) * cfg.damage));
+        say("WRONG PRIORITY", `${raw} points · ${ev.def.correct} was the move`, false);
+      }
     }
     window.setTimeout(() => {
       if (journey.current.length) return; // player already sent her elsewhere
@@ -814,10 +836,10 @@ export function WardScreen({
                 transform: "translate(-50%,-50%)",
               }}
             >
-              {urg && urg !== "routine" && (
+              {urg && urg !== "routine" && level <= 3 && (
                 <span
                   className={cn(
-                    "font-display absolute -top-1 left-1/2 z-20 -translate-x-1/2 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                    "font-display absolute -bottom-1 right-1 z-20 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
                     URGENCY_META[urg].chip,
                     urg === "critical" && "animate-throb",
                   )}
@@ -992,7 +1014,7 @@ export function WardScreen({
                         {beds[selectedEvent.bed]?.name}
                         {here ? ` — ${selectedEvent.def.label}` : " — on my way"}
                       </p>
-                      <p className="text-[11px] font-semibold text-muted-foreground">
+                      <p className="text-[13px] font-semibold text-muted-foreground">
                         {here ? selectedEvent.def.brief : "Walking over… you'll see what they want on arrival."}
                       </p>
                     </div>
@@ -1008,9 +1030,9 @@ export function WardScreen({
                             ACTION_META[a].color,
                           )}
                         >
-                          <span className="text-xl leading-none">{ACTION_META[a].icon}</span>
-                          <span className="font-display text-[11px] font-black">{a}</span>
-                          <span className="text-[9px] font-bold leading-tight opacity-90">
+                          <span className="text-2xl leading-none">{ACTION_META[a].icon}</span>
+                          <span className="font-display text-sm font-black">{a}</span>
+                          <span className="text-[13px] font-bold leading-snug opacity-95">
                             {selectedEvent.def.options[a]}
                           </span>
                         </button>
