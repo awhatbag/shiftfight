@@ -444,7 +444,195 @@ export const EVENTS: EventDef[] = [
     win: "Grape access achieved.",
     fail: "The grapes remain tantalisingly distant.",
   },
+
+  /* ---------- silly, harmless, judgement-required ---------- */
+  {
+    key: "telly",
+    label: "CALL BELL: TV CHANNEL",
+    icon: "📺",
+    severity: 1,
+    correct: "ASSIST",
+    ttl: 17000,
+    callBell: true,
+    brief: "Wants channel 4. Remote is literally on the pillow.",
+    options: {
+      ASSIST: "Show them the remote, let them do it",
+      FETCH: "Sprint to find a different remote",
+      ESCALATE: "Bleep a doctor about the telly",
+    },
+    win: "They found the buttons themselves. Independence!",
+    fail: "Still watching the shopping channel.",
+  },
+  {
+    key: "pillowangle",
+    label: "PILLOW AT 43 DEGREES",
+    icon: "🛏️",
+    severity: 1,
+    correct: "ADJUST",
+    ttl: 18000,
+    brief: "Not 42. Not 44. Forty-three degrees exactly.",
+    options: {
+      ADJUST: "One confident pillow fluff, job done",
+      FETCH: "Go and find a protractor",
+      REASSURE: "Explain pillows are not that precise",
+    },
+    win: "Declared 'perfect'. Do not touch it again.",
+    fail: "The pillow saga continues.",
+  },
+  {
+    key: "curtaingap",
+    label: "CURTAIN GAP CRISIS",
+    icon: "🪟",
+    severity: 1,
+    correct: "ADJUST",
+    ttl: 17000,
+    callBell: true,
+    brief: "A two-centimetre gap in the curtain. Unbearable.",
+    options: {
+      ADJUST: "Close the gap. Takes one second.",
+      ESCALATE: "Report a curtain emergency",
+      ASSESS: "Study the gap thoughtfully",
+    },
+    win: "Privacy restored. Ward peace holds.",
+    fail: "The gap has become a talking point.",
+  },
+  {
+    key: "sockquest",
+    label: "SOCK UNDER THE BED",
+    icon: "🧦",
+    severity: 1,
+    correct: "REASSURE",
+    ttl: 18000,
+    brief: "Wants you to crawl under the bed for one sock. It's the wrong sock.",
+    options: {
+      REASSURE: "Kindly say it can wait for the morning",
+      FETCH: "Get on the floor. Commit to the sock.",
+      ESCALATE: "Bleep someone about a sock",
+    },
+    win: "Sock deferred. Everyone survives.",
+    fail: "You are now under a bed.",
+  },
+  {
+    key: "teaorder",
+    label: "VERY SPECIFIC TEA",
+    icon: "🍵",
+    severity: 1,
+    correct: "RESPOND",
+    ttl: 17000,
+    callBell: true,
+    brief: "Half a sugar, splash of milk, 'not too hot, not too cold'.",
+    options: {
+      RESPOND: "Take the order, pass it to the tea round",
+      FETCH: "Abandon the ward for one perfect brew",
+      ESCALATE: "Escalate the tea to the medical team",
+    },
+    win: "Tea round notified. Ward still standing.",
+    fail: "Tea is cold. Somehow your fault.",
+  },
+  {
+    key: "phonecharger",
+    label: "PHONE ON 4%",
+    icon: "🔌",
+    severity: 1,
+    correct: "ASSIST",
+    ttl: 17000,
+    brief: "Charger is plugged in. At the wall. Behind them.",
+    options: {
+      ASSIST: "Point out the plug, they can reach it",
+      FETCH: "Hunt the ward for a spare charger",
+      ASSESS: "Contemplate the battery percentage",
+    },
+    win: "Charging. Crisis averted with one finger point.",
+    fail: "Phone dies. Drama ensues.",
+  },
+  {
+    key: "windowdebate",
+    label: "WINDOW WAR",
+    icon: "🌬️",
+    severity: 1,
+    correct: "REASSURE",
+    ttl: 18000,
+    brief: "Bed 1 wants it open. This one wants it shut. Forever.",
+    options: {
+      REASSURE: "Broker a truce, blanket instead",
+      ADJUST: "Open it fully. Pick a side. Chaos.",
+      ESCALATE: "Bleep the team about the window",
+    },
+    win: "Peace treaty signed. Blanket deployed.",
+    fail: "The bay has formed factions.",
+  },
+  {
+    key: "biscuitreview",
+    label: "BISCUIT COMPLAINT",
+    icon: "🍪",
+    severity: 1,
+    correct: "REASSURE",
+    ttl: 18000,
+    callBell: true,
+    brief: "Rang the bell to tell you the biscuit was 'fine, I suppose'.",
+    options: {
+      REASSURE: "Nod warmly, move on, ward needs you",
+      FETCH: "Source a superior biscuit",
+      ASSESS: "Conduct a full biscuit review",
+    },
+    win: "Feedback received. Bell reset. Next!",
+    fail: "You are now the biscuit ombudsman.",
+  },
+  {
+    key: "slippers",
+    label: "SLIPPERS, WRONG FEET",
+    icon: "🥿",
+    severity: 1,
+    correct: "ASSIST",
+    ttl: 17000,
+    brief: "Slippers are on. Just... swapped. They noticed.",
+    options: {
+      ASSIST: "Steady them while they swap the slippers",
+      FETCH: "Fetch a brand new pair of slippers",
+      ESCALATE: "Bleep podiatry immediately",
+    },
+    win: "Correct feet. Correct slippers. Beautiful.",
+    fail: "Shuffling continues, incorrectly.",
+  },
+  {
+    key: "crossword",
+    label: "CROSSWORD, SEVEN DOWN",
+    icon: "📰",
+    severity: 1,
+    correct: "REASSURE",
+    ttl: 18000,
+    callBell: true,
+    brief: "Bell rung for help with a crossword clue. It's 'OTTER'.",
+    options: {
+      REASSURE: "Give one clue, promise to check back",
+      ASSIST: "Sit down and finish the whole crossword",
+      ESCALATE: "Escalate seven down to the consultant",
+    },
+    win: "One clue given. Dignity intact.",
+    fail: "You lost eleven minutes to seven down.",
+  },
 ];
+
+/* ------------------------------------------------------------------ */
+/* RESPONSE OUTCOMES                                                   */
+/* ------------------------------------------------------------------ */
+
+/** full / half / zero / negative payout weights, shuffled per spawned event */
+export function rollOutcomes(def: EventDef): Partial<Record<ActionKind, number>> {
+  const keys = Object.keys(def.options) as ActionKind[];
+  const others = keys.filter((k) => k !== def.correct);
+  const pool = [0.5, 0, -0.6, 0.5, 0, -0.6].slice(0, others.length);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j]!, pool[i]!];
+  }
+  const out: Partial<Record<ActionKind, number>> = { [def.correct]: 1 };
+  others.forEach((k, i) => {
+    out[k] = pool[i] ?? 0;
+  });
+  return out;
+}
+
 
 export const PATIENT_NAMES = [
   "Mr Pemberly",
