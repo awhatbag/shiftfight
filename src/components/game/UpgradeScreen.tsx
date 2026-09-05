@@ -17,6 +17,8 @@ export function UpgradeScreen({
   onUnlockBeds,
   onHire,
   onPlay,
+  onSave,
+  saveNote,
   onBack,
 }: {
   points: number;
@@ -35,6 +37,8 @@ export function UpgradeScreen({
   onUnlockBeds: () => void;
   onHire: (k: string, cost: number) => void;
   onPlay: () => void;
+  onSave: () => void;
+  saveNote: string;
   onBack: () => void;
 }) {
   const maxTier = rank.level >= 4 ? 5 : 4;
@@ -191,12 +195,25 @@ export function UpgradeScreen({
         >
           Continue to Next Shift (Level {level})
         </button>
-        <button
-          onClick={onBack}
-          className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
-        >
-          ← Back to Points &amp; XP
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={onBack}
+            className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+          >
+            ← Back to Summary
+          </button>
+          <button
+            onClick={onSave}
+            className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+          >
+            💾 Save progress
+          </button>
+        </div>
+        {saveNote && (
+          <p className="text-center font-display text-xs font-black uppercase text-calm-foreground">
+            {saveNote}
+          </p>
+        )}
       </div>
     </div>
   );

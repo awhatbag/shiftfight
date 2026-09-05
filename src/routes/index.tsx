@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
-import { WalletScreen } from "@/components/game/WalletScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { BED_UNLOCK_COST, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
 import {
@@ -10,7 +9,7 @@ import {
   setSoundEnabled,
 } from "@/lib/sfx";
 
-const TITLE = "Shift Happens — Hospital Ward Arcade";
+const TITLE = "Shift Fight! — Hospital Ward Arcade";
 const DESC =
   "A fast, tappy hospital ward arcade game. Triage chaotic bays, nail the med trolley dash, upgrade your ward. Pure arcade fun, not clinical advice.";
 
@@ -28,7 +27,28 @@ export const Route = createFileRoute("/")({
   component: Game,
 });
 
-type Phase = "intro" | "shift" | "summary" | "wallet" | "shop";
+const SAVE_KEY = "shift-fight-save";
+
+type SaveData = {
+  points: number;
+  xp: number;
+  level: number;
+  upgrades: Upgrades;
+  bedCount: number;
+  staff: string[];
+};
+
+function readSave(): SaveData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(SAVE_KEY);
+    return raw ? (JSON.parse(raw) as SaveData) : null;
+  } catch {
+    return null;
+  }
+}
+
+type Phase = "intro" | "shift" | "summary" | "shop";
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
@@ -46,6 +66,37 @@ function Game() {
   const [level, setLevel] = useState(1);
   const [soundOn, setSoundOn] = useState(true);
   const [hapticsOn, setHapticsOn] = useState(true);
+  const [saveNote, setSaveNote] = useState("");
+  const [hasSave, setHasSave] = useState(false);
+
+  useEffect(() => {
+    setHasSave(!!readSave());
+  }, []);
+
+  function saveProgress() {
+    const data: SaveData = { points, xp, level, upgrades, bedCount, staff };
+    try {
+      window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      setHasSave(true);
+      setSaveNote("Progress saved on this device ✓");
+    } catch {
+      setSaveNote("Could not save on this device");
+    }
+    window.setTimeout(() => setSaveNote(""), 2500);
+  }
+
+  function loadProgress() {
+    const d = readSave();
+    if (!d) return;
+    setPoints(d.points ?? 0);
+    setXp(d.xp ?? 0);
+    setLevel(d.level ?? 1);
+    setUpgrades(d.upgrades ?? { speed: 0, response: 0, equipment: 0 });
+    setBedCount(d.bedCount ?? 4);
+    setStaff(d.staff ?? []);
+    setSaveNote("Saved progress loaded ✓");
+    window.setTimeout(() => setSaveNote(""), 2500);
+  }
 
   const rank = nurseRank(xp);
 
@@ -90,6 +141,10 @@ function Game() {
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
             onToggleHaptics={toggleHaptics}
+            onSave={saveProgress}
+            onLoad={loadProgress}
+            hasSave={hasSave}
+            saveNote={saveNote}
             onPlay={play}
           />
         )}
@@ -109,18 +164,11 @@ function Game() {
           />
         )}
         {phase === "summary" && last && (
-          <SummaryScreen stats={last} onNext={() => setPhase("wallet")} />
-        )}
-        {phase === "wallet" && (
-          <WalletScreen
-            points={points}
-            xp={xp}
-            level={level}
-            rank={rank}
-            lastPoints={last?.points ?? 0}
-            lastXp={last?.xp ?? 0}
-            onShop={() => setPhase("shop")}
-            onPlay={play}
+          <SummaryScreen
+            stats={last}
+            totalPoints={points}
+            totalXp={xp}
+            onNext={() => setPhase("shop")}
           />
         )}
         {phase === "shop" && (
@@ -144,7 +192,9 @@ function Game() {
               setStaff((s) => [...s, k]);
             }}
             onPlay={play}
-            onBack={() => setPhase("wallet")}
+            onSave={saveProgress}
+            saveNote={saveNote}
+            onBack={() => setPhase("summary")}
           />
         )}
       </div>
@@ -160,6 +210,10 @@ function IntroScreen({
   hapticsOn,
   onToggleSound,
   onToggleHaptics,
+  onSave,
+  onLoad,
+  hasSave,
+  saveNote,
   onPlay,
 }: {
   xp: number;
@@ -169,6 +223,10 @@ function IntroScreen({
   hapticsOn: boolean;
   onToggleSound: () => void;
   onToggleHaptics: () => void;
+  onSave: () => void;
+  onLoad: () => void;
+  hasSave: boolean;
+  saveNote: string;
   onPlay: () => void;
 }) {
   return (
@@ -178,7 +236,7 @@ function IntroScreen({
         <h1 className="font-display text-5xl font-black leading-none tracking-tight">
           SHIFT
           <br />
-          <span className="text-primary">HAPPENS</span>
+          <span className="text-primary">FIGHT!</span>
         </h1>
         <p className="mt-2 text-sm font-semibold text-muted-foreground">
           One thumb. Four beds. Total chaos.
@@ -216,6 +274,27 @@ function IntroScreen({
           📳 Haptics {hapticsOn ? "ON" : "OFF"}
         </button>
       </div>
+
+      <div className="grid w-full grid-cols-2 gap-2">
+        <button
+          onClick={onSave}
+          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+        >
+          💾 Save progress
+        </button>
+        <button
+          onClick={onLoad}
+          disabled={!hasSave}
+          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground disabled:opacity-50"
+        >
+          ↩ Continue save
+        </button>
+      </div>
+      {saveNote && (
+        <p className="font-display text-xs font-black uppercase text-calm-foreground">
+          {saveNote}
+        </p>
+      )}
 
       <button
         onClick={onPlay}

@@ -3,9 +3,13 @@ import type { ShiftStats } from "./WardScreen";
 
 export function SummaryScreen({
   stats,
+  totalPoints,
+  totalXp,
   onNext,
 }: {
   stats: ShiftStats;
+  totalPoints: number;
+  totalXp: number;
   onNext: () => void;
 }) {
   const rating = RATINGS.find((r) => stats.points >= r.min) ?? RATINGS[RATINGS.length - 1];
@@ -45,6 +49,19 @@ export function SummaryScreen({
         ))}
       </div>
 
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { k: "⭐", v: totalPoints, l: "Total points" },
+          { k: "✨", v: totalXp, l: "Total XP" },
+        ].map((s) => (
+          <div key={s.l} className="rounded-2xl border-2 border-border bg-card p-2 text-center">
+            <p className="text-lg">{s.k}</p>
+            <p className="font-display text-lg font-black leading-none">{s.v}</p>
+            <p className="text-[10px] uppercase text-muted-foreground">{s.l}</p>
+          </div>
+        ))}
+      </div>
+
       <div className="space-y-1.5 rounded-2xl border-2 border-border bg-card p-3">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between gap-2">
@@ -77,7 +94,7 @@ export function SummaryScreen({
         onClick={onNext}
         className="chunky chunky-press mt-auto w-full rounded-2xl bg-primary py-4 font-display text-lg font-black uppercase text-primary-foreground"
       >
-        Spend your money →
+        Go to the shop →
       </button>
     </div>
   );
