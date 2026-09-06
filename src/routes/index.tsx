@@ -28,6 +28,7 @@ export const Route = createFileRoute("/")({
 });
 
 const SAVE_KEY = "shift-fight-save";
+const TUT_KEY = "shift-fight-tutorial-done";
 
 type SaveData = {
   points: number;
@@ -68,10 +69,25 @@ function Game() {
   const [hapticsOn, setHapticsOn] = useState(true);
   const [saveNote, setSaveNote] = useState("");
   const [hasSave, setHasSave] = useState(false);
+  const [tutorialDone, setTutorialDone] = useState(true);
 
   useEffect(() => {
     setHasSave(!!readSave());
+    try {
+      setTutorialDone(!!window.localStorage.getItem(TUT_KEY));
+    } catch {
+      setTutorialDone(true);
+    }
   }, []);
+
+  function completeTutorial() {
+    try {
+      window.localStorage.setItem(TUT_KEY, "1");
+    } catch {
+      /* storage unavailable — tutorial simply replays next time */
+    }
+    setTutorialDone(true);
+  }
 
   function saveProgress() {
     const data: SaveData = { points, xp, level, upgrades, bedCount, staff };
@@ -161,6 +177,8 @@ function Game() {
             onToggleSound={toggleSound}
             onToggleHaptics={toggleHaptics}
             onEnd={endShift}
+            tutorial={!tutorialDone}
+            onTutorialDone={completeTutorial}
           />
         )}
         {phase === "summary" && last && (
