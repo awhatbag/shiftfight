@@ -95,6 +95,8 @@ export function WardScreen({
   onToggleSound,
   onToggleHaptics,
   onEnd,
+  tutorial = false,
+  onTutorialDone,
 }: {
   level: number;
   upgrades: Upgrades;
@@ -106,6 +108,9 @@ export function WardScreen({
   onToggleSound: () => void;
   onToggleHaptics: () => void;
   onEnd: (s: ShiftStats) => void;
+  /** show the first-shift walkthrough */
+  tutorial?: boolean;
+  onTutorialDone?: () => void;
 }) {
   const cfg = useMemo(() => levelConfig(level), [level]);
   /** every bed the player owns is a live bed — purchased beds unlock immediately */
@@ -131,6 +136,9 @@ export function WardScreen({
   const [banner, setBanner] = useState<Banner | null>(null);
   const [combo, setCombo] = useState(0);
   const [stability, setStability] = useState(100);
+  /** first-shift walkthrough: 0 intro card · 1 "tap a bay" hint · 2 scoring card · -1 done */
+  const [tutStep, setTutStep] = useState(tutorial ? 0 : -1);
+  const tutPause = tutorial && (tutStep === 0 || tutStep === 2);
 
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
@@ -212,7 +220,12 @@ export function WardScreen({
   const eventsRef = useRef<ActiveEvent[]>([]);
   eventsRef.current = events;
 
-  const rate = manualPause || settingsOpen || phase !== "play" || miniOffer ? 0 : mini ? 1 / 3 : 1;
+  const rate =
+    manualPause || settingsOpen || phase !== "play" || miniOffer || tutPause
+      ? 0
+      : mini
+        ? 1 / 3
+        : 1;
   const rateRef = useRef(rate);
   rateRef.current = rate;
 
@@ -565,6 +578,7 @@ export function WardScreen({
     if (rate === 0 || beds[bed]?.locked) return;
     primeAudio();
     buzz(10);
+    if (tutStep === 1) setTutStep(2);
     setSelected(bed);
     walkTo(BED_SLOTS[bed]!, bed);
   }
@@ -579,6 +593,10 @@ export function WardScreen({
   function doAction(action: ActionKind) {
     const ev = selectedEvent;
     if (!ev || rate === 0 || nurseHereBed !== ev.bed) return;
+    if (tutStep >= 0) {
+      setTutStep(-1);
+      onTutorialDone?.();
+    }
     const mult = ev.scores[action] ?? 0;
     const correct = mult === 1;
     setEvents((cur) => cur.filter((e) => e.id !== ev.id));
@@ -906,6 +924,64 @@ export function WardScreen({
           </div>
         )}
 
+        {/* first-shift walkthrough */}
+        {tutorial && phase === "play" && tutStep === 0 && (
+          <div className="absolute inset-0 z-[65] grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
+            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
+              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
+                First shift? Ten-second tour
+              </p>
+              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">
+                Your job 🏥
+              </h3>
+              <p className="mt-3 text-base font-bold">
+                Keep every patient stable until the shift timer runs out.
+              </p>
+              <p className="mt-1 text-base font-semibold text-muted-foreground">
+                When a bay lights up or rings the bell, someone needs you.
+              </p>
+              <button
+                onClick={() => setTutStep(1)}
+                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
+              >
+                Got it ▶
+              </button>
+            </div>
+          </div>
+        )}
+        {tutorial && phase === "play" && tutStep === 1 && (
+          <div className="pointer-events-none absolute inset-x-4 top-3 z-[65] animate-pop rounded-2xl border-2 border-gold bg-card/95 p-3 text-center shadow-xl">
+            <p className="font-display text-base font-black uppercase leading-snug">
+              👆 Tap a bay that's lit up — your nurse walks over. Tap one now!
+            </p>
+          </div>
+        )}
+        {tutorial && phase === "play" && tutStep === 2 && (
+          <div className="absolute inset-0 z-[65] grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
+            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
+              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
+                She's on her way
+              </p>
+              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">
+                Read, then respond 💬
+              </h3>
+              <p className="mt-3 text-base font-bold">
+                When she arrives you'll see what's wrong — pick the response that fits.
+              </p>
+              <p className="mt-1 text-base font-semibold text-muted-foreground">
+                The best answer pays full points. Others pay half, nothing, or even
+                cost you — revealed only after you choose. Judge, don't guess!
+              </p>
+              <button
+                onClick={() => setTutStep(3)}
+                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
+              >
+                Got it ▶
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* end countdown — floats over the ward, synced to the real timer */}
         {endCountValue !== null && (
           <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center">
@@ -1008,13 +1084,18 @@ export function WardScreen({
               return (
                 <>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{here ? selectedEvent.def.icon : "🚶‍♀️"}</span>
+                    <span className="text-3xl">{here ? selectedEvent.def.icon : "🚶‍♀️"}</span>
                     <div className="min-w-0">
-                      <p className="font-display truncate text-sm font-black uppercase">
+                      <p className="font-display truncate text-base font-black uppercase">
                         {beds[selectedEvent.bed]?.name}
                         {here ? ` — ${selectedEvent.def.label}` : " — on my way"}
                       </p>
-                      <p className="text-[13px] font-semibold text-muted-foreground">
+                      <p
+                        className={cn(
+                          "text-base font-bold leading-snug",
+                          here ? "text-foreground" : "text-muted-foreground",
+                        )}
+                      >
                         {here ? selectedEvent.def.brief : "Walking over… you'll see what they want on arrival."}
                       </p>
                     </div>
@@ -1026,13 +1107,13 @@ export function WardScreen({
                           key={a}
                           onClick={() => doAction(a)}
                           className={cn(
-                            "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2",
+                            "chunky chunky-press flex flex-col items-center gap-1 rounded-2xl px-1.5 py-2.5",
                             ACTION_META[a].color,
                           )}
                         >
-                          <span className="text-2xl leading-none">{ACTION_META[a].icon}</span>
-                          <span className="font-display text-sm font-black">{a}</span>
-                          <span className="text-[13px] font-bold leading-snug opacity-95">
+                          <span className="text-3xl leading-none">{ACTION_META[a].icon}</span>
+                          <span className="font-display text-base font-black">{a}</span>
+                          <span className="text-[15px] font-bold leading-snug opacity-95">
                             {selectedEvent.def.options[a]}
                           </span>
                         </button>
