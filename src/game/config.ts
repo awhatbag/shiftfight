@@ -641,6 +641,14 @@ export const PATIENT_NAMES = [
   "Mr Dhillon",
   "Ms Trent",
   "Mr Baird",
+  "Mr Smith",
+  "Miss Violet",
+  "Lady Peacock",
+  "The Contessa",
+  "Mr Thistlewaite",
+  "Miss Didi",
+  "Camille Von Teaux",
+  "Sir Thomson",
 ];
 
 /** Big bank of obviously-fictional medication names. Not real drugs. */
