@@ -1084,13 +1084,18 @@ export function WardScreen({
               return (
                 <>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{here ? selectedEvent.def.icon : "🚶‍♀️"}</span>
+                    <span className="text-3xl">{here ? selectedEvent.def.icon : "🚶‍♀️"}</span>
                     <div className="min-w-0">
-                      <p className="font-display truncate text-sm font-black uppercase">
+                      <p className="font-display truncate text-base font-black uppercase">
                         {beds[selectedEvent.bed]?.name}
                         {here ? ` — ${selectedEvent.def.label}` : " — on my way"}
                       </p>
-                      <p className="text-[13px] font-semibold text-muted-foreground">
+                      <p
+                        className={cn(
+                          "text-base font-bold leading-snug",
+                          here ? "text-foreground" : "text-muted-foreground",
+                        )}
+                      >
                         {here ? selectedEvent.def.brief : "Walking over… you'll see what they want on arrival."}
                       </p>
                     </div>
@@ -1102,13 +1107,13 @@ export function WardScreen({
                           key={a}
                           onClick={() => doAction(a)}
                           className={cn(
-                            "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2",
+                            "chunky chunky-press flex flex-col items-center gap-1 rounded-2xl px-1.5 py-2.5",
                             ACTION_META[a].color,
                           )}
                         >
-                          <span className="text-2xl leading-none">{ACTION_META[a].icon}</span>
-                          <span className="font-display text-sm font-black">{a}</span>
-                          <span className="text-[13px] font-bold leading-snug opacity-95">
+                          <span className="text-3xl leading-none">{ACTION_META[a].icon}</span>
+                          <span className="font-display text-base font-black">{a}</span>
+                          <span className="text-[15px] font-bold leading-snug opacity-95">
                             {selectedEvent.def.options[a]}
                           </span>
                         </button>
