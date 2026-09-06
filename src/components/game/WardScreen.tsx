@@ -136,6 +136,9 @@ export function WardScreen({
   const [banner, setBanner] = useState<Banner | null>(null);
   const [combo, setCombo] = useState(0);
   const [stability, setStability] = useState(100);
+  /** first-shift walkthrough: 0 intro card · 1 "tap a bay" hint · 2 scoring card · -1 done */
+  const [tutStep, setTutStep] = useState(tutorial ? 0 : -1);
+  const tutPause = tutorial && (tutStep === 0 || tutStep === 2);
 
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
@@ -217,7 +220,12 @@ export function WardScreen({
   const eventsRef = useRef<ActiveEvent[]>([]);
   eventsRef.current = events;
 
-  const rate = manualPause || settingsOpen || phase !== "play" || miniOffer ? 0 : mini ? 1 / 3 : 1;
+  const rate =
+    manualPause || settingsOpen || phase !== "play" || miniOffer || tutPause
+      ? 0
+      : mini
+        ? 1 / 3
+        : 1;
   const rateRef = useRef(rate);
   rateRef.current = rate;
 
