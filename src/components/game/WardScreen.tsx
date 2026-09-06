@@ -924,6 +924,64 @@ export function WardScreen({
           </div>
         )}
 
+        {/* first-shift walkthrough */}
+        {tutorial && phase === "play" && tutStep === 0 && (
+          <div className="absolute inset-0 z-[65] grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
+            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
+              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
+                First shift? Ten-second tour
+              </p>
+              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">
+                Your job 🏥
+              </h3>
+              <p className="mt-3 text-base font-bold">
+                Keep every patient stable until the shift timer runs out.
+              </p>
+              <p className="mt-1 text-base font-semibold text-muted-foreground">
+                When a bay lights up or rings the bell, someone needs you.
+              </p>
+              <button
+                onClick={() => setTutStep(1)}
+                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
+              >
+                Got it ▶
+              </button>
+            </div>
+          </div>
+        )}
+        {tutorial && phase === "play" && tutStep === 1 && (
+          <div className="pointer-events-none absolute inset-x-4 top-3 z-[65] animate-pop rounded-2xl border-2 border-gold bg-card/95 p-3 text-center shadow-xl">
+            <p className="font-display text-base font-black uppercase leading-snug">
+              👆 Tap a bay that's lit up — your nurse walks over. Tap one now!
+            </p>
+          </div>
+        )}
+        {tutorial && phase === "play" && tutStep === 2 && (
+          <div className="absolute inset-0 z-[65] grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
+            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
+              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
+                She's on her way
+              </p>
+              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">
+                Read, then respond 💬
+              </h3>
+              <p className="mt-3 text-base font-bold">
+                When she arrives you'll see what's wrong — pick the response that fits.
+              </p>
+              <p className="mt-1 text-base font-semibold text-muted-foreground">
+                The best answer pays full points. Others pay half, nothing, or even
+                cost you — revealed only after you choose. Judge, don't guess!
+              </p>
+              <button
+                onClick={() => setTutStep(3)}
+                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
+              >
+                Got it ▶
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* end countdown — floats over the ward, synced to the real timer */}
         {endCountValue !== null && (
           <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center">
