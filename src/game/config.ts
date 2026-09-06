@@ -875,10 +875,10 @@ export function levelConfig(levelRaw: number): LevelConfig {
     beds: Math.min(6, 2 + Math.floor(t * 4 + 0.5)),
     /** level 1 already juggles a few things — busy, but forgiving */
     maxEvents: Math.min(5, 2 + Math.round(t * 3)),
-    spawnChance: 0.5 + t * 0.4,
+    spawnChance: 0.4 + t * 0.5,
     /** response windows tighten steadily with level (urgency tiers preserved) */
-    timeMult: 1.75 - t * 1.1,
-    damage: 0.55 + t * 0.9,
+    timeMult: 1.95 - t * 1.3,
+    damage: 0.45 + t * 1.0,
     /** urgent + critical exist from level 1, just rarely */
     maxSeverity: 3,
     sevWeights: [0.7 - t * 0.45, 0.24 + t * 0.11, 0.06 + t * 0.34],

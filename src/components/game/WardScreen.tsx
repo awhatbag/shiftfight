@@ -95,6 +95,8 @@ export function WardScreen({
   onToggleSound,
   onToggleHaptics,
   onEnd,
+  tutorial = false,
+  onTutorialDone,
 }: {
   level: number;
   upgrades: Upgrades;
@@ -106,6 +108,9 @@ export function WardScreen({
   onToggleSound: () => void;
   onToggleHaptics: () => void;
   onEnd: (s: ShiftStats) => void;
+  /** show the first-shift walkthrough */
+  tutorial?: boolean;
+  onTutorialDone?: () => void;
 }) {
   const cfg = useMemo(() => levelConfig(level), [level]);
   /** every bed the player owns is a live bed — purchased beds unlock immediately */
