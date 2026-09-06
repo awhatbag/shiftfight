@@ -578,6 +578,7 @@ export function WardScreen({
     if (rate === 0 || beds[bed]?.locked) return;
     primeAudio();
     buzz(10);
+    if (tutStep === 1) setTutStep(2);
     setSelected(bed);
     walkTo(BED_SLOTS[bed]!, bed);
   }
@@ -592,6 +593,10 @@ export function WardScreen({
   function doAction(action: ActionKind) {
     const ev = selectedEvent;
     if (!ev || rate === 0 || nurseHereBed !== ev.bed) return;
+    if (tutStep >= 0) {
+      setTutStep(-1);
+      onTutorialDone?.();
+    }
     const mult = ev.scores[action] ?? 0;
     const correct = mult === 1;
     setEvents((cur) => cur.filter((e) => e.id !== ev.id));
