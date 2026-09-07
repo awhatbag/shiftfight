@@ -4,6 +4,7 @@ import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
 import { MedMatchGame } from "./MedMatchGame";
 import { CannulaGame } from "./CannulaGame";
+import { VomitGame } from "./VomitGame";
 import {
   buzz,
   playBad,
@@ -16,7 +17,8 @@ import {
 import {
   ACTION_META,
   EVENTS,
-  PATIENT_NAMES,
+  shuffledPatientNames,
+  MAX_BEDS,
   SHIFT_MS,
   STAFF,
   STAFF_BEHAVIOUR,
@@ -66,20 +68,23 @@ type Point = { x: number; y: number };
 
 /** bed layout in ward-percentage coords; corridor runs down the middle */
 const BED_SLOTS: Point[] = [
-  { x: 0.16, y: 0.16 },
-  { x: 0.84, y: 0.16 },
-  { x: 0.16, y: 0.47 },
-  { x: 0.84, y: 0.47 },
-  { x: 0.16, y: 0.76 },
-  { x: 0.84, y: 0.76 },
+  { x: 0.16, y: 0.13 },
+  { x: 0.84, y: 0.13 },
+  { x: 0.16, y: 0.37 },
+  { x: 0.84, y: 0.37 },
+  { x: 0.16, y: 0.61 },
+  { x: 0.84, y: 0.61 },
+  { x: 0.16, y: 0.85 },
+  { x: 0.84, y: 0.85 },
 ];
 
 const STATION: Point = { x: 0.5, y: 0.94 };
 
 /** curtain sections in the corridor the nurse must walk around */
 const GATES = [
-  { y: 0.31, side: "left" as const, lane: 0.6 },
-  { y: 0.62, side: "right" as const, lane: 0.4 },
+  { y: 0.25, side: "left" as const, lane: 0.6 },
+  { y: 0.49, side: "right" as const, lane: 0.4 },
+  { y: 0.73, side: "left" as const, lane: 0.6 },
 ];
 
 const MS_PER_UNIT = (u: Upgrades) => Math.max(620, 1500 - u.speed * 230);
@@ -116,9 +121,12 @@ export function WardScreen({
   /** every bed the player owns is a live bed — purchased beds unlock immediately */
   const activeBeds = Math.max(1, bedCount);
 
-  const beds: BedState[] = Array.from({ length: 6 }, (_, i) => ({
+  /** fresh, non-repeating patient names every shift */
+  const shiftNames = useMemo(() => shuffledPatientNames(MAX_BEDS), []);
+
+  const beds: BedState[] = Array.from({ length: MAX_BEDS }, (_, i) => ({
     id: i,
-    name: PATIENT_NAMES[i] ?? `Bay ${i + 1}`,
+    name: shiftNames[i] ?? `Bay ${i + 1}`,
     locked: i >= activeBeds,
   }));
 
@@ -142,11 +150,11 @@ export function WardScreen({
 
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
-    kind: "med" | "cannula";
+    kind: "med" | "cannula" | "vomit";
     bonus: number;
     lvl: number;
   }>(null);
-  const [mini, setMini] = useState<null | { kind: "med" | "cannula"; lvl: number }>(null);
+  const [mini, setMini] = useState<null | { kind: "med" | "cannula" | "vomit"; lvl: number }>(null);
 
   /* nurse */
   const wardRef = useRef<HTMLDivElement | null>(null);
@@ -629,7 +637,7 @@ export function WardScreen({
         const n = stats.current.miniGames;
         const lvl = Math.min(9, Math.floor(n / 2) + Math.floor(level / 3));
         setMiniOffer({
-          kind: n % 2 === 0 ? "med" : "cannula",
+          kind: n % 3 === 0 ? "med" : n % 3 === 1 ? "cannula" : "vomit",
           bonus: 120 + lvl * 40 + level * 15,
           lvl,
         });
@@ -847,7 +855,7 @@ export function WardScreen({
           return (
             <div
               key={b.id}
-              className="absolute h-[26%] w-[29%]"
+              className="absolute h-[21%] w-[29%]"
               style={{
                 left: `${slot.x * 100}%`,
                 top: `${slot.y * 100}%`,
@@ -1007,7 +1015,11 @@ export function WardScreen({
                 Bonus round available
               </p>
               <h3 className="font-display text-2xl font-black uppercase leading-none">
-                {miniOffer.kind === "med" ? "Med Trolley Dash" : "Cannula Challenge"}
+                {miniOffer.kind === "med"
+                  ? "Med Trolley Dash"
+                  : miniOffer.kind === "cannula"
+                    ? "Cannula Challenge"
+                    : "Sick Bowl Sprint"}
               </h3>
               <p className="font-display mt-2 rounded-2xl bg-[image:var(--gradient-gold)] py-2 text-xl font-black text-gold-foreground">
                 up to +{miniOffer.bonus} ⭐
@@ -1163,8 +1175,10 @@ export function WardScreen({
         <>
           {mini.kind === "med" ? (
             <MedMatchGame level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
-          ) : (
+          ) : mini.kind === "cannula" ? (
             <CannulaGame level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
+          ) : (
+            <VomitGame level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
           )}
           <div className="absolute inset-x-0 bottom-0 z-40 flex items-stretch gap-2 border-t-2 border-border bg-card px-3 pb-4 pt-3">
             <button
