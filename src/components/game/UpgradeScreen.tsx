@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import {
-  BED_UNLOCK_COST,
+  bedsForLevel,
+  MAX_BEDS,
   STAFF,
   UPGRADE_INFO,
   type Upgrades,
@@ -14,7 +15,6 @@ export function UpgradeScreen({
   bedCount,
   staff,
   onBuy,
-  onUnlockBeds,
   onHire,
   onPlay,
   onSave,
@@ -34,7 +34,6 @@ export function UpgradeScreen({
   bedCount: number;
   staff: string[];
   onBuy: (k: keyof Upgrades, cost: number) => void;
-  onUnlockBeds: () => void;
   onHire: (k: string, cost: number) => void;
   onPlay: () => void;
   onSave: () => void;

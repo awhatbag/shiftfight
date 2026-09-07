@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
-import { BED_UNLOCK_COST, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
+import { bedsForLevel, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
 import {
   setHapticsEnabled,
   setSoundEnabled,
@@ -60,7 +60,6 @@ function Game() {
     response: 0,
     equipment: 0,
   });
-  const [bedCount, setBedCount] = useState(4);
   const [staff, setStaff] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
   const [runKey, setRunKey] = useState(0);
@@ -108,13 +107,14 @@ function Game() {
     setXp(d.xp ?? 0);
     setLevel(d.level ?? 1);
     setUpgrades(d.upgrades ?? { speed: 0, response: 0, equipment: 0 });
-    setBedCount(d.bedCount ?? 4);
     setStaff(d.staff ?? []);
     setSaveNote("Saved progress loaded ✓");
     window.setTimeout(() => setSaveNote(""), 2500);
   }
 
   const rank = nurseRank(xp);
+  /** beds are unlocked by level progression, never bought */
+  const bedCount = bedsForLevel(level);
 
   const staffBonus = staff.includes("student") ? 0.15 : 0;
 
@@ -200,10 +200,6 @@ function Game() {
             onBuy={(k, cost) => {
               setPoints((p) => p - cost);
               setUpgrades((u) => ({ ...u, [k]: u[k] + 1 }));
-            }}
-            onUnlockBeds={() => {
-              setPoints((p) => p - BED_UNLOCK_COST);
-              setBedCount(6);
             }}
             onHire={(k, cost) => {
               setPoints((p) => p - cost);
