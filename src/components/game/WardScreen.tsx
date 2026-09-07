@@ -1149,8 +1149,8 @@ export function WardScreen({
               <div className="absolute inset-x-9 top-3 h-[55px] rounded-t-[1.65rem] border-2 border-border bg-background/55" />
               <div className="absolute inset-x-3 bottom-2 h-7 rounded-lg border-2 border-border bg-card/70" />
 
-              <div className="absolute left-5 top-2 h-12 w-[27%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
-              <div className="absolute right-5 top-2 h-12 w-[27%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
+              <div className="absolute left-4 top-2 h-12 w-[25%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
+              <div className="absolute right-4 top-2 h-12 w-[25%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
 
               <div className="absolute left-1/2 top-0 -translate-x-1/2">
                 <div className="grid h-12 w-16 place-items-center rounded-md border-[3px] border-border bg-primary/20 shadow-md" aria-label="Nurses station computer">
@@ -1162,10 +1162,11 @@ export function WardScreen({
                 ☎️
               </span>
 
-              <div className="absolute bottom-2 left-1/2 w-[70%] -translate-x-1/2 rounded-md bg-background/85 px-2 py-0.5 text-center shadow-sm">
+              <div className="absolute left-4 top-3 w-[25%] px-1 text-center">
                 <p className="font-display truncate text-xs font-black uppercase">
-                  Level {cfg.level} · {cfg.name}
+                  Lv {cfg.level}
                 </p>
+                <p className="font-display truncate text-[8px] font-black uppercase text-muted-foreground">{cfg.name}</p>
               </div>
             </button>
 
@@ -1174,7 +1175,8 @@ export function WardScreen({
                 const staffKey = i > 0 ? staff[i - 1] : undefined;
                 const info = staffKey ? STAFF.find((s) => s.key === staffKey) : undefined;
                 const rt = staffKey ? staffRt.current[staffKey] : undefined;
-                const seated = i === 0 || (!!staffKey && !rt?.eventId && !rt?.path.length);
+                const playerSeated = i === 0 && !walking && atBed === null;
+                const seated = playerSeated || (!!staffKey && !rt?.eventId && !rt?.path.length);
                 const activated = !!staffKey && seated && redAlert;
                 return (
                   <button
@@ -1187,7 +1189,7 @@ export function WardScreen({
                     )}
                   >
                     <span className="absolute -top-5 grid h-9 w-9 place-items-center rounded-full border-2 border-border bg-card">
-                      {i === 0 ? (
+                      {playerSeated ? (
                         <span className="block h-8 w-7 overflow-hidden">
                           <Nurse moving={false} />
                         </span>
