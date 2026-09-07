@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
-import { MINI_GAMES, miniGameByKey, miniGameKeyForIndex } from "@/game/minigames";
+import { miniGameByKey, miniGameKeyForIndex } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import {
   buzz,
@@ -322,7 +322,7 @@ export function WardScreen({
   /* ---------------- spawner ---------------- */
   useEffect(() => {
     if (rate === 0) return;
-    const id = window.setInterval(() => {
+    const spawnOne = (force: boolean) => {
       const heat = Math.min(1, gameT.current / SHIFT_MS);
       const cur = eventsRef.current;
       if (cur.length >= Math.min(cfg.maxEvents, activeBeds)) return;
@@ -330,7 +330,7 @@ export function WardScreen({
         (b) => !cur.some((ev) => ev.bed === b),
       );
       if (!free.length) return;
-      if (Math.random() > cfg.spawnChance * (0.7 + heat * 0.5)) return;
+      if (!force && Math.random() > cfg.spawnChance * (0.7 + heat * 0.5)) return;
       const bed = free[Math.floor(Math.random() * free.length)]!;
 
       // pick a severity band first, so urgent/critical show up even early on
@@ -355,9 +355,20 @@ export function WardScreen({
       // the bell only ever rings because this patient is ringing it
       if (def.callBell) playCallBell();
       setEvents((c) => [...c, ev]);
-    }, 1200);
-    return () => window.clearInterval(id);
+    };
+    const id = window.setInterval(() => spawnOne(false), 1200);
+    const offDev = onDevCommand("spawnEvent", () => spawnOne(true));
+    return () => {
+      window.clearInterval(id);
+      offDev();
+    };
   }, [rate, activeBeds, cfg, upgrades]);
+
+  /* ---------------- dev info ---------------- */
+  useEffect(() => {
+    reportDevInfo({ activeEvents: events.length, inShift: true });
+    return () => reportDevInfo({ activeEvents: 0, inShift: false });
+  }, [events.length]);
 
   /* ---------------- expiry ---------------- */
   useEffect(() => {
