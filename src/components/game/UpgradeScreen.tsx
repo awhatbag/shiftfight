@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import {
-  BED_UNLOCK_COST,
+  bedsForLevel,
+  MAX_BEDS,
   STAFF,
   UPGRADE_INFO,
   type Upgrades,
@@ -14,7 +15,6 @@ export function UpgradeScreen({
   bedCount,
   staff,
   onBuy,
-  onUnlockBeds,
   onHire,
   onPlay,
   onSave,
@@ -34,7 +34,6 @@ export function UpgradeScreen({
   bedCount: number;
   staff: string[];
   onBuy: (k: keyof Upgrades, cost: number) => void;
-  onUnlockBeds: () => void;
   onHire: (k: string, cost: number) => void;
   onPlay: () => void;
   onSave: () => void;
@@ -43,7 +42,10 @@ export function UpgradeScreen({
 }) {
   const maxTier = rank.level >= 4 ? 5 : 4;
   const staffUnlocked = rank.level >= 2;
-  const bedsUnlocked = rank.level >= 3;
+  const nextBedLevel = Array.from({ length: 10 }, (_, i) => i + 1).find(
+    (l) => l > level && bedsForLevel(l) > bedCount,
+  );
+
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
@@ -117,11 +119,11 @@ export function UpgradeScreen({
 
       <div className="rounded-2xl border-2 border-dashed border-border bg-card/70 p-3">
         <p className="font-display text-xs font-black uppercase text-muted-foreground">
-          Ward expansion
+          Ward expansion · unlocked by shift level
         </p>
         <div className="mt-2 flex items-center gap-3">
           <div className="flex flex-1 gap-1">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: MAX_BEDS }).map((_, i) => (
               <span
                 key={i}
                 className={cn(
@@ -133,26 +135,15 @@ export function UpgradeScreen({
               </span>
             ))}
           </div>
-          {bedCount < 6 ? (
-            <button
-              disabled={points < BED_UNLOCK_COST || !bedsUnlocked}
-              onClick={onUnlockBeds}
-              className={cn(
-                "font-display shrink-0 rounded-xl bg-gold px-3 py-2 text-xs font-black text-gold-foreground",
-                points < BED_UNLOCK_COST || !bedsUnlocked
-                  ? "opacity-50"
-                  : "chunky chunky-press",
-              )}
-            >
-              {bedsUnlocked ? <>+2 BEDS ⭐{BED_UNLOCK_COST}</> : "🔒 XP Lv3"}
-            </button>
-          ) : (
-            <span className="font-display shrink-0 text-xs font-black text-calm-foreground">
-              6-BED WARD!
-            </span>
-          )}
+          <span className="font-display shrink-0 text-xs font-black text-calm-foreground">
+            {bedCount >= MAX_BEDS
+              ? `${MAX_BEDS}-BED WARD!`
+              : `+1 BED AT LV${nextBedLevel ?? level}`}
+          </span>
         </div>
       </div>
+
+
 
       <div className="space-y-2">
         <p className="font-display text-xs font-black uppercase text-muted-foreground">

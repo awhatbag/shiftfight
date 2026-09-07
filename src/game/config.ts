@@ -641,7 +641,42 @@ export const PATIENT_NAMES = [
   "Mr Dhillon",
   "Ms Trent",
   "Mr Baird",
+  "Mrs Ashcombe",
+  "Mr Nwosu",
+  "Ms Halloran",
+  "Mr Kowalski",
+  "Mrs Fenwick",
+  "Ms Bhatt",
+  "Mr Sandoval",
+  "Mrs Quigley",
+  "Mr Adeyemi",
+  "Ms Lindqvist",
+  "Mr Tulloch",
+  "Mrs Panayiotou",
+  "Ms Cardew",
+  "Mr Rafferty",
+  "Mrs Iwuchukwu",
+  "Mr Featherstone",
+  "Lady Periwinkle",
+  "Baron Von Custard",
+  "Mr Reginald Fifth",
+  "Dame Bubbles Trotter",
+  "Mrs Marmalade Poot",
+  "Sir Nigel Wobble",
+  "Ms Twinkle Bunce",
+  "Mr Barnaby Snugworth",
+  "Duchess Doreen",
 ];
+
+/** one distinct name per bed, reshuffled every shift */
+export function shuffledPatientNames(count: number): string[] {
+  const pool = [...PATIENT_NAMES];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j]!, pool[i]!];
+  }
+  return Array.from({ length: count }, (_, i) => pool[i % pool.length] ?? `Bay ${i + 1}`);
+}
 
 /** Big bank of obviously-fictional medication names. Not real drugs. */
 export const FICTIONAL_MEDS = [
@@ -772,7 +807,12 @@ export const STAFF = [
   },
 ];
 
-export const BED_UNLOCK_COST = 14000;
+/** beds unlock naturally with level: 4 at Level 1, 8 by Level 10 */
+export const MAX_BEDS = 8;
+export function bedsForLevel(levelRaw: number): number {
+  const level = Math.max(1, Math.min(MAX_LEVEL, levelRaw));
+  return Math.min(MAX_BEDS, 4 + Math.round(((level - 1) / (MAX_LEVEL - 1)) * 4));
+}
 
 
 export const travelMs = (u: Upgrades) => Math.max(140, 520 - u.speed * 85);
