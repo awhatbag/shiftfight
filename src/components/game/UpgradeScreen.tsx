@@ -42,7 +42,10 @@ export function UpgradeScreen({
 }) {
   const maxTier = rank.level >= 4 ? 5 : 4;
   const staffUnlocked = rank.level >= 2;
-  const bedsUnlocked = rank.level >= 3;
+  const nextBedLevel = Array.from({ length: 10 }, (_, i) => i + 1).find(
+    (l) => l > level && bedsForLevel(l) > bedCount,
+  );
+
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
