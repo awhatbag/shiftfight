@@ -808,16 +808,6 @@ export function WardScreen({
           />
         ))}
 
-        {/* nurses station desk */}
-        <div className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2">
-          <div className="rounded-xl border-2 border-border bg-card px-4 py-1 text-center">
-            <p className="font-display text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-              Station
-            </p>
-            {staff.length === 0 && <span className="text-lg opacity-40">🪑</span>}
-          </div>
-        </div>
-
         {/* staff characters */}
         {staff.map((k) => {
           const info = STAFF.find((s) => s.key === k);
@@ -825,7 +815,7 @@ export function WardScreen({
           const pos = staffPos[k] ?? staffHome(k);
           const onJob = !!rt && (rt.eventId !== null || rt.path.length > 0);
           const activated = !onJob && redAlert;
-          return (
+          return onJob ? (
             <button
               key={k}
               onClick={() => tapStaff(k)}
@@ -844,7 +834,7 @@ export function WardScreen({
                 {info?.icon ?? "🧑‍⚕️"}
               </span>
             </button>
-          );
+          ) : null;
         })}
 
         {/* beds */}
@@ -889,7 +879,10 @@ export function WardScreen({
 
         {/* nurse */}
         <div
-          className="pointer-events-none absolute z-20 h-16 w-12 transition-all ease-linear"
+          className={cn(
+            "pointer-events-none absolute z-20 h-16 w-12 transition-all ease-linear",
+            !walking && atBed === null && "invisible",
+          )}
           style={{
             left: `${nurse.x * 100}%`,
             top: `${nurse.y * 100}%`,
@@ -1151,22 +1144,58 @@ export function WardScreen({
             })()}
           </div>
         ) : (
-          <button
-            onClick={goStation}
-            className="flex w-full items-center gap-3 py-1 text-left"
-          >
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-secondary text-xl">
-              🖥️
-            </span>
-            <div className="min-w-0">
-              <p className="font-display text-sm font-black uppercase">
-                Level {cfg.level} · {cfg.name}
-              </p>
-              <p className="truncate text-[11px] text-muted-foreground">
-                Tap a flashing bay — your nurse walks there. Tap here to head back.
-              </p>
+          <div className="relative pb-7">
+            <button
+              onClick={goStation}
+              className="relative block h-[76px] w-full overflow-hidden rounded-xl border-2 border-border bg-secondary px-3 pb-2 pt-1.5 text-left shadow-[inset_0_-8px_0_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 pt-0.5">
+                  <p className="font-display text-sm font-black uppercase">
+                    Level {cfg.level} · {cfg.name}
+                  </p>
+                  <p className="text-[11px] leading-tight text-muted-foreground">
+                    Tap a flashing bay — your nurse walks there. Tap the desk to head back.
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-end gap-2" aria-label="Nurses station equipment">
+                  <span className="grid h-10 w-12 place-items-center rounded-md border-2 border-border bg-background text-2xl shadow-sm" title="Computer">
+                    🖥️
+                  </span>
+                  <span className="grid h-9 w-10 place-items-center text-2xl" title="Phone">
+                    ☎️
+                  </span>
+                </div>
+              </div>
+              <div className="absolute bottom-2 left-3 right-3 h-1.5 rounded-full bg-foreground/15" />
+            </button>
+
+            <div className="absolute inset-x-2 -bottom-1 grid grid-cols-5 gap-2" aria-label="Five station chairs">
+              {Array.from({ length: 5 }, (_, i) => {
+                const staffKey = i > 0 ? staff[i - 1] : undefined;
+                const info = staffKey ? STAFF.find((s) => s.key === staffKey) : undefined;
+                const rt = staffKey ? staffRt.current[staffKey] : undefined;
+                const seated = i === 0 || (!!staffKey && !rt?.eventId && !rt?.path.length);
+                const activated = !!staffKey && seated && redAlert;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => staffKey ? tapStaff(staffKey) : goStation()}
+                    aria-label={staffKey ? `Send ${info?.name ?? "staff"}` : i === 0 ? "Nurse chair" : "Empty chair"}
+                    className={cn(
+                      "relative grid h-10 place-items-center rounded-b-xl border-2 border-t-0 border-border bg-card text-xl shadow-md",
+                      activated && "animate-throb border-alarm ring-4 ring-alarm/30",
+                    )}
+                  >
+                    <span className="absolute -top-3 grid h-8 w-8 place-items-center rounded-full border-2 border-border bg-card">
+                      {i === 0 ? "👩‍⚕️" : seated && info ? info.icon : ""}
+                    </span>
+                    <span className="mt-3 text-xs text-muted-foreground">▰</span>
+                  </button>
+                );
+              })}
             </div>
-          </button>
+          </div>
         )}
       </div>
 
