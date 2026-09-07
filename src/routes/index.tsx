@@ -205,7 +205,7 @@ function Game() {
             hasSave={hasSave}
             saveNote={saveNote}
             onPlay={play}
-            onDev={() => setPinOpen(true)}
+            onDev={() => { console.log("DEVCLICK"); setPinOpen(true); }}
           />
         )}
         {phase === "dev" && <DevMode api={devApi} onClose={() => setPhase("intro")} />}
