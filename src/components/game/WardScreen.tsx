@@ -637,7 +637,7 @@ export function WardScreen({
         const n = stats.current.miniGames;
         const lvl = Math.min(9, Math.floor(n / 2) + Math.floor(level / 3));
         setMiniOffer({
-          kind: n % 3 === 0 ? "med" : n % 3 === 1 ? "cannula" : "vomit",
+          kind: "vomit" as const,
           bonus: 120 + lvl * 40 + level * 15,
           lvl,
         });
