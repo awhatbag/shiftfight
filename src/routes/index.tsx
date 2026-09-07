@@ -4,6 +4,8 @@ import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { bedsForLevel, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
+import { DevMode, DevPinPrompt, type DevApi } from "@/components/dev/DevMode";
+import { DEV_PIN, subscribeDevInfo } from "@/game/dev";
 import {
   setHapticsEnabled,
   setSoundEnabled,
@@ -49,7 +51,7 @@ function readSave(): SaveData | null {
   }
 }
 
-type Phase = "intro" | "shift" | "summary" | "shop";
+type Phase = "intro" | "shift" | "summary" | "shop" | "dev";
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
@@ -69,6 +71,11 @@ function Game() {
   const [saveNote, setSaveNote] = useState("");
   const [hasSave, setHasSave] = useState(false);
   const [tutorialDone, setTutorialDone] = useState(true);
+  /* dev mode (developer/testing tool) */
+  const [pinOpen, setPinOpen] = useState(false);
+  const [bedOverride, setBedOverride] = useState<number | null>(null);
+  const [debugOverlay, setDebugOverlay] = useState(false);
+  const [devEvents, setDevEvents] = useState(0);
 
   useEffect(() => {
     setHasSave(!!readSave());
@@ -78,6 +85,8 @@ function Game() {
       setTutorialDone(true);
     }
   }, []);
+
+  useEffect(() => subscribeDevInfo((i) => setDevEvents(i.activeEvents)), []);
 
   function completeTutorial() {
     try {
@@ -114,7 +123,7 @@ function Game() {
 
   const rank = nurseRank(xp);
   /** beds are unlocked by level progression, never bought */
-  const bedCount = bedsForLevel(level);
+  const bedCount = bedOverride ?? bedsForLevel(level);
 
   const staffBonus = staff.includes("student") ? 0.15 : 0;
 
@@ -140,6 +149,40 @@ function Game() {
     });
   }
 
+  const devApi: DevApi = {
+    level,
+    points,
+    xp,
+    bedCount,
+    bedOverride,
+    upgrades,
+    staff,
+    setLevel,
+    addPoints: (n) => setPoints((p) => Math.max(0, p + n)),
+    addXp: (n) => setXp((x) => Math.max(0, x + n)),
+    setUpgrades,
+    setStaff,
+    setBedOverride,
+    resetSave: () => {
+      try {
+        window.localStorage.removeItem(SAVE_KEY);
+        window.localStorage.removeItem(TUT_KEY);
+      } catch {
+        /* storage unavailable */
+      }
+      setHasSave(false);
+      setPoints(0);
+      setXp(0);
+      setLevel(1);
+      setUpgrades({ speed: 0, response: 0, equipment: 0 });
+      setStaff([]);
+      setBedOverride(null);
+      setTutorialDone(false);
+    },
+    debugOverlay,
+    setDebugOverlay,
+  };
+
   function play() {
     setRunKey((k) => k + 1);
     setPhase("shift");
@@ -162,7 +205,28 @@ function Game() {
             hasSave={hasSave}
             saveNote={saveNote}
             onPlay={play}
+            onDev={() => setPinOpen(true)}
           />
+        )}
+        {phase === "dev" && <DevMode api={devApi} onClose={() => setPhase("intro")} />}
+        {pinOpen && (
+          <DevPinPrompt
+            pin={DEV_PIN}
+            onCancel={() => setPinOpen(false)}
+            onUnlock={() => {
+              setPinOpen(false);
+              setPhase("dev");
+            }}
+          />
+        )}
+        {debugOverlay && (
+          <div className="pointer-events-none absolute left-2 top-2 z-[80] rounded-lg bg-background/85 px-2 py-1 font-mono text-[10px] leading-tight">
+            <p>lv {level} · ⭐{points} · ✨{xp}</p>
+            <p>
+              beds {bedCount}
+              {bedOverride !== null ? "*" : ""} · events {devEvents}
+            </p>
+          </div>
         )}
         {phase === "shift" && (
           <WardScreen
@@ -229,6 +293,7 @@ function IntroScreen({
   hasSave,
   saveNote,
   onPlay,
+  onDev,
 }: {
   xp: number;
   points: number;
@@ -242,6 +307,7 @@ function IntroScreen({
   hasSave: boolean;
   saveNote: string;
   onPlay: () => void;
+  onDev: () => void;
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5 bg-[image:var(--gradient-sky)] p-6 text-center">
@@ -315,6 +381,12 @@ function IntroScreen({
         className="chunky chunky-press w-full rounded-2xl bg-primary py-5 font-display text-2xl font-black uppercase tracking-wide text-primary-foreground"
       >
         Clock in ▶
+      </button>
+      <button
+        onClick={onDev}
+        className="chunky chunky-press w-full rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+      >
+        🛠️ Dev Mode
       </button>
       <p className="text-[10px] leading-tight text-muted-foreground">
         Silly fiction. Fictional patients, fictional meds. Not medical or nursing advice.

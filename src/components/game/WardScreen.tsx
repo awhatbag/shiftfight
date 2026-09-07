@@ -2,9 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
-import { MedMatchGame } from "./MedMatchGame";
-import { CannulaGame } from "./CannulaGame";
-import { VomitGame } from "./VomitGame";
+import { miniGameByKey, miniGameKeyForIndex } from "@/game/minigames";
+import { onDevCommand, reportDevInfo } from "@/game/dev";
 import {
   buzz,
   playBad,
@@ -150,11 +149,11 @@ export function WardScreen({
 
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
-    kind: "med" | "cannula" | "vomit";
+    kind: string;
     bonus: number;
     lvl: number;
   }>(null);
-  const [mini, setMini] = useState<null | { kind: "med" | "cannula" | "vomit"; lvl: number }>(null);
+  const [mini, setMini] = useState<null | { kind: string; lvl: number }>(null);
 
   /* nurse */
   const wardRef = useRef<HTMLDivElement | null>(null);
@@ -323,7 +322,7 @@ export function WardScreen({
   /* ---------------- spawner ---------------- */
   useEffect(() => {
     if (rate === 0) return;
-    const id = window.setInterval(() => {
+    const spawnOne = (force: boolean) => {
       const heat = Math.min(1, gameT.current / SHIFT_MS);
       const cur = eventsRef.current;
       if (cur.length >= Math.min(cfg.maxEvents, activeBeds)) return;
@@ -331,7 +330,7 @@ export function WardScreen({
         (b) => !cur.some((ev) => ev.bed === b),
       );
       if (!free.length) return;
-      if (Math.random() > cfg.spawnChance * (0.7 + heat * 0.5)) return;
+      if (!force && Math.random() > cfg.spawnChance * (0.7 + heat * 0.5)) return;
       const bed = free[Math.floor(Math.random() * free.length)]!;
 
       // pick a severity band first, so urgent/critical show up even early on
@@ -356,9 +355,20 @@ export function WardScreen({
       // the bell only ever rings because this patient is ringing it
       if (def.callBell) playCallBell();
       setEvents((c) => [...c, ev]);
-    }, 1200);
-    return () => window.clearInterval(id);
+    };
+    const id = window.setInterval(() => spawnOne(false), 1200);
+    const offDev = onDevCommand("spawnEvent", () => spawnOne(true));
+    return () => {
+      window.clearInterval(id);
+      offDev();
+    };
   }, [rate, activeBeds, cfg, upgrades]);
+
+  /* ---------------- dev info ---------------- */
+  useEffect(() => {
+    reportDevInfo({ activeEvents: events.length, inShift: true });
+    return () => reportDevInfo({ activeEvents: 0, inShift: false });
+  }, [events.length]);
 
   /* ---------------- expiry ---------------- */
   useEffect(() => {
@@ -637,7 +647,7 @@ export function WardScreen({
         const n = stats.current.miniGames;
         const lvl = Math.min(9, Math.floor(n / 2) + Math.floor(level / 3));
         setMiniOffer({
-          kind: n % 3 === 0 ? "med" : n % 3 === 1 ? "cannula" : "vomit",
+          kind: miniGameKeyForIndex(n),
           bonus: 120 + lvl * 40 + level * 15,
           lvl,
         });
@@ -998,11 +1008,7 @@ export function WardScreen({
                 Bonus round available
               </p>
               <h3 className="font-display text-2xl font-black uppercase leading-none">
-                {miniOffer.kind === "med"
-                  ? "Med Trolley Dash"
-                  : miniOffer.kind === "cannula"
-                    ? "Cannula Challenge"
-                    : "Sick Bowl Sprint"}
+                {miniGameByKey(miniOffer.kind).name}
               </h3>
               <p className="font-display mt-2 rounded-2xl bg-[image:var(--gradient-gold)] py-2 text-xl font-black text-gold-foreground">
                 up to +{miniOffer.bonus} ⭐
@@ -1211,13 +1217,12 @@ export function WardScreen({
       {/* mini-game overlay + controls */}
       {mini && (
         <>
-          {mini.kind === "med" ? (
-            <MedMatchGame level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
-          ) : mini.kind === "cannula" ? (
-            <CannulaGame level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
-          ) : (
-            <VomitGame level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
-          )}
+          {(() => {
+            const Game = miniGameByKey(mini.kind).component;
+            return (
+              <Game level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
+            );
+          })()}
           <div className="absolute inset-x-0 bottom-0 z-40 flex items-stretch gap-2 border-t-2 border-border bg-card px-3 pb-4 pt-3">
             <button
               onClick={() => {
