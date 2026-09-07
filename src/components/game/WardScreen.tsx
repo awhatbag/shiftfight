@@ -757,9 +757,6 @@ export function WardScreen({
         </div>
 
         <div className="flex items-stretch gap-2">
-          <span className="font-display grid shrink-0 place-items-center rounded-2xl bg-[image:var(--gradient-gold)] px-2 text-xs font-black uppercase text-gold-foreground">
-            Lv {cfg.level}
-          </span>
           <div className="flex flex-1 items-center gap-2 rounded-2xl border-2 border-border bg-card px-2.5 py-1.5">
             <span className="text-xl leading-none">❤️</span>
             <div className="min-w-0 flex-1">
@@ -950,13 +947,6 @@ export function WardScreen({
             </div>
           </div>
         )}
-        {tutorial && phase === "play" && tutStep === 1 && (
-          <div className="pointer-events-none absolute inset-x-4 top-3 z-[65] animate-pop rounded-2xl border-2 border-gold bg-card/95 p-3 text-center shadow-xl">
-            <p className="font-display text-base font-black uppercase leading-snug">
-              👆 Tap a bay that's lit up — your nurse walks over. Tap one now!
-            </p>
-          </div>
-        )}
         {tutorial && phase === "play" && tutStep === 2 && (
           <div className="absolute inset-0 z-[65] grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
             <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
@@ -1081,7 +1071,14 @@ export function WardScreen({
       </div>
 
       {/* action overlay — floats above the ward so opening it never resizes the play area */}
-      <div className="absolute inset-x-0 bottom-0 z-30 max-h-[58%] overflow-y-auto rounded-t-3xl border-t-2 border-border bg-card px-3 pb-4 pt-3 shadow-[0_-10px_24px_-16px_oklch(0_0_0/0.5)]">
+      <div
+        className={cn(
+          "absolute inset-x-0 bottom-0 z-30",
+          selectedEvent
+            ? "max-h-[58%] overflow-y-auto rounded-t-3xl border-t-2 border-border bg-card px-3 pb-4 pt-3 shadow-[0_-10px_24px_-16px_oklch(0_0_0/0.5)]"
+            : "pointer-events-none px-2 pb-1",
+        )}
+      >
         {selectedEvent ? (
           <div className="animate-slide-up space-y-2">
             {(() => {
@@ -1144,38 +1141,42 @@ export function WardScreen({
             })()}
           </div>
         ) : (
-          <div className="relative pb-7">
+          <div className="relative mx-auto h-[112px] max-w-[430px]">
             <button
               onClick={goStation}
-              className="relative block h-[76px] w-full overflow-hidden rounded-xl border-2 border-border bg-secondary px-3 pb-2 pt-1.5 text-left shadow-[inset_0_-8px_0_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
+              className="pointer-events-auto absolute inset-x-0 bottom-0 h-[96px] overflow-hidden rounded-t-[2.25rem] rounded-b-xl border-2 border-border bg-secondary text-left shadow-[0_-8px_20px_-14px_color-mix(in_oklab,var(--foreground)_45%,transparent)]"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 pt-0.5">
-                  <p className="font-display text-sm font-black uppercase">
-                    Level {cfg.level} · {cfg.name}
-                  </p>
-                  <p className="text-[11px] leading-tight text-muted-foreground">
-                    Tap a flashing bay — your nurse walks there. Tap the desk to head back.
-                  </p>
+              <div className="absolute inset-x-9 top-3 h-[55px] rounded-t-[1.65rem] border-2 border-border bg-background/55" />
+              <div className="absolute inset-x-3 bottom-2 h-7 rounded-lg border-2 border-border bg-card/70" />
+
+              <div className="absolute left-4 top-2 h-12 w-[25%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
+              <div className="absolute right-4 top-2 h-12 w-[25%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
+
+              <div className="absolute left-1/2 top-0 -translate-x-1/2">
+                <div className="grid h-12 w-16 place-items-center rounded-md border-[3px] border-border bg-primary/20 shadow-md" aria-label="Nurses station computer">
+                  <span className="text-2xl">🖥️</span>
                 </div>
-                <div className="flex shrink-0 items-end gap-2" aria-label="Nurses station equipment">
-                  <span className="grid h-10 w-12 place-items-center rounded-md border-2 border-border bg-background text-2xl shadow-sm" title="Computer">
-                    🖥️
-                  </span>
-                  <span className="grid h-9 w-10 place-items-center text-2xl" title="Phone">
-                    ☎️
-                  </span>
-                </div>
+                <div className="mx-auto h-2 w-8 rounded-b-md bg-border" />
               </div>
-              <div className="absolute bottom-2 left-3 right-3 h-1.5 rounded-full bg-foreground/15" />
+              <span className="absolute right-[21%] top-4 grid h-9 w-10 place-items-center text-2xl" aria-label="Nurses station phone">
+                ☎️
+              </span>
+
+              <div className="absolute left-4 top-3 w-[25%] px-1 text-center">
+                <p className="font-display truncate text-xs font-black uppercase">
+                  Lv {cfg.level}
+                </p>
+                <p className="font-display truncate text-[8px] font-black uppercase text-muted-foreground">{cfg.name}</p>
+              </div>
             </button>
 
-            <div className="absolute inset-x-2 -bottom-1 grid grid-cols-5 gap-2" aria-label="Five station chairs">
+            <div className="pointer-events-none absolute inset-x-4 bottom-0 grid grid-cols-5 gap-2" aria-label="Five station chairs">
               {Array.from({ length: 5 }, (_, i) => {
                 const staffKey = i > 0 ? staff[i - 1] : undefined;
                 const info = staffKey ? STAFF.find((s) => s.key === staffKey) : undefined;
                 const rt = staffKey ? staffRt.current[staffKey] : undefined;
-                const seated = i === 0 || (!!staffKey && !rt?.eventId && !rt?.path.length);
+                const playerSeated = i === 0 && !walking && atBed === null;
+                const seated = playerSeated || (!!staffKey && !rt?.eventId && !rt?.path.length);
                 const activated = !!staffKey && seated && redAlert;
                 return (
                   <button
@@ -1183,14 +1184,22 @@ export function WardScreen({
                     onClick={() => staffKey ? tapStaff(staffKey) : goStation()}
                     aria-label={staffKey ? `Send ${info?.name ?? "staff"}` : i === 0 ? "Nurse chair" : "Empty chair"}
                     className={cn(
-                      "relative grid h-10 place-items-center rounded-b-xl border-2 border-t-0 border-border bg-card text-xl shadow-md",
+                      "pointer-events-auto relative grid h-9 place-items-center rounded-b-xl border-2 border-t-0 border-border bg-card text-xl shadow-md",
                       activated && "animate-throb border-alarm ring-4 ring-alarm/30",
                     )}
                   >
-                    <span className="absolute -top-3 grid h-8 w-8 place-items-center rounded-full border-2 border-border bg-card">
-                      {i === 0 ? "👩‍⚕️" : seated && info ? info.icon : ""}
+                    <span className="absolute -top-5 grid h-9 w-9 place-items-center rounded-full border-2 border-border bg-card">
+                      {playerSeated ? (
+                        <span className="block h-8 w-7 overflow-hidden">
+                          <Nurse moving={false} />
+                        </span>
+                      ) : seated && info ? (
+                        info.icon
+                      ) : (
+                        ""
+                      )}
                     </span>
-                    <span className="mt-3 text-xs text-muted-foreground">▰</span>
+                    <span className="mt-2 text-xs text-muted-foreground">▰</span>
                   </button>
                 );
               })}
