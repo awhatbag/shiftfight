@@ -1087,8 +1087,8 @@ export function WardScreen({
         )}
       </div>
 
-      {/* action bar */}
-      <div className="z-10 rounded-t-3xl border-t-2 border-border bg-card px-3 pb-4 pt-3 shadow-[0_-10px_24px_-16px_oklch(0_0_0/0.5)]">
+      {/* action overlay — floats above the ward so opening it never resizes the play area */}
+      <div className="absolute inset-x-0 bottom-0 z-30 max-h-[58%] overflow-y-auto rounded-t-3xl border-t-2 border-border bg-card px-3 pb-4 pt-3 shadow-[0_-10px_24px_-16px_oklch(0_0_0/0.5)]">
         {selectedEvent ? (
           <div className="animate-slide-up space-y-2">
             {(() => {
