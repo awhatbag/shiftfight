@@ -5,7 +5,7 @@ import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { bedsForLevel, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
 import { DevMode, DevPinPrompt, type DevApi } from "@/components/dev/DevMode";
-import { DEV_PIN } from "@/game/dev";
+import { DEV_PIN, subscribeDevInfo } from "@/game/dev";
 import {
   setHapticsEnabled,
   setSoundEnabled,
@@ -85,6 +85,8 @@ function Game() {
       setTutorialDone(true);
     }
   }, []);
+
+  useEffect(() => subscribeDevInfo((i) => setDevEvents(i.activeEvents)), []);
 
   function completeTutorial() {
     try {
