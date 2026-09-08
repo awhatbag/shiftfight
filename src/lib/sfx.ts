@@ -85,6 +85,54 @@ export function playPop() {
   tone(520, 0, 0.09, 0.05);
 }
 
+/** Comedic splatter: a wet, gurgling noise burst. */
+export function playVomit() {
+  if (!soundOn) return;
+  const c = audio();
+  if (!c) return;
+  const t = c.currentTime;
+  const dur = 1.1;
+
+  const len = Math.floor(c.sampleRate * dur);
+  const buf = c.createBuffer(1, len, c.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    const p = i / len;
+    data[i] = (Math.random() * 2 - 1) * (1 - p * 0.6);
+  }
+  const noise = c.createBufferSource();
+  noise.buffer = buf;
+
+  const lp = c.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.setValueAtTime(900, t);
+  lp.frequency.linearRampToValueAtTime(320, t + dur);
+  lp.Q.setValueAtTime(6, t);
+
+  // wobble for the gurgle
+  const lfo = c.createOscillator();
+  const lfoGain = c.createGain();
+  lfo.frequency.setValueAtTime(11, t);
+  lfoGain.gain.setValueAtTime(220, t);
+  lfo.connect(lfoGain).connect(lp.frequency);
+
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.3, t + 0.06);
+  g.gain.exponentialRampToValueAtTime(0.12, t + 0.6);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  noise.connect(lp).connect(g).connect(c.destination);
+  noise.start(t);
+  noise.stop(t + dur + 0.05);
+  lfo.start(t);
+  lfo.stop(t + dur + 0.05);
+
+  tone(120, 0.05, 0.5, 0.06, "sawtooth");
+  buzz([40, 30, 90]);
+}
+
+
 /** Boxing-style ring bell (one clang). */
 function clang(at: number) {
   tone(1320, at, 0.55, 0.1, "triangle");
