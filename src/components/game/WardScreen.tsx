@@ -67,14 +67,14 @@ type Point = { x: number; y: number };
 
 /** bed layout in ward-percentage coords; corridor runs down the middle */
 const BED_SLOTS: Point[] = [
-  { x: 0.16, y: 0.13 },
-  { x: 0.84, y: 0.13 },
-  { x: 0.16, y: 0.37 },
-  { x: 0.84, y: 0.37 },
-  { x: 0.16, y: 0.61 },
-  { x: 0.84, y: 0.61 },
-  { x: 0.16, y: 0.85 },
-  { x: 0.84, y: 0.85 },
+  { x: 0.16, y: 0.105 },
+  { x: 0.84, y: 0.105 },
+  { x: 0.16, y: 0.285 },
+  { x: 0.84, y: 0.285 },
+  { x: 0.16, y: 0.465 },
+  { x: 0.84, y: 0.465 },
+  { x: 0.16, y: 0.655 },
+  { x: 0.84, y: 0.655 },
 ];
 
 const STATION: Point = { x: 0.5, y: 0.94 };
@@ -852,7 +852,7 @@ export function WardScreen({
           return (
             <div
               key={b.id}
-              className="absolute h-[21%] w-[29%]"
+              className="absolute h-[15%] w-[29%]"
               style={{
                 left: `${slot.x * 100}%`,
                 top: `${slot.y * 100}%`,
