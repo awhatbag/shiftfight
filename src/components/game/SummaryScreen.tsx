@@ -74,6 +74,34 @@ export function SummaryScreen({
         ))}
       </div>
 
+      {stats.objectives?.length > 0 && (
+        <div className="space-y-1.5 rounded-2xl border-2 border-border bg-card p-3">
+          <p className="font-display text-xs font-black uppercase text-muted-foreground">
+            This shift's challenges
+          </p>
+          {stats.objectives.map((o) => (
+            <div key={o.key} className="flex items-center justify-between gap-2 text-sm">
+              <span className="flex min-w-0 items-center gap-2">
+                <span>{o.done ? "✅" : "⬜"}</span>
+                <span className={o.done ? "min-w-0 truncate" : "min-w-0 truncate text-muted-foreground"}>
+                  {o.label}
+                </span>
+              </span>
+              <span
+                className={
+                  o.done
+                    ? "font-display shrink-0 font-black text-calm-foreground"
+                    : "font-display shrink-0 font-black text-muted-foreground"
+                }
+              >
+                {o.done ? "+" : ""}
+                {o.reward.amount} {o.reward.type === "points" ? "⭐" : "✨"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="space-y-1.5 rounded-2xl border-2 border-border bg-card p-3">
         <p className="font-display text-xs font-black uppercase text-muted-foreground">
           Shift modifiers
@@ -89,6 +117,7 @@ export function SummaryScreen({
           </div>
         ))}
       </div>
+
 
       <button
         onClick={onNext}

@@ -35,6 +35,13 @@ import {
   type Quirk,
   type Upgrades,
 } from "@/game/config";
+import {
+  emptyCounters,
+  evaluateObjectives,
+  pickObjectives,
+  type ShiftCounters,
+  type ShiftObjective,
+} from "@/game/objectives";
 
 export type ShiftStats = {
   level: number;
@@ -50,7 +57,9 @@ export type ShiftStats = {
   steps: number;
   quirks: Quirk[];
   collapsed: boolean;
+  objectives: ShiftObjective[];
 };
+
 
 type ActiveEvent = {
   id: number;
@@ -180,12 +189,23 @@ export function WardScreen({
     steps: 0,
     quirks: [],
     collapsed: false,
+    objectives: [],
   });
   const streak = useRef(0);
   const uid = useRef(1);
   const ended = useRef(false);
   const bannerId = useRef(1);
   const [, force] = useState(0);
+
+  /* ---------------- shift objectives ---------------- */
+  const [briefing, setBriefing] = useState(true);
+  const [objectives, setObjectives] = useState<ShiftObjective[]>(() =>
+    pickObjectives(level, 3),
+  );
+  const counters = useRef<ShiftCounters>(emptyCounters());
+  const objectivesRef = useRef<ShiftObjective[]>(objectives);
+  objectivesRef.current = objectives;
+
 
   /* ---------------- staff runtime ---------------- */
   type StaffRt = {
@@ -256,6 +276,7 @@ export function WardScreen({
 
   /* ---------------- start sequence ---------------- */
   useEffect(() => {
+    if (briefing) return;
     primeAudio();
     playRoundBells();
     const t1 = window.setTimeout(() => setCue("SET..."), 800);
@@ -265,13 +286,37 @@ export function WardScreen({
       setCue("");
     }, 2500);
     return () => [t1, t2, t3].forEach(window.clearTimeout);
-  }, []);
+  }, [briefing]);
 
   const say = useCallback((title: string, sub: string, good: boolean) => {
     const id = bannerId.current++;
     setBanner({ id, title, sub, good });
     window.setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 1500);
   }, []);
+
+  /** re-check the shift objectives and pay out any that just completed */
+  const checkObjectives = useCallback(() => {
+    counters.current.points = stats.current.points;
+    const { objectives: next, completed } = evaluateObjectives(
+      objectivesRef.current,
+      counters.current,
+    );
+    if (!completed.length) return;
+    objectivesRef.current = next;
+    setObjectives(next);
+    for (const o of completed) {
+      if (o.reward.type === "points") stats.current.points += o.reward.amount;
+      else stats.current.xp += o.reward.amount;
+    }
+    const first = completed[0]!;
+    say(
+      "CHALLENGE COMPLETE!",
+      `${first.label} · +${first.reward.amount} ${
+        first.reward.type === "points" ? "points" : "XP"
+      }`,
+      true,
+    );
+  }, [say]);
 
   const finish = useCallback(
     (collapsed: boolean) => {
@@ -284,11 +329,13 @@ export function WardScreen({
         stats.current.points +
           Math.round(stats.current.quirks.reduce((a, q) => a + q.pts, 0) * 0.3),
       );
+      stats.current.objectives = objectivesRef.current;
       playWhistle();
       onEnd({ ...stats.current });
     },
     [onEnd],
   );
+
 
   const elapsed = Math.min(SHIFT_MS, gameT.current);
   const shiftLeft = Math.max(0, 1 - elapsed / SHIFT_MS);
@@ -623,7 +670,14 @@ export function WardScreen({
     window.setTimeout(() => setFlash((f) => ({ ...f, [ev.bed]: null })), 500);
 
     stats.current.handled++;
+    counters.current.patients++;
     if (correct) {
+      counters.current.eventsOk++;
+      if (ev.def.severity === 3) counters.current.criticalOk++;
+      else if (ev.def.severity === 2) counters.current.urgentOk++;
+      else counters.current.routineOk++;
+      if (ev.def.callBell) counters.current.callBells++;
+
       playGood();
       const isTop = !events.some(
         (e) => e.id !== ev.id && e.def.severity > ev.def.severity,
@@ -631,6 +685,8 @@ export function WardScreen({
       const newCombo = combo + 1;
       setCombo(newCombo);
       stats.current.maxCombo = Math.max(stats.current.maxCombo, newCombo);
+      counters.current.streak = Math.max(counters.current.streak, newCombo);
+
       const base = 14 * ev.def.severity * (isTop ? 1.4 : 1);
       const gain = Math.round(
         base * (1 + newCombo * 0.1) * payMult(upgrades, staffBonus) * (1 + level * 0.05),
@@ -677,6 +733,7 @@ export function WardScreen({
         say("WRONG PRIORITY", `${raw} points · ${ev.def.correct} was the move`, false);
       }
     }
+    checkObjectives();
     window.setTimeout(() => {
       if (journey.current.length) return; // player already sent her elsewhere
       walkTo(STATION, null, true);
@@ -697,8 +754,16 @@ export function WardScreen({
     stats.current.xp += 12;
     say(perfect ? "FLAWLESS!" : "BONUS BANKED", `+${bonus} points`, true);
     setStability((s) => Math.min(100, s + (perfect ? 15 : 6)));
+    const kind = mini?.kind;
+    counters.current.miniDone++;
+    if (perfect) counters.current.miniPerfect++;
+    if (kind) {
+      counters.current.miniByKey[kind] = (counters.current.miniByKey[kind] ?? 0) + 1;
+    }
     setMini(null);
+    window.setTimeout(checkObjectives, 1600);
   }
+
 
   function abandonMini() {
     setMini(null);
@@ -793,7 +858,25 @@ export function WardScreen({
             🔥x{combo}
           </span>
         </div>
+
+        {/* this shift's challenges — compact tracker */}
+        <div className="flex items-center gap-1.5 overflow-hidden">
+          {objectives.map((o) => (
+            <span
+              key={o.key}
+              title={o.label}
+              className={cn(
+                "flex min-w-0 flex-1 items-center gap-1 rounded-xl border-2 border-border px-1.5 py-0.5 text-[10px] font-bold leading-tight",
+                o.done ? "bg-calm text-calm-foreground line-through" : "bg-card",
+              )}
+            >
+              <span className="text-sm leading-none">{o.done ? "✅" : o.icon}</span>
+              <span className="truncate">{o.label}</span>
+            </span>
+          ))}
+        </div>
       </div>
+
 
       {/* WARD */}
       <div ref={wardRef} className="relative flex-1 select-none overflow-hidden px-1 py-2">
@@ -920,8 +1003,44 @@ export function WardScreen({
           </div>
         )}
 
+        {/* shift objectives briefing */}
+        {briefing && (
+          <div className="absolute inset-0 z-[70] grid place-items-center bg-background/85 p-4 backdrop-blur-sm">
+            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 shadow-2xl">
+              <p className="font-display text-center text-[11px] font-black uppercase tracking-widest text-primary">
+                Shift {cfg.level} briefing
+              </p>
+              <h3 className="font-display mt-1 text-center text-2xl font-black uppercase leading-none">
+                This shift's challenges
+              </h3>
+              <div className="mt-3 space-y-2">
+                {objectives.map((o) => (
+                  <div
+                    key={o.key}
+                    className="flex items-center gap-2 rounded-2xl border-2 border-border bg-background px-2.5 py-2"
+                  >
+                    <span className="text-2xl leading-none">{o.icon}</span>
+                    <span className="min-w-0 flex-1 text-sm font-bold leading-tight">
+                      {o.label}
+                    </span>
+                    <span className="font-display shrink-0 rounded-full bg-gold px-2 py-0.5 text-xs font-black text-gold-foreground">
+                      +{o.reward.amount} {o.reward.type === "points" ? "⭐" : "✨"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setBriefing(false)}
+                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
+              >
+                Start shift ▶
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* start cue */}
-        {phase === "ready" && (
+        {phase === "ready" && !briefing && (
           <div className="absolute inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm">
             <p
               key={cue}
@@ -931,6 +1050,7 @@ export function WardScreen({
             </p>
           </div>
         )}
+
 
         {/* first-shift walkthrough */}
         {tutorial && phase === "play" && tutStep === 0 && (
