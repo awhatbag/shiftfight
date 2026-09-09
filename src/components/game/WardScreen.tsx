@@ -670,7 +670,14 @@ export function WardScreen({
     window.setTimeout(() => setFlash((f) => ({ ...f, [ev.bed]: null })), 500);
 
     stats.current.handled++;
+    counters.current.patients++;
     if (correct) {
+      counters.current.eventsOk++;
+      if (ev.def.severity === 3) counters.current.criticalOk++;
+      else if (ev.def.severity === 2) counters.current.urgentOk++;
+      else counters.current.routineOk++;
+      if (ev.def.callBell) counters.current.callBells++;
+
       playGood();
       const isTop = !events.some(
         (e) => e.id !== ev.id && e.def.severity > ev.def.severity,
