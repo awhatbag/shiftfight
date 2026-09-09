@@ -504,7 +504,7 @@ function rewardFor(tier: 1 | 2 | 3, type: "points" | "xp"): ObjectiveReward {
 
 const HISTORY_KEY = "shift-fight-objective-history";
 /** how many recently used objective keys we avoid re-offering */
-const HISTORY_LEN = 18;
+const HISTORY_LEN = 30;
 
 function readHistory(): string[] {
   if (typeof window === "undefined") return [];
