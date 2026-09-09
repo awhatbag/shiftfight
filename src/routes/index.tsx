@@ -110,7 +110,7 @@ function Game() {
   }
 
   function saveProgress() {
-    const data: SaveData = { points, xp, level, upgrades, bedCount, staff };
+    const data: SaveData = { points, xp, level, upgrades, bedCount, staff, jobSecurity };
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       setHasSave(true);
