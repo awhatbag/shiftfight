@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { MINI_GAMES } from "@/game/minigames";
 import { emitDevCommand, subscribeDevInfo, type DevInfo } from "@/game/dev";
 import { MAX_BEDS, MAX_LEVEL, STAFF, UPGRADE_INFO, type Upgrades } from "@/game/config";
+import { DON_MOOD_META, moodFor, securityBand } from "@/game/don";
+import { JobSecurityBar } from "@/components/game/JobSecurityBar";
 import { useEffect } from "react";
 
 export type DevApi = {
@@ -279,6 +281,60 @@ export const DEV_CATEGORIES: Category[] = [
           </div>
         </Row>
         <Placeholder text="Space for future staff mechanics." />
+      </div>
+    ),
+  },
+  {
+    key: "don",
+    name: "Job Security / The DON",
+    icon: "🧑‍💼",
+    render: (api, ui) => (
+      <div className="space-y-3">
+        <JobSecurityBar value={api.jobSecurity} />
+        <Row label={`Set job security (now ${api.jobSecurity}%)`}>
+          <div className="grid grid-cols-6 gap-2">
+            {[0, 15, 40, 60, 80, 100].map((v) => (
+              <Chip
+                key={v}
+                active={api.jobSecurity === v}
+                onClick={() => api.setJobSecurity(v)}
+              >
+                {v}
+              </Chip>
+            ))}
+          </div>
+        </Row>
+        <Row label="Nudge">
+          <div className="grid grid-cols-4 gap-2">
+            {[-10, -5, +5, +10].map((d) => (
+              <Chip key={d} onClick={() => api.setJobSecurity(api.jobSecurity + d)}>
+                {d > 0 ? `+${d}` : d}
+              </Chip>
+            ))}
+          </div>
+        </Row>
+        <Row label="DON mood">
+          <p className="rounded-2xl border-2 border-border bg-card p-3 text-sm font-bold">
+            {DON_MOOD_META[moodFor(api.jobSecurity)].dot}{" "}
+            {securityBand(api.jobSecurity).label} · “
+            {DON_MOOD_META[moodFor(api.jobSecurity)].line}”
+          </p>
+        </Row>
+        <Row label="Live testing">
+          <button
+            disabled={!ui.info.inShift}
+            onClick={() => emitDevCommand("donVisit")}
+            className="chunky-press w-full rounded-2xl bg-alarm py-3 font-display text-sm font-black uppercase text-alarm-foreground disabled:opacity-50"
+          >
+            🚨 Send the DON to the ward
+          </button>
+          {!ui.info.inShift && (
+            <p className="text-[11px] text-muted-foreground">
+              Start a shift first — the DON visits the live ward.
+            </p>
+          )}
+        </Row>
+        <Placeholder text="Space for future DON mechanics (warnings, HR events, rehiring)." />
       </div>
     ),
   },
