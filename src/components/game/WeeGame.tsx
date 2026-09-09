@@ -9,14 +9,17 @@ type Props = {
 };
 
 /**
- * CATCH THE WEE! — drag the bottle under a wandering stream and fill it up.
- * Deliberately lightweight: the stream is a handful of animated segments,
- * no physics engine.
+ * CATCH THE WEE! — a continuous fluid stream pours from the top of the
+ * screen; drag the specimen bottle to catch it and fill it up.
+ * Higher levels: the stream whips left/right faster and the bottle shrinks.
  */
 export function WeeGame({ level, paused, onDone }: Props) {
-  const speed = 0.09 + level * 0.022; // horizontal drift per tick
-  const wobble = 0.5 + level * 0.16;
-  const width = Math.max(5, 11 - level * 0.6); // stream width in %
+  // Bottle mouth shrinks from a generous 22% of arena width to ~9% by level 10.
+  const bottleW = Math.max(9, 22 - level * 1.4);
+  // Stream travels faster left/right as level rises.
+  const speed = 0.14 + level * 0.05;
+  const wobble = 0.4 + level * 0.22;
+  const streamWidth = 2.6; // % of arena width — thin continuous pour
   const target = 100;
   const totalMs = 15000 + Math.min(6000, level * 400);
 
@@ -26,6 +29,7 @@ export function WeeGame({ level, paused, onDone }: Props) {
   const [streamX, setStreamX] = useState(0.5);
   const [splash, setSplash] = useState(false);
   const [won, setWon] = useState(false);
+  const [tick, setTick] = useState(0); // drives stream ripple animation
 
   const areaRef = useRef<HTMLDivElement | null>(null);
   const bottleRef = useRef(0.5);
@@ -43,21 +47,23 @@ export function WeeGame({ level, paused, onDone }: Props) {
   useEffect(() => {
     const id = setInterval(() => {
       if (pausedRef.current || done.current) return;
-      phaseRef.current += 0.12;
+      phaseRef.current += 0.14;
       let n = streamRef.current + dir.current * speed * 0.03;
       n += Math.sin(phaseRef.current) * 0.004 * wobble;
-      if (n > 0.92) {
-        n = 0.92;
+      if (n > 0.94) {
+        n = 0.94;
         dir.current = -1;
-      } else if (n < 0.08) {
-        n = 0.08;
+      } else if (n < 0.06) {
+        n = 0.06;
         dir.current = 1;
       }
-      if (Math.random() < 0.01 + level * 0.004) dir.current *= -1;
+      if (Math.random() < 0.008 + level * 0.004) dir.current *= -1;
       streamRef.current = n;
       setStreamX(n);
+      setTick((t) => t + 1);
 
-      const caught = Math.abs(n - bottleRef.current) < width / 200 + 0.055;
+      // caught when the stream lands inside the bottle mouth
+      const caught = Math.abs(n - bottleRef.current) < bottleW / 200 + streamWidth / 200;
       setSplash(!caught);
       if (caught) {
         fillRef.current = Math.min(target, fillRef.current + 1.6);
@@ -106,12 +112,13 @@ export function WeeGame({ level, paused, onDone }: Props) {
     const el = areaRef.current;
     if (!el || done.current) return;
     const box = el.getBoundingClientRect();
-    const x = Math.min(0.94, Math.max(0.06, (clientX - box.left) / box.width));
+    const x = Math.min(0.96, Math.max(0.04, (clientX - box.left) / box.width));
     bottleRef.current = x;
     setBottle(x);
   }
 
   const pct = Math.round((fill / target) * 100);
+  void tick; // re-render keeps the stream ripple alive
 
   return (
     <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-2 bg-background/98 p-3">
@@ -155,48 +162,62 @@ export function WeeGame({ level, paused, onDone }: Props) {
         onPointerCancel={() => (dragging.current = false)}
         className="relative flex-1 touch-none overflow-hidden rounded-3xl border-4 border-border bg-floor"
       >
-        {/* stream */}
+        {/* continuous pouring stream */}
         <div
-          className="pointer-events-none absolute top-0 bottom-[16%]"
+          className="pointer-events-none absolute top-0 bottom-[17%]"
           style={{
             left: `${streamX * 100}%`,
-            width: `${width}%`,
+            width: `${streamWidth}%`,
             transform: "translateX(-50%)",
           }}
         >
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-full rounded-full"
-              style={{
-                top: `${i * 12.5}%`,
-                height: "13%",
-                background: "oklch(0.88 0.14 95)",
-                opacity: 0.85,
-                transform: `translateX(${Math.sin(phaseRef.current + i * 0.7) * 6}px) scaleX(${
-                  0.8 + ((i % 3) * 0.12)
-                })`,
-              }}
-            />
-          ))}
+          {/* main column: a smooth gradient bar, slightly wavy via skew */}
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background:
+                "linear-gradient(to bottom, oklch(0.93 0.12 98), oklch(0.86 0.15 95) 40%, oklch(0.82 0.16 92))",
+              opacity: 0.95,
+              transform: `skewX(${Math.sin(phaseRef.current * 1.3) * 3}deg)`,
+              boxShadow: "0 0 8px oklch(0.9 0.14 95 / 0.5)",
+            }}
+          />
+          {/* fast-moving droplet highlights to sell the pour */}
+          {Array.from({ length: 5 }).map((_, i) => {
+            const cycle = ((phaseRef.current * 0.9 + i * 0.2) % 1) * 100;
+            return (
+              <span
+                key={i}
+                className="absolute left-1/2 h-2 w-1 -translate-x-1/2 rounded-full"
+                style={{
+                  top: `${cycle}%`,
+                  background: "oklch(0.96 0.09 100)",
+                  opacity: 0.7,
+                }}
+              />
+            );
+          })}
         </div>
 
         {/* splash when missed */}
         {splash && !won && (
           <span
-            className="pointer-events-none absolute bottom-[12%] text-xl"
+            className="pointer-events-none absolute bottom-[13%] text-xl"
             style={{ left: `${streamX * 100}%`, transform: "translateX(-50%)" }}
           >
             💦
           </span>
         )}
 
-        {/* bottle */}
+        {/* big specimen bottle — mouth width matches bottleW */}
         <div
           className="pointer-events-none absolute bottom-2"
           style={{ left: `${bottle * 100}%`, transform: "translateX(-50%)" }}
         >
-          <div className="relative h-24 w-16 rounded-b-2xl rounded-t-lg border-4 border-border bg-card/90">
+          <div
+            className="relative h-28 rounded-b-2xl rounded-t-lg border-4 border-border bg-card/90"
+            style={{ width: `clamp(52px, ${bottleW}vw, 130px)` }}
+          >
             <div
               className="absolute inset-x-1 bottom-1 rounded-b-xl transition-[height] duration-100"
               style={{
@@ -204,7 +225,8 @@ export function WeeGame({ level, paused, onDone }: Props) {
                 background: "oklch(0.86 0.15 95)",
               }}
             />
-            <div className="absolute -top-3 left-1/2 h-3 w-8 -translate-x-1/2 rounded-t-md border-4 border-b-0 border-border bg-card" />
+            {/* mouth rim */}
+            <div className="absolute -top-2.5 -left-1.5 -right-1.5 h-3 rounded-t-md border-4 border-b-0 border-border bg-card" />
           </div>
         </div>
 
