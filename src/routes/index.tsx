@@ -284,7 +284,18 @@ function Game() {
             stats={last}
             totalPoints={points}
             totalXp={xp}
-            onNext={() => setPhase("shop")}
+            review={review}
+            onNext={() => setPhase(review?.fired ? "fired" : "shop")}
+          />
+        )}
+        {phase === "fired" && (
+          <FiredScreen
+            reason={review?.reason ?? "The DON has requested that you return your ID badge."}
+            onContinue={() => {
+              setJobSecurity(JOB_SECURITY_REHIRE);
+              setReview((r) => (r ? { ...r, fired: false, after: JOB_SECURITY_REHIRE } : r));
+              setPhase("shop");
+            }}
           />
         )}
         {phase === "shop" && (
