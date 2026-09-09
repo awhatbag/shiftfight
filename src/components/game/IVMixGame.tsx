@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { playBad, playGood, playPop } from "@/lib/sfx";
+import { FICTIONAL_MEDS } from "@/game/config";
 
 type Props = {
   level: number;
