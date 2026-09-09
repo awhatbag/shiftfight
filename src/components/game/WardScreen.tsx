@@ -842,6 +842,7 @@ export function WardScreen({
   function startMini() {
     if (!miniOffer) return;
     stats.current.miniGames++;
+    lastMini.current = miniOffer.kind;
     setMini({ kind: miniOffer.kind, lvl: miniOffer.lvl });
     setMiniOffer(null);
   }
