@@ -58,7 +58,7 @@ export function SutureGame({ level, paused, onDone }: Props) {
     try {
       const previous = Number(window.localStorage.getItem(SKIN_TONE_KEY) ?? "-1");
       const next = (previous + 1) % SKIN_TONES.length;
-      setSkinTone(SKIN_TONES[next]);
+      setSkinTone(SKIN_TONES[next] ?? SKIN_TONES[0]);
       window.localStorage.setItem(SKIN_TONE_KEY, String(next));
     } catch {
       setSkinTone(SKIN_TONES[0]);
