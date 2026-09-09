@@ -189,12 +189,23 @@ export function WardScreen({
     steps: 0,
     quirks: [],
     collapsed: false,
+    objectives: [],
   });
   const streak = useRef(0);
   const uid = useRef(1);
   const ended = useRef(false);
   const bannerId = useRef(1);
   const [, force] = useState(0);
+
+  /* ---------------- shift objectives ---------------- */
+  const [briefing, setBriefing] = useState(true);
+  const [objectives, setObjectives] = useState<ShiftObjective[]>(() =>
+    pickObjectives(level, 3),
+  );
+  const counters = useRef<ShiftCounters>(emptyCounters());
+  const objectivesRef = useRef<ShiftObjective[]>(objectives);
+  objectivesRef.current = objectives;
+
 
   /* ---------------- staff runtime ---------------- */
   type StaffRt = {
