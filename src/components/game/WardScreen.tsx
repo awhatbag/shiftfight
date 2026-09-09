@@ -961,6 +961,12 @@ export function WardScreen({
           })}
         </div>
 
+        {jobSecurity > 0 && jobSecurity < FINAL_WARNING_AT && (
+          <p className="font-display animate-throb rounded-xl bg-alarm px-2 py-1 text-center text-[11px] font-black uppercase tracking-wider text-alarm-foreground">
+            ⚠️ Final warning · job security {jobSecurity}%
+          </p>
+        )}
+
       </div>
 
 
