@@ -759,6 +759,7 @@ export function WardScreen({
       if (ev.def.callBell) stats.current.callBells++;
       setStability((s) => Math.min(100, s + 3));
       say(isTop ? "GREAT CALL!" : "PATIENT STABLE", `+${gain} · ${ev.def.win}`, true);
+      if (isTop && newCombo >= 2) donSay(DON_LINES.good);
       streak.current++;
       const gap = streak.current <= 8 ? 4 : 5;
       if (streak.current % gap === 0) {
@@ -812,6 +813,8 @@ export function WardScreen({
 
   function miniDone(score: number, perfect: boolean) {
     const bonus = Math.round(score * 0.4 * payMult(upgrades, staffBonus));
+    /** a low score means the bonus round ran out before it was finished */
+    const flunked = !perfect && score < 60;
     stats.current.points += bonus;
     stats.current.xp += 12;
     say(perfect ? "FLAWLESS!" : "BONUS BANKED", `+${bonus} points`, true);
@@ -822,6 +825,12 @@ export function WardScreen({
     if (kind) {
       counters.current.miniByKey[kind] = (counters.current.miniByKey[kind] ?? 0) + 1;
     }
+    if (flunked) {
+      stats.current.miniFailed++;
+      donSay(DON_LINES.miniFail, true);
+    } else {
+      donSay(DON_LINES.good);
+    }
     setMini(null);
     window.setTimeout(checkObjectives, 1600);
   }
@@ -829,6 +838,8 @@ export function WardScreen({
 
   function abandonMini() {
     setMini(null);
+    stats.current.miniAbandoned++;
+    donSay(DON_LINES.struggling, true);
     say("ABANDONED", "No bonus, no harm. Back to the ward.", false);
   }
 
