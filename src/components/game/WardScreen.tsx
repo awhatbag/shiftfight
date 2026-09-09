@@ -123,6 +123,8 @@ export function WardScreen({
   onToggleSound,
   onToggleHaptics,
   onEnd,
+  onSave,
+  onQuit,
   jobSecurity = 100,
   tutorial = false,
   onTutorialDone,
@@ -137,6 +139,10 @@ export function WardScreen({
   onToggleSound: () => void;
   onToggleHaptics: () => void;
   onEnd: (s: ShiftStats) => void;
+  /** save progress locally from the in-shift menu */
+  onSave?: () => void;
+  /** leave the shift and go back to the title screen */
+  onQuit?: () => void;
   /** persistent job security — drives DON visit odds and the final warning */
   jobSecurity?: number;
   /** show the first-shift walkthrough */
@@ -1335,6 +1341,20 @@ export function WardScreen({
                 on={hapticsOn}
                 onToggle={onToggleHaptics}
               />
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => onSave?.()}
+                  className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-lg font-black uppercase text-secondary-foreground"
+                >
+                  💾 Save
+                </button>
+                <button
+                  onClick={() => onQuit?.()}
+                  className="chunky chunky-press rounded-2xl bg-alarm py-3 font-display text-lg font-black uppercase text-alarm-foreground"
+                >
+                  🚪 Quit
+                </button>
+              </div>
               <button
                 onClick={() => setSettingsOpen(false)}
                 className="chunky chunky-press w-full rounded-2xl bg-primary py-3 font-display text-lg font-black uppercase text-primary-foreground"
