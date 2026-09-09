@@ -733,6 +733,7 @@ export function WardScreen({
         say("WRONG PRIORITY", `${raw} points · ${ev.def.correct} was the move`, false);
       }
     }
+    checkObjectives();
     window.setTimeout(() => {
       if (journey.current.length) return; // player already sent her elsewhere
       walkTo(STATION, null, true);
@@ -753,8 +754,16 @@ export function WardScreen({
     stats.current.xp += 12;
     say(perfect ? "FLAWLESS!" : "BONUS BANKED", `+${bonus} points`, true);
     setStability((s) => Math.min(100, s + (perfect ? 15 : 6)));
+    const kind = mini?.kind;
+    counters.current.miniDone++;
+    if (perfect) counters.current.miniPerfect++;
+    if (kind) {
+      counters.current.miniByKey[kind] = (counters.current.miniByKey[kind] ?? 0) + 1;
+    }
     setMini(null);
+    window.setTimeout(checkObjectives, 1600);
   }
+
 
   function abandonMini() {
     setMini(null);
