@@ -329,6 +329,7 @@ function IntroScreen({
   xp,
   points,
   level,
+  jobSecurity,
   soundOn,
   hapticsOn,
   onToggleSound,
@@ -343,6 +344,7 @@ function IntroScreen({
   xp: number;
   points: number;
   level: number;
+  jobSecurity: number;
   soundOn: boolean;
   hapticsOn: boolean;
   onToggleSound: () => void;
