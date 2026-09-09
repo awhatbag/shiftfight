@@ -38,6 +38,7 @@ import {
 import {
   emptyCounters,
   evaluateObjectives,
+  objectiveProgress,
   pickObjectives,
   type ShiftCounters,
   type ShiftObjective,
