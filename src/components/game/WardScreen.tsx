@@ -1095,6 +1095,28 @@ export function WardScreen({
           </div>
         )}
 
+        {/* the DON, standing in the corridor, judging quietly */}
+        {don && (
+          <div
+            className="pointer-events-none absolute left-1/2 top-[2%] z-[45] flex -translate-x-1/2 flex-col items-center"
+            aria-label="The DON is on the ward"
+          >
+            <div className="animate-pop max-w-[220px] rounded-2xl border-2 border-border bg-card px-2.5 py-1 text-center shadow-lg">
+              <p className="font-display text-[11px] font-black uppercase leading-tight">
+                {don.line}
+              </p>
+            </div>
+            <span className="animate-bob mt-0.5 grid h-11 w-11 place-items-center rounded-full border-2 border-alarm bg-card text-2xl shadow-lg ring-4 ring-alarm/30">
+              🧑‍💼
+            </span>
+            <span className="font-display rounded-full bg-alarm px-1.5 text-[8px] font-black uppercase text-alarm-foreground">
+              DON
+            </span>
+          </div>
+        )}
+
+
+
         {/* shift objectives briefing */}
         {briefing && (
           <div className="absolute inset-0 z-[70] grid place-items-center bg-background/85 p-4 backdrop-blur-sm">
