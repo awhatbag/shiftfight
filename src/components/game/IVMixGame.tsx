@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { playBad, playGood, playPop } from "@/lib/sfx";
+import { FICTIONAL_MEDS } from "@/game/config";
 
 type Props = {
   level: number;
@@ -25,6 +26,9 @@ export function IVMixGame({ level, paused, onDone }: Props) {
   const [misses, setMisses] = useState(0);
   const [nudge, setNudge] = useState(false);
   const [mix, setMix] = useState(0);
+  const [drugName] = useState(() =>
+    FICTIONAL_MEDS[Math.floor(Math.random() * FICTIONAL_MEDS.length)],
+  );
 
   const areaRef = useRef<HTMLDivElement | null>(null);
   const mixRef = useRef(0);
@@ -239,9 +243,11 @@ export function IVMixGame({ level, paused, onDone }: Props) {
               }}
             />
             {/* label */}
-            <div className="absolute left-1/2 top-[16%] w-24 -translate-x-1/2 rounded border border-foreground/20 bg-card/95 px-1 py-1 text-center shadow-sm">
-              <p className="font-display text-[9px] font-black uppercase tracking-wide">IV Meds</p>
-              <p className="text-[7px] text-muted-foreground">Shake well · Fictional 500mg</p>
+            <div className="absolute left-1/2 top-[12%] w-28 -translate-x-1/2 rounded border border-foreground/20 bg-card/95 px-2 py-1.5 text-center shadow-sm">
+              <p className="font-display text-sm font-black uppercase leading-tight tracking-wide">
+                {drugName}
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground">500mg · Shake well</p>
             </div>
           </div>
         </div>
@@ -331,6 +337,17 @@ export function IVMixGame({ level, paused, onDone }: Props) {
               <div className="h-3 w-3.5 border-x-2 border-b-2 border-foreground/40 bg-muted" />
               {/* needle */}
               <div className="h-14 w-[3px] rounded-b-full bg-gradient-to-b from-foreground/60 to-foreground/30" />
+            </div>
+          </div>
+        )}
+
+        {(stage === "insert" || stage === "shake") && (
+          <div className="pointer-events-none absolute inset-0 grid place-items-center">
+            <div className="font-display animate-pop rounded-2xl border-4 border-calm bg-background/95 px-6 py-4 text-center shadow-2xl">
+              <p className="text-3xl font-black uppercase text-calm">NOW SHAKE!</p>
+              <p className="mt-1 text-sm font-bold uppercase text-foreground">
+                Shake phone or swipe fast
+              </p>
             </div>
           </div>
         )}
