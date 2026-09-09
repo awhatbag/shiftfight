@@ -341,6 +341,17 @@ export function IVMixGame({ level, paused, onDone }: Props) {
           </div>
         )}
 
+        {(stage === "insert" || stage === "shake") && (
+          <div className="pointer-events-none absolute inset-0 grid place-items-center">
+            <div className="font-display animate-pop rounded-2xl border-4 border-calm bg-background/95 px-6 py-4 text-center shadow-2xl">
+              <p className="text-3xl font-black uppercase text-calm">NOW SHAKE!</p>
+              <p className="mt-1 text-sm font-bold uppercase text-foreground">
+                Shake phone or swipe fast
+              </p>
+            </div>
+          </div>
+        )}
+
         {stage === "done" && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
             <p className="font-display animate-pop rounded-2xl bg-calm px-5 py-3 text-2xl font-black uppercase text-calm-foreground">
