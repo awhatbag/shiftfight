@@ -71,3 +71,13 @@ export function miniGameByKey(key: string): MiniGameDef {
 export function miniGameKeyForIndex(n: number): string {
   return MINI_GAMES[n % MINI_GAMES.length]!.key;
 }
+
+/**
+ * Pick a random mini-game key from the whole registry, never the same one
+ * twice in a row. New entries in MINI_GAMES are eligible automatically.
+ */
+export function randomMiniGameKey(previous?: string | null): string {
+  const pool = MINI_GAMES.filter((g) => g.key !== previous);
+  const list = pool.length ? pool : MINI_GAMES;
+  return list[Math.floor(Math.random() * list.length)]!.key;
+}

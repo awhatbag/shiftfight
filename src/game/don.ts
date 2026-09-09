@@ -234,3 +234,61 @@ export const DON_LINES = {
   leaveOk: "Carry on.",
   leaveBad: "We'll talk after your shift.",
 } as const;
+
+/* ---------------- DON one-liner catalogue ---------------- */
+
+/** short, snappy quips grouped by the moment that triggers them */
+export const DON_QUIPS: Record<
+  "good" | "struggling" | "miniFail" | "overdue" | "idle",
+  string[]
+> = {
+  good: [
+    "Impressive.",
+    "Hm. Adequate.",
+    "Don't let it go to your head.",
+    "I saw that. Barely.",
+    "Look at you, employed.",
+    "Keep doing that exact thing.",
+    "Noted. In pencil.",
+    "That was almost professional.",
+  ],
+  struggling: [
+    "I'll come back later.",
+    "Take your time. Everyone else is.",
+    "Shall I hold the ward for you?",
+    "This is a lot of standing.",
+    "I've seen quicker queues.",
+    "Blink twice if you need help.",
+  ],
+  miniFail: [
+    "Really?",
+    "That was a choice.",
+    "Was that the plan?",
+    "I'll pretend I didn't see it.",
+    "Interesting technique.",
+    "Bold. Wrong, but bold.",
+  ],
+  overdue: [
+    "Would you like me to come back tomorrow?",
+    "Bed's been buzzing a while.",
+    "Someone is still waiting, you know.",
+    "The call bell isn't decorative.",
+    "I can hear that from my office.",
+  ],
+  idle: [
+    "…",
+    "Carry on. I'm just watching.",
+    "Don't mind me.",
+    "I have all day.",
+    "Pretend I'm not here.",
+  ],
+};
+
+/** pick a quip that hasn't been used yet this shift; falls back once exhausted */
+export function pickDonQuip(kind: keyof typeof DON_QUIPS, used: Set<string>): string {
+  const pool = DON_QUIPS[kind];
+  const fresh = pool.filter((q) => !used.has(q));
+  const line = pick(fresh.length ? fresh : pool);
+  used.add(line);
+  return line;
+}
