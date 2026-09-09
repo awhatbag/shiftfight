@@ -195,6 +195,8 @@ function Game() {
     setUpgrades,
     setStaff,
     setBedOverride,
+    jobSecurity,
+    setJobSecurity: (n) => setJobSecurity(Math.max(0, Math.min(100, n))),
     resetSave: () => {
       try {
         window.localStorage.removeItem(SAVE_KEY);

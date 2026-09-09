@@ -19,6 +19,8 @@ export type DevApi = {
   setUpgrades: (u: Upgrades) => void;
   setStaff: (s: string[]) => void;
   setBedOverride: (n: number | null) => void;
+  jobSecurity: number;
+  setJobSecurity: (n: number) => void;
   resetSave: () => void;
   debugOverlay: boolean;
   setDebugOverlay: (v: boolean) => void;
