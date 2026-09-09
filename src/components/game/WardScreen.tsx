@@ -858,7 +858,25 @@ export function WardScreen({
             🔥x{combo}
           </span>
         </div>
+
+        {/* this shift's challenges — compact tracker */}
+        <div className="flex items-center gap-1.5 overflow-hidden">
+          {objectives.map((o) => (
+            <span
+              key={o.key}
+              title={o.label}
+              className={cn(
+                "flex min-w-0 flex-1 items-center gap-1 rounded-xl border-2 border-border px-1.5 py-0.5 text-[10px] font-bold leading-tight",
+                o.done ? "bg-calm text-calm-foreground line-through" : "bg-card",
+              )}
+            >
+              <span className="text-sm leading-none">{o.done ? "✅" : o.icon}</span>
+              <span className="truncate">{o.label}</span>
+            </span>
+          ))}
+        </div>
       </div>
+
 
       {/* WARD */}
       <div ref={wardRef} className="relative flex-1 select-none overflow-hidden px-1 py-2">
