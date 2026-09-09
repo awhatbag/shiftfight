@@ -129,6 +129,7 @@ function Game() {
     setLevel(d.level ?? 1);
     setUpgrades(d.upgrades ?? { speed: 0, response: 0, equipment: 0 });
     setStaff(d.staff ?? []);
+    setJobSecurity(d.jobSecurity ?? JOB_SECURITY_START);
     setSaveNote("Saved progress loaded ✓");
     window.setTimeout(() => setSaveNote(""), 2500);
   }
@@ -144,6 +145,25 @@ function Game() {
     setPoints((p) => p + s.points);
     setXp((x) => x + s.xp);
     if (!s.collapsed) setLevel((l) => Math.min(MAX_LEVEL, l + 1));
+    /** the DON reviews the shift using the stats the game already tracks */
+    const r = reviewShift(
+      {
+        helped: s.helped,
+        handled: s.handled,
+        mistakes: s.mistakes,
+        miniGames: s.miniGames,
+        miniFailed: s.miniFailed,
+        miniAbandoned: s.miniAbandoned,
+        overdue: s.overdue,
+        collapsed: s.collapsed,
+        objectivesDone: s.objectives.filter((o) => o.done).length,
+        donVisited: s.donVisited,
+        donAnnoyed: s.donAnnoyed,
+      },
+      jobSecurity,
+    );
+    setReview(r);
+    setJobSecurity(r.after);
     setPhase("summary");
   }
 
