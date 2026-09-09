@@ -210,6 +210,7 @@ function Game() {
       setStaff([]);
       setBedOverride(null);
       setTutorialDone(false);
+      setJobSecurity(JOB_SECURITY_START);
     },
     debugOverlay,
     setDebugOverlay,
@@ -228,6 +229,7 @@ function Game() {
             xp={xp}
             points={points}
             level={level}
+            jobSecurity={jobSecurity}
             soundOn={soundOn}
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
