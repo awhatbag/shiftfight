@@ -2,6 +2,9 @@ import type { ComponentType } from "react";
 import { MedMatchGame } from "@/components/game/MedMatchGame";
 import { CannulaGame } from "@/components/game/CannulaGame";
 import { VomitGame } from "@/components/game/VomitGame";
+import { WeeGame } from "@/components/game/WeeGame";
+import { IVMixGame } from "@/components/game/IVMixGame";
+import { SutureGame } from "@/components/game/SutureGame";
 
 /** Shared contract every mini-game must satisfy. */
 export type MiniGameProps = {
@@ -40,6 +43,24 @@ export const MINI_GAMES: MiniGameDef[] = [
     name: "Sick Bowl Sprint",
     blurb: "Wipe the mess off the screen before time runs out.",
     component: VomitGame,
+  },
+  {
+    key: "wee",
+    name: "Catch The Wee!",
+    blurb: "Slide the bottle under the stream and fill it up.",
+    component: WeeGame,
+  },
+  {
+    key: "ivmix",
+    name: "Mix The IV Meds",
+    blurb: "Line up the syringe, then shake to mix.",
+    component: IVMixGame,
+  },
+  {
+    key: "suture",
+    name: "Wound Suturing",
+    blurb: "Drag the needle across the wound to close it.",
+    component: SutureGame,
   },
 ];
 
