@@ -243,9 +243,11 @@ export function IVMixGame({ level, paused, onDone }: Props) {
               }}
             />
             {/* label */}
-            <div className="absolute left-1/2 top-[16%] w-24 -translate-x-1/2 rounded border border-foreground/20 bg-card/95 px-1 py-1 text-center shadow-sm">
-              <p className="font-display text-[9px] font-black uppercase tracking-wide">IV Meds</p>
-              <p className="text-[7px] text-muted-foreground">Shake well · Fictional 500mg</p>
+            <div className="absolute left-1/2 top-[12%] w-28 -translate-x-1/2 rounded border border-foreground/20 bg-card/95 px-2 py-1.5 text-center shadow-sm">
+              <p className="font-display text-sm font-black uppercase leading-tight tracking-wide">
+                {drugName}
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground">500mg · Shake well</p>
             </div>
           </div>
         </div>
