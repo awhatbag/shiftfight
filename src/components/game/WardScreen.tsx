@@ -47,7 +47,7 @@ import {
   DON_LINES,
   DON_VISIT_MS,
   pickDonQuip,
-  type DON_QUIPS,
+  DON_QUIPS,
   FINAL_WARNING_AT,
   donVisitChance,
 } from "@/game/don";
