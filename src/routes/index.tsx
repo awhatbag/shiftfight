@@ -275,6 +275,7 @@ function Game() {
             onToggleSound={toggleSound}
             onToggleHaptics={toggleHaptics}
             onEnd={endShift}
+            jobSecurity={jobSecurity}
             tutorial={!tutorialDone}
             onTutorialDone={completeTutorial}
           />
