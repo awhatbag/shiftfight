@@ -8,7 +8,16 @@ type Props = {
   onDone: (score: number, perfect: boolean) => void;
 };
 
-type Stitch = { y: number; done: boolean; good: boolean };
+type Stitch = { y: number; done: boolean; good: boolean; fromLeft: boolean };
+
+const SKIN_TONES = ["suture-skin-light", "suture-skin-tan", "suture-skin-brown", "suture-skin-dark"] as const;
+const SKIN_TONE_KEY = "shift-fight-suture-skin-tone";
+
+function stitchPoints(stitch: Stitch) {
+  return stitch.fromLeft
+    ? { startX: 0.27, startY: stitch.y - 0.038, endX: 0.73, endY: stitch.y + 0.038 }
+    : { startX: 0.73, startY: stitch.y - 0.038, endX: 0.27, endY: stitch.y + 0.038 };
+}
 
 /**
  * WOUND SUTURING — drag the needle across the wound at each marked stitch
@@ -25,8 +34,10 @@ export function SutureGame({ level, paused, onDone }: Props) {
       y: 0.18 + (i * 0.64) / Math.max(1, count - 1),
       done: false,
       good: false,
+      fromLeft: i % 2 === 0,
     })),
   );
+  const [skinTone, setSkinTone] = useState<(typeof SKIN_TONES)[number]>(SKIN_TONES[0]);
   const [idx, setIdx] = useState(0);
   const [trail, setTrail] = useState<{ x: number; y: number } | null>(null);
   const [warn, setWarn] = useState(false);
@@ -42,6 +53,17 @@ export function SutureGame({ level, paused, onDone }: Props) {
   const done = useRef(false);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+
+  useEffect(() => {
+    try {
+      const previous = Number(window.localStorage.getItem(SKIN_TONE_KEY) ?? "-1");
+      const next = (previous + 1) % SKIN_TONES.length;
+      setSkinTone(SKIN_TONES[next]);
+      window.localStorage.setItem(SKIN_TONE_KEY, String(next));
+    } catch {
+      setSkinTone(SKIN_TONES[0]);
+    }
+  }, []);
 
   useEffect(() => {
     let last = performance.now();
@@ -95,9 +117,12 @@ export function SutureGame({ level, paused, onDone }: Props) {
     const p = rel(e.clientX, e.clientY);
     const target = stitches[idxRef.current];
     if (!p || !target) return;
+    const path = stitchPoints(target);
     setTrail(p);
-    // must start on the left entry point
-    if (p.x < 0.42 && Math.abs(p.y - target.y) < bandTol * 1.6) {
+    if (
+      Math.abs(p.x - path.startX) < 0.13 &&
+      Math.abs(p.y - path.startY) < bandTol * 1.7
+    ) {
       startedRef.current = true;
       cleanRef.current = true;
       playPop();
@@ -111,8 +136,14 @@ export function SutureGame({ level, paused, onDone }: Props) {
     const p = rel(e.clientX, e.clientY);
     const target = stitches[idxRef.current];
     if (!p || !target) return;
+    const path = stitchPoints(target);
     setTrail(p);
-    if (Math.abs(p.y - target.y) > bandTol) {
+    const progress = Math.max(
+      0,
+      Math.min(1, (p.x - path.startX) / (path.endX - path.startX)),
+    );
+    const expectedY = path.startY + (path.endY - path.startY) * progress;
+    if (Math.abs(p.y - expectedY) > bandTol) {
       if (cleanRef.current) {
         cleanRef.current = false;
         strayRef.current++;
@@ -120,7 +151,10 @@ export function SutureGame({ level, paused, onDone }: Props) {
         setTimeout(() => setWarn(false), 300);
       }
     }
-    if (p.x > 0.62) completeStitch(cleanRef.current);
+    const reachedEnd = target.fromLeft ? p.x >= path.endX : p.x <= path.endX;
+    if (reachedEnd && Math.abs(p.y - path.endY) < bandTol * 2) {
+      completeStitch(cleanRef.current);
+    }
   }
 
   function completeStitch(good: boolean) {
@@ -148,7 +182,7 @@ export function SutureGame({ level, paused, onDone }: Props) {
         </p>
         <h2 className="font-display text-2xl font-black leading-none">WOUND SUTURING</h2>
         <p className="text-[11px] text-muted-foreground">
-          Drag the needle across the wound at each gold marker.
+          Follow the gold zigzag, starting at the needle.
         </p>
       </div>
 
@@ -180,41 +214,89 @@ export function SutureGame({ level, paused, onDone }: Props) {
         onPointerCancel={onUp}
         className={cn(
           "relative flex-1 touch-none overflow-hidden rounded-3xl border-4 border-border",
+          skinTone,
           warn && "animate-shake border-alarm",
         )}
-        style={{ background: "oklch(0.86 0.07 58)" }}
       >
-        {/* wound */}
-        <div
-          className="absolute left-1/2 top-[10%] h-[80%] w-6 -translate-x-1/2 rounded-full"
-          style={{
-            background: "oklch(0.5 0.19 22)",
-            opacity: Math.max(0.25, 1 - idx / count),
-          }}
-        />
+        <div className="suture-skin-texture absolute inset-0" />
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M50 10 C48 18 52 25 49 34 C47 44 53 53 50 63 C47 72 52 82 50 90"
+            fill="none"
+            stroke="var(--suture-wound-shadow)"
+            strokeLinecap="round"
+            strokeWidth="8"
+            opacity="0.28"
+          />
+          <path
+            d="M50 10 C48 18 52 25 49 34 C47 44 53 53 50 63 C47 72 52 82 50 90"
+            fill="none"
+            stroke="var(--suture-wound-edge)"
+            strokeLinecap="round"
+            strokeWidth="5.5"
+          />
+          <path
+            d="M50 10 C48 18 52 25 49 34 C47 44 53 53 50 63 C47 72 52 82 50 90"
+            fill="none"
+            stroke="var(--suture-wound-depth)"
+            strokeLinecap="round"
+            strokeWidth="2.4"
+            opacity={Math.max(0.32, 1 - idx / count)}
+          />
+          {stitches.map((stitch, i) => {
+            const path = stitchPoints(stitch);
+            const active = i === idx && !stitch.done;
+            return (
+              <g key={i} opacity={!active && !stitch.done ? 0.26 : 1}>
+                <line
+                  x1={path.startX * 100}
+                  y1={path.startY * 100}
+                  x2={path.endX * 100}
+                  y2={path.endY * 100}
+                  stroke={
+                    stitch.done
+                      ? stitch.good
+                        ? "var(--suture-thread)"
+                        : "var(--suture-thread-wobbly)"
+                      : "var(--suture-guide)"
+                  }
+                  strokeDasharray={stitch.done ? undefined : "3 2"}
+                  strokeLinecap="round"
+                  strokeWidth={stitch.done ? 1.4 : active ? 1.1 : 0.8}
+                />
+                <circle
+                  cx={path.startX * 100}
+                  cy={path.startY * 100}
+                  r={active ? 2.4 : 1.5}
+                  fill={active ? "var(--suture-guide)" : "var(--suture-marker)"}
+                />
+                <circle
+                  cx={path.endX * 100}
+                  cy={path.endY * 100}
+                  r={active ? 2.4 : 1.5}
+                  fill={active ? "var(--suture-guide)" : "var(--suture-marker)"}
+                />
+              </g>
+            );
+          })}
+        </svg>
 
-        {stitches.map((s, i) => (
-          <div key={i} className="absolute inset-x-6" style={{ top: `${s.y * 100}%` }}>
-            {s.done ? (
-              <div
-                className="h-1.5 w-full rounded-full"
-                style={{
-                  background: s.good ? "oklch(0.35 0.05 250)" : "oklch(0.55 0.05 250)",
-                }}
-              />
-            ) : (
-              <div
-                className={cn(
-                  "h-1.5 w-full rounded-full border-2 border-dashed",
-                  i === idx ? "border-gold" : "border-border/50",
-                )}
-              />
-            )}
-            {i === idx && !s.done && (
-              <span className="absolute -left-4 -top-3 text-lg">🪡</span>
-            )}
-          </div>
-        ))}
+        {stitches[idx] && !stitches[idx].done && (() => {
+          const path = stitchPoints(stitches[idx]);
+          return (
+            <span
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 text-2xl drop-shadow-md"
+              style={{ left: `${path.startX * 100}%`, top: `${path.startY * 100}%` }}
+            >
+              🪡
+            </span>
+          );
+        })()}
 
         {trail && (
           <span
