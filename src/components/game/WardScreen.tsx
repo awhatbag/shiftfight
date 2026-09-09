@@ -685,6 +685,8 @@ export function WardScreen({
       const newCombo = combo + 1;
       setCombo(newCombo);
       stats.current.maxCombo = Math.max(stats.current.maxCombo, newCombo);
+      counters.current.streak = Math.max(counters.current.streak, newCombo);
+
       const base = 14 * ev.def.severity * (isTop ? 1.4 : 1);
       const gain = Math.round(
         base * (1 + newCombo * 0.1) * payMult(upgrades, staffBonus) * (1 + level * 0.05),
