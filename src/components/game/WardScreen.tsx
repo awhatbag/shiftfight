@@ -985,8 +985,44 @@ export function WardScreen({
           </div>
         )}
 
+        {/* shift objectives briefing */}
+        {briefing && (
+          <div className="absolute inset-0 z-[70] grid place-items-center bg-background/85 p-4 backdrop-blur-sm">
+            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 shadow-2xl">
+              <p className="font-display text-center text-[11px] font-black uppercase tracking-widest text-primary">
+                Shift {cfg.level} briefing
+              </p>
+              <h3 className="font-display mt-1 text-center text-2xl font-black uppercase leading-none">
+                This shift's challenges
+              </h3>
+              <div className="mt-3 space-y-2">
+                {objectives.map((o) => (
+                  <div
+                    key={o.key}
+                    className="flex items-center gap-2 rounded-2xl border-2 border-border bg-background px-2.5 py-2"
+                  >
+                    <span className="text-2xl leading-none">{o.icon}</span>
+                    <span className="min-w-0 flex-1 text-sm font-bold leading-tight">
+                      {o.label}
+                    </span>
+                    <span className="font-display shrink-0 rounded-full bg-gold px-2 py-0.5 text-xs font-black text-gold-foreground">
+                      +{o.reward.amount} {o.reward.type === "points" ? "⭐" : "✨"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setBriefing(false)}
+                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
+              >
+                Start shift ▶
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* start cue */}
-        {phase === "ready" && (
+        {phase === "ready" && !briefing && (
           <div className="absolute inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm">
             <p
               key={cue}
@@ -996,6 +1032,7 @@ export function WardScreen({
             </p>
           </div>
         )}
+
 
         {/* first-shift walkthrough */}
         {tutorial && phase === "play" && tutStep === 0 && (
