@@ -387,6 +387,11 @@ function IntroScreen({
         Shift Lv {level} · ⭐ {points} · ✨ {xp} XP · {nurseRank(xp).title}
       </p>
 
+      <div className="w-full">
+        <JobSecurityBar value={jobSecurity} />
+      </div>
+
+
       <div className="grid w-full grid-cols-2 gap-2">
         <button
           onClick={onToggleSound}
