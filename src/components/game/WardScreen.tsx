@@ -500,6 +500,35 @@ export function WardScreen({
     };
   }, [phase, jobSecurity, say]);
 
+  /* dev tools: summon the DON on demand */
+  useEffect(() => {
+    let leave = 0;
+    let settle = 0;
+    const off = onDevCommand("donVisit", () => {
+      stats.current.donVisited = true;
+      setDon({ line: DON_LINES.arrive });
+      playCallBell();
+      buzz(30);
+      say(DON_LINES.arrive, DON_LINES.arriveSub, false);
+      window.clearTimeout(settle);
+      window.clearTimeout(leave);
+      settle = window.setTimeout(() => setDon((d) => (d ? { line: "…" } : d)), 2600);
+      leave = window.setTimeout(() => {
+        setDon(null);
+        say(
+          "THE DON LEAVES",
+          stats.current.donAnnoyed ? DON_LINES.leaveBad : DON_LINES.leaveOk,
+          !stats.current.donAnnoyed,
+        );
+      }, DON_VISIT_MS);
+    });
+    return () => {
+      off();
+      window.clearTimeout(settle);
+      window.clearTimeout(leave);
+    };
+  }, [say]);
+
   const selectedEvent = events.find((e) => e.bed === selected);
   const nurseHereBed = atBed;
 

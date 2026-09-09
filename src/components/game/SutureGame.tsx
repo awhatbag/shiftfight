@@ -175,7 +175,7 @@ export function SutureGame({ level, paused, onDone }: Props) {
   }
 
   return (
-    <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-2 bg-background/98 p-3">
+    <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-2 bg-background/98 p-3 pb-[104px]">
       <div className="text-center">
         <p className="font-display text-[11px] font-bold uppercase tracking-widest text-primary">
           Mini-game · Level {level + 1}
