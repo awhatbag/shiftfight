@@ -3,7 +3,15 @@ import { useEffect, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
+import { FiredScreen } from "@/components/game/FiredScreen";
+import { JobSecurityBar } from "@/components/game/JobSecurityBar";
 import { bedsForLevel, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
+import {
+  JOB_SECURITY_REHIRE,
+  JOB_SECURITY_START,
+  reviewShift,
+  type ShiftReview,
+} from "@/game/don";
 import { DevMode, DevPinPrompt, type DevApi } from "@/components/dev/DevMode";
 import { DEV_PIN, subscribeDevInfo } from "@/game/dev";
 import {
