@@ -26,6 +26,9 @@ export function IVMixGame({ level, paused, onDone }: Props) {
   const [misses, setMisses] = useState(0);
   const [nudge, setNudge] = useState(false);
   const [mix, setMix] = useState(0);
+  const [drugName] = useState(() =>
+    FICTIONAL_MEDS[Math.floor(Math.random() * FICTIONAL_MEDS.length)],
+  );
 
   const areaRef = useRef<HTMLDivElement | null>(null);
   const mixRef = useRef(0);
