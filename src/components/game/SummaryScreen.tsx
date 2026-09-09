@@ -1,15 +1,19 @@
 import { RATINGS } from "@/game/config";
+import { DON_MOOD_META, type ShiftReview } from "@/game/don";
+import { JobSecurityBar } from "./JobSecurityBar";
 import type { ShiftStats } from "./WardScreen";
 
 export function SummaryScreen({
   stats,
   totalPoints,
   totalXp,
+  review,
   onNext,
 }: {
   stats: ShiftStats;
   totalPoints: number;
   totalXp: number;
+  review?: ShiftReview | null;
   onNext: () => void;
 }) {
   const rating = RATINGS.find((r) => stats.points >= r.min) ?? RATINGS[RATINGS.length - 1];
@@ -17,10 +21,12 @@ export function SummaryScreen({
   const rows = [
     { label: "Patients helped", value: stats.helped, icon: "🧑‍🦽" },
     { label: "Events handled", value: stats.handled, icon: "⚡" },
+    { label: "Patients left waiting", value: stats.overdue, icon: "⌛" },
     { label: "Mistakes", value: stats.mistakes, icon: "🙈" },
     { label: "Call bells answered", value: stats.callBells, icon: "🛎️" },
     { label: "Best combo", value: `x${stats.maxCombo}`, icon: "🔥" },
-    { label: "Mini-games", value: stats.miniGames, icon: "🎯" },
+    { label: "Mini-games done", value: stats.miniGames - stats.miniFailed, icon: "🎯" },
+    { label: "Mini-games failed", value: stats.miniFailed, icon: "💥" },
   ];
 
   return (
