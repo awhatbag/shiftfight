@@ -47,6 +47,8 @@ type SaveData = {
   upgrades: Upgrades;
   bedCount: number;
   staff: string[];
+  /** added with the DON system — older saves simply start at 100% */
+  jobSecurity?: number;
 };
 
 function readSave(): SaveData | null {
@@ -59,7 +61,7 @@ function readSave(): SaveData | null {
   }
 }
 
-type Phase = "intro" | "shift" | "summary" | "shop" | "dev";
+type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired";
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
@@ -72,6 +74,8 @@ function Game() {
   });
   const [staff, setStaff] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
+  const [review, setReview] = useState<ShiftReview | null>(null);
+  const [jobSecurity, setJobSecurity] = useState(JOB_SECURITY_START);
   const [runKey, setRunKey] = useState(0);
   const [level, setLevel] = useState(1);
   const [soundOn, setSoundOn] = useState(true);
