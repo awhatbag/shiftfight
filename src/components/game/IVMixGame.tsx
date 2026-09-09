@@ -117,7 +117,7 @@ export function IVMixGame({ level, paused, onDone }: Props) {
   function release() {
     dragging.current = false;
     if (stageRef.current !== "line") return;
-    const d = Math.hypot(pos.x - port.x, (pos.y - port.y) * 0.8);
+    const d = Math.hypot(pos.x - port.x, (pos.y + NEEDLE_TIP_OFFSET - port.y) * 0.8);
     if (d <= tolerance) {
       playPop();
       setStage("insert");
@@ -144,7 +144,8 @@ export function IVMixGame({ level, paused, onDone }: Props) {
   const mixPct = Math.round((mix / shakeNeeded) * 100);
   const lining = stage === "line";
   const near =
-    lining && Math.hypot(pos.x - port.x, (pos.y - port.y) * 0.8) <= tolerance * 1.6;
+    lining &&
+    Math.hypot(pos.x - port.x, (pos.y + NEEDLE_TIP_OFFSET - port.y) * 0.8) <= tolerance * 1.6;
 
   return (
     <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-2 bg-background/98 p-3">
