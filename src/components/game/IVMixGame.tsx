@@ -21,7 +21,7 @@ export function IVMixGame({ level, paused, onDone }: Props) {
 
   const [time, setTime] = useState(1);
   const [stage, setStage] = useState<"line" | "insert" | "shake" | "done">("line");
-  const [pos, setPos] = useState({ x: 0.2, y: 0.2 });
+  const [pos, setPos] = useState({ x: 0.2, y: 0.16 });
   const [misses, setMisses] = useState(0);
   const [nudge, setNudge] = useState(false);
   const [mix, setMix] = useState(0);
@@ -37,8 +37,8 @@ export function IVMixGame({ level, paused, onDone }: Props) {
   pausedRef.current = paused;
   const missRef = useRef(0);
 
-  /* target port sits at the top of the vial */
-  const port = { x: 0.5, y: 0.42 };
+  /* needle tip target = centre of the vial's rubber stopper */
+  const port = { x: 0.5, y: 0.38 };
 
   useEffect(() => {
     let last = performance.now();
@@ -100,20 +100,24 @@ export function IVMixGame({ level, paused, onDone }: Props) {
   }
 
   /* ---------- stage 1 dragging ---------- */
+  /* The syringe graphic hangs below the drag point, so the drag point IS the
+     needle tip — the player moves the needle tip onto the port. */
+  const NEEDLE_TIP_OFFSET = 0.34; // fraction of arena height below anchor
+
   function moveTo(clientX: number, clientY: number) {
     const el = areaRef.current;
     if (!el || done.current || stageRef.current !== "line") return;
     const box = el.getBoundingClientRect();
     setPos({
       x: Math.min(0.95, Math.max(0.05, (clientX - box.left) / box.width)),
-      y: Math.min(0.9, Math.max(0.05, (clientY - box.top) / box.height)),
+      y: Math.min(0.9, Math.max(0.05, (clientY - box.top) / box.height - NEEDLE_TIP_OFFSET)),
     });
   }
 
   function release() {
     dragging.current = false;
     if (stageRef.current !== "line") return;
-    const d = Math.hypot(pos.x - port.x, (pos.y - port.y) * 0.8);
+    const d = Math.hypot(pos.x - port.x, (pos.y + NEEDLE_TIP_OFFSET - port.y) * 0.8);
     if (d <= tolerance) {
       playPop();
       setStage("insert");
@@ -138,6 +142,10 @@ export function IVMixGame({ level, paused, onDone }: Props) {
   }
 
   const mixPct = Math.round((mix / shakeNeeded) * 100);
+  const lining = stage === "line";
+  const near =
+    lining &&
+    Math.hypot(pos.x - port.x, (pos.y + NEEDLE_TIP_OFFSET - port.y) * 0.8) <= tolerance * 1.6;
 
   return (
     <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-2 bg-background/98 p-3">
@@ -148,7 +156,7 @@ export function IVMixGame({ level, paused, onDone }: Props) {
         <h2 className="font-display text-2xl font-black leading-none">MIX THE IV MEDS</h2>
         <p className="text-[11px] text-muted-foreground">
           {stage === "line"
-            ? "Drag the syringe onto the vial port."
+            ? "Drag the syringe — drop the NEEDLE TIP on the vial port."
             : stage === "insert"
               ? "In it goes…"
               : "SHAKE TO MIX! (or swipe fast)"}
@@ -195,56 +203,134 @@ export function IVMixGame({ level, paused, onDone }: Props) {
         onPointerCancel={release}
         className="relative flex-1 touch-none overflow-hidden rounded-3xl border-4 border-border bg-floor"
       >
-        {/* vial */}
+        {/* ---- big glass vial ---- */}
         <div
-          className={cn(
-            "absolute left-1/2 -translate-x-1/2",
-            stage === "shake" && "animate-throb",
-          )}
-          style={{ top: "42%" }}
+          className={cn("absolute left-1/2 -translate-x-1/2", stage === "shake" && "animate-throb")}
+          style={{ top: "38%" }}
         >
-          <div className="relative h-32 w-20 rounded-b-2xl rounded-t-md border-4 border-border bg-card">
+          {/* crimp cap + rubber stopper (the port) */}
+          <div className="relative z-10 mx-auto h-6 w-20 rounded-t-md border border-foreground/30 bg-gradient-to-b from-muted to-foreground/20 shadow-sm">
+            {/* rubber stopper visible through the cap opening */}
             <div
-              className="absolute inset-x-1 bottom-1 rounded-b-xl transition-all duration-150"
+              className={cn(
+                "absolute left-1/2 top-1 h-3 w-10 -translate-x-1/2 rounded-sm border transition-colors",
+                near ? "border-calm bg-calm/60" : "border-foreground/30 bg-foreground/20",
+              )}
+            />
+          </div>
+          {/* neck */}
+          <div className="mx-auto h-3 w-16 border-x border-foreground/25 bg-gradient-to-b from-card to-muted" />
+          {/* body */}
+          <div className="relative mx-auto h-44 w-32 overflow-hidden rounded-b-3xl rounded-t-sm border border-foreground/25 bg-gradient-to-br from-card via-muted/40 to-muted shadow-lg">
+            {/* glass highlight */}
+            <div className="absolute left-2 top-2 h-[85%] w-4 rounded-full bg-white/40" />
+            {/* liquid */}
+            <div
+              className="absolute inset-x-1.5 bottom-1.5 rounded-b-2xl transition-all duration-150"
               style={{
-                height: "60%",
+                height: "62%",
                 background:
                   stage === "shake" || stage === "done"
-                    ? `oklch(${0.8 - mix / shakeNeeded * 0.1} ${0.06 + (mix / shakeNeeded) * 0.14} ${
+                    ? `oklch(${0.8 - (mix / shakeNeeded) * 0.1} ${0.06 + (mix / shakeNeeded) * 0.14} ${
                         200 + (mix / shakeNeeded) * 120
                       })`
                     : "oklch(0.9 0.03 210)",
-                opacity: 0.9,
+                opacity: 0.85,
               }}
             />
-            <div className="absolute -top-4 left-1/2 h-4 w-10 -translate-x-1/2 rounded-t-md border-4 border-b-0 border-border bg-secondary" />
+            {/* label */}
+            <div className="absolute left-1/2 top-[16%] w-24 -translate-x-1/2 rounded border border-foreground/20 bg-card/95 px-1 py-1 text-center shadow-sm">
+              <p className="font-display text-[9px] font-black uppercase tracking-wide">IV Meds</p>
+              <p className="text-[7px] text-muted-foreground">Shake well · Fictional 500mg</p>
+            </div>
           </div>
-          {/* port target */}
-          {stage === "line" && (
-            <span className="font-display absolute -top-11 left-1/2 -translate-x-1/2 rounded-full border-2 border-dashed border-primary px-2 py-0.5 text-[10px] font-black uppercase text-primary">
-              port
-            </span>
-          )}
         </div>
 
-        {/* syringe */}
+        {/* ---- target ring on the port ---- */}
+        {lining && (
+          <>
+            <span
+              className={cn(
+                "pointer-events-none absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-dashed",
+                near ? "animate-pulse border-calm" : "border-primary",
+              )}
+              style={{ left: `${port.x * 100}%`, top: `${port.y * 100}%` }}
+            />
+            <span
+              className={cn(
+                "pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full",
+                near ? "bg-calm" : "bg-primary",
+              )}
+              style={{ left: `${port.x * 100}%`, top: `${port.y * 100}%` }}
+            />
+            {/* dashed guide line from needle tip to port */}
+            <svg className="pointer-events-none absolute inset-0 h-full w-full">
+              <line
+                x1={`${pos.x * 100}%`}
+                y1={`${(pos.y + NEEDLE_TIP_OFFSET) * 100}%`}
+                x2={`${port.x * 100}%`}
+                y2={`${port.y * 100}%`}
+                stroke={near ? "oklch(var(--calm))" : "oklch(var(--primary))"}
+                strokeWidth="3"
+                strokeDasharray="10 8"
+                strokeLinecap="round"
+                opacity="0.8"
+              />
+            </svg>
+            <span
+              className={cn(
+                "font-display pointer-events-none absolute -translate-x-1/2 rounded-full border-2 px-2 py-0.5 text-[10px] font-black uppercase",
+                near
+                  ? "border-calm bg-calm/15 text-calm"
+                  : "border-primary bg-background/80 text-primary",
+              )}
+              style={{ left: `${port.x * 100}%`, top: `calc(${port.y * 100}% - 44px)` }}
+            >
+              {near ? "Release!" : "Insert needle here"}
+            </span>
+          </>
+        )}
+
+        {/* ---- realistic syringe (needle points down, tip = drag anchor) ---- */}
         {(stage === "line" || stage === "insert") && (
           <div
             className={cn(
-              "pointer-events-none absolute -translate-x-1/2 -translate-y-1/2",
+              "pointer-events-none absolute -translate-x-1/2",
               nudge && "animate-shake",
               stage === "insert" && "transition-all duration-700",
             )}
             style={
               stage === "insert"
-                ? { left: "50%", top: "38%" }
+                ? { left: "50%", top: "12%" }
                 : { left: `${pos.x * 100}%`, top: `${pos.y * 100}%` }
             }
           >
-            <div className="flex flex-col items-center">
-              <div className="h-10 w-8 rounded-t-md border-4 border-border bg-card" />
-              <div className="h-14 w-6 border-x-4 border-border bg-primary/30" />
-              <div className="h-8 w-1.5 bg-foreground/70" />
+            <div className="flex flex-col items-center drop-shadow-md">
+              {/* plunger thumb rest */}
+              <div className="h-2.5 w-12 rounded-sm border border-foreground/40 bg-gradient-to-b from-muted to-foreground/25" />
+              {/* plunger rod */}
+              <div className="h-6 w-2.5 bg-foreground/35" />
+              {/* rubber plunger head */}
+              <div className="h-2 w-8 rounded-sm bg-foreground/50" />
+              {/* barrel */}
+              <div className="relative h-20 w-9 overflow-hidden rounded-b-sm border-2 border-foreground/40 bg-white/50">
+                {/* med liquid inside */}
+                <div className="absolute inset-x-0.5 bottom-0.5 top-[30%] bg-primary/40" />
+                {/* measurement marks */}
+                {[20, 40, 60, 80].map((t) => (
+                  <span
+                    key={t}
+                    className="absolute right-0.5 h-px w-2 bg-foreground/50"
+                    style={{ top: `${t}%` }}
+                  />
+                ))}
+                {/* glass shine */}
+                <div className="absolute left-1 top-1 h-[90%] w-1.5 rounded-full bg-white/60" />
+              </div>
+              {/* hub */}
+              <div className="h-3 w-3.5 border-x-2 border-b-2 border-foreground/40 bg-muted" />
+              {/* needle */}
+              <div className="h-14 w-[3px] rounded-b-full bg-gradient-to-b from-foreground/60 to-foreground/30" />
             </div>
           </div>
         )}
