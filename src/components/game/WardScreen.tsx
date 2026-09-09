@@ -35,6 +35,13 @@ import {
   type Quirk,
   type Upgrades,
 } from "@/game/config";
+import {
+  emptyCounters,
+  evaluateObjectives,
+  pickObjectives,
+  type ShiftCounters,
+  type ShiftObjective,
+} from "@/game/objectives";
 
 export type ShiftStats = {
   level: number;
@@ -50,7 +57,9 @@ export type ShiftStats = {
   steps: number;
   quirks: Quirk[];
   collapsed: boolean;
+  objectives: ShiftObjective[];
 };
+
 
 type ActiveEvent = {
   id: number;
