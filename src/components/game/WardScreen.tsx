@@ -276,6 +276,7 @@ export function WardScreen({
 
   /* ---------------- start sequence ---------------- */
   useEffect(() => {
+    if (briefing) return;
     primeAudio();
     playRoundBells();
     const t1 = window.setTimeout(() => setCue("SET..."), 800);
@@ -285,13 +286,37 @@ export function WardScreen({
       setCue("");
     }, 2500);
     return () => [t1, t2, t3].forEach(window.clearTimeout);
-  }, []);
+  }, [briefing]);
 
   const say = useCallback((title: string, sub: string, good: boolean) => {
     const id = bannerId.current++;
     setBanner({ id, title, sub, good });
     window.setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 1500);
   }, []);
+
+  /** re-check the shift objectives and pay out any that just completed */
+  const checkObjectives = useCallback(() => {
+    counters.current.points = stats.current.points;
+    const { objectives: next, completed } = evaluateObjectives(
+      objectivesRef.current,
+      counters.current,
+    );
+    if (!completed.length) return;
+    objectivesRef.current = next;
+    setObjectives(next);
+    for (const o of completed) {
+      if (o.reward.type === "points") stats.current.points += o.reward.amount;
+      else stats.current.xp += o.reward.amount;
+    }
+    const first = completed[0]!;
+    say(
+      "CHALLENGE COMPLETE!",
+      `${first.label} · +${first.reward.amount} ${
+        first.reward.type === "points" ? "points" : "XP"
+      }`,
+      true,
+    );
+  }, [say]);
 
   const finish = useCallback(
     (collapsed: boolean) => {
@@ -304,11 +329,13 @@ export function WardScreen({
         stats.current.points +
           Math.round(stats.current.quirks.reduce((a, q) => a + q.pts, 0) * 0.3),
       );
+      stats.current.objectives = objectivesRef.current;
       playWhistle();
       onEnd({ ...stats.current });
     },
     [onEnd],
   );
+
 
   const elapsed = Math.min(SHIFT_MS, gameT.current);
   const shiftLeft = Math.max(0, 1 - elapsed / SHIFT_MS);
