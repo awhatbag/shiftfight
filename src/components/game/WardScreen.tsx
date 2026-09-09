@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
-import { miniGameByKey, miniGameKeyForIndex } from "@/game/minigames";
+import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import {
   buzz,
@@ -46,6 +46,8 @@ import {
 import {
   DON_LINES,
   DON_VISIT_MS,
+  pickDonQuip,
+  type DON_QUIPS,
   FINAL_WARNING_AT,
   donVisitChance,
 } from "@/game/don";
@@ -213,6 +215,8 @@ export function WardScreen({
     donAnnoyed: 0,
   });
   const streak = useRef(0);
+  /** last mini-game played, so the next one is always different */
+  const lastMini = useRef<string | null>(null);
   const uid = useRef(1);
   const ended = useRef(false);
   const bannerId = useRef(1);
@@ -223,10 +227,12 @@ export function WardScreen({
   const donOn = useRef(false);
   donOn.current = !!don;
   const donScheduled = useRef(false);
-  const donSay = useCallback((line: string, annoyed = false) => {
+  /** quips already used this shift, so he never repeats himself */
+  const donUsed = useRef<Set<string>>(new Set());
+  const donSay = useCallback((kind: keyof typeof DON_QUIPS, annoyed = false) => {
     if (!donOn.current) return;
     if (annoyed) stats.current.donAnnoyed++;
-    setDon({ line });
+    setDon({ line: pickDonQuip(kind, donUsed.current) });
   }, []);
 
   /* ---------------- shift objectives ---------------- */
@@ -468,7 +474,7 @@ export function WardScreen({
       streak.current = 0;
       setStability((s) => Math.max(0, s - dmg));
     }
-    donSay(DON_LINES.overdue, true);
+    donSay("overdue", true);
     if (selected !== null && expired.some((e) => e.bed === selected)) setSelected(null);
   }, [tick, rate, events, upgrades, cfg, selected, say, donSay]);
 
@@ -484,7 +490,7 @@ export function WardScreen({
       playCallBell();
       buzz(30);
       say(DON_LINES.arrive, DON_LINES.arriveSub, false);
-      window.setTimeout(() => setDon((d) => (d ? { line: "…" } : d)), 2600);
+      window.setTimeout(() => setDon((d) => (d ? { line: pickDonQuip("idle", donUsed.current) } : d)), 2600);
     }, delay);
     const t2 = window.setTimeout(() => {
       setDon(null);
@@ -512,7 +518,7 @@ export function WardScreen({
       say(DON_LINES.arrive, DON_LINES.arriveSub, false);
       window.clearTimeout(settle);
       window.clearTimeout(leave);
-      settle = window.setTimeout(() => setDon((d) => (d ? { line: "…" } : d)), 2600);
+      settle = window.setTimeout(() => setDon((d) => (d ? { line: pickDonQuip("idle", donUsed.current) } : d)), 2600);
       leave = window.setTimeout(() => {
         setDon(null);
         say(
@@ -788,14 +794,14 @@ export function WardScreen({
       if (ev.def.callBell) stats.current.callBells++;
       setStability((s) => Math.min(100, s + 3));
       say(isTop ? "GREAT CALL!" : "PATIENT STABLE", `+${gain} · ${ev.def.win}`, true);
-      if (isTop && newCombo >= 2) donSay(DON_LINES.good);
+      if (isTop && newCombo >= 2) donSay("good");
       streak.current++;
       const gap = streak.current <= 8 ? 4 : 5;
       if (streak.current % gap === 0) {
         const n = stats.current.miniGames;
         const lvl = Math.min(9, Math.floor(n / 2) + Math.floor(level / 3));
         setMiniOffer({
-          kind: miniGameKeyForIndex(n),
+          kind: randomMiniGameKey(lastMini.current),
           bonus: 120 + lvl * 40 + level * 15,
           lvl,
         });
@@ -856,9 +862,9 @@ export function WardScreen({
     }
     if (flunked) {
       stats.current.miniFailed++;
-      donSay(DON_LINES.miniFail, true);
+      donSay("miniFail", true);
     } else {
-      donSay(DON_LINES.good);
+      donSay("good");
     }
     setMini(null);
     window.setTimeout(checkObjectives, 1600);
@@ -868,7 +874,7 @@ export function WardScreen({
   function abandonMini() {
     setMini(null);
     stats.current.miniAbandoned++;
-    donSay(DON_LINES.struggling, true);
+    donSay("struggling", true);
     say("ABANDONED", "No bonus, no harm. Back to the ward.", false);
   }
 
