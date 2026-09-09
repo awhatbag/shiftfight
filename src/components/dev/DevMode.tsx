@@ -379,6 +379,7 @@ function DebugPanel({ api, ui }: { api: DevApi; ui: DevUi }) {
           <p>
             beds: {api.bedCount} {api.bedOverride !== null ? "(forced)" : "(auto)"}
           </p>
+          <p>jobSecurity: {api.jobSecurity}% ({moodFor(api.jobSecurity)})</p>
           <p>activeEvents: {ui.info.activeEvents}</p>
           <p>inShift: {String(ui.info.inShift)}</p>
           <p>staff: {api.staff.join(", ") || "none"}</p>
