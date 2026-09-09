@@ -68,6 +68,45 @@ export function SummaryScreen({
         ))}
       </div>
 
+      {review && (
+        <div className="space-y-2 rounded-2xl border-2 border-border bg-card p-3">
+          <p className="font-display text-xs font-black uppercase text-muted-foreground">
+            The DON's assessment
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{DON_MOOD_META[review.mood].face}</span>
+            <div className="min-w-0">
+              <p className="font-display text-lg font-black leading-none">
+                {"⭐".repeat(review.stars)}
+                {"☆".repeat(5 - review.stars)}
+              </p>
+              <p className="font-display text-[11px] font-black uppercase text-muted-foreground">
+                {review.rating}
+              </p>
+            </div>
+          </div>
+          <p className="text-sm font-bold leading-snug">“{review.quote}”</p>
+          {review.notes.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {review.notes.map((n) => (
+                <span
+                  key={n.label}
+                  className={
+                    n.pts >= 0
+                      ? "rounded-full bg-calm px-2 py-0.5 text-[10px] font-bold text-calm-foreground"
+                      : "rounded-full bg-alarm px-2 py-0.5 text-[10px] font-bold text-alarm-foreground"
+                  }
+                >
+                  {n.label}
+                </span>
+              ))}
+            </div>
+          )}
+          <JobSecurityBar value={review.after} delta={review.delta} />
+        </div>
+      )}
+
+
       <div className="space-y-1.5 rounded-2xl border-2 border-border bg-card p-3">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between gap-2">
