@@ -326,7 +326,160 @@ export const OBJECTIVE_POOL: ObjectiveDef[] = [
     tier: 3,
     minLevel: 2,
   },
+  {
+    key: "points-steady",
+    category: "scoring",
+    icon: "📈",
+    label: (t) => `Tidy shift: reach ${t} points`,
+    metric: (c) => c.points,
+    target: (lv) => 200 + lv * 40,
+    tier: 2,
+  },
+  {
+    key: "streak-4",
+    category: "scoring",
+    icon: "✨",
+    label: (t) => `Four in a row without a slip (${t})`,
+    metric: (c) => c.streak,
+    target: () => 4,
+    tier: 2,
+  },
+  {
+    key: "patients-6",
+    category: "patients",
+    icon: "🏃‍♀️",
+    label: (t) => `Get round to ${t} patients`,
+    metric: (c) => c.patients,
+    target: (lv) => 6 + Math.floor(lv / 3),
+    tier: 2,
+  },
+  {
+    key: "patients-12",
+    category: "patients",
+    icon: "🌪️",
+    label: (t) => `Whirlwind shift: ${t} patients`,
+    metric: (c) => c.patients,
+    target: (lv) => 12 + Math.floor(lv / 2),
+    tier: 3,
+    minLevel: 4,
+  },
+  {
+    key: "events-ok-6",
+    category: "patients",
+    icon: "👍",
+    label: (t) => `Get ${t} responses spot on`,
+    metric: (c) => c.eventsOk,
+    target: (lv) => 6 + Math.floor(lv / 3),
+    tier: 2,
+    minLevel: 2,
+  },
+  {
+    key: "bells-9",
+    category: "patients",
+    icon: "📞",
+    label: (t) => `Never miss a ring: ${t} bells`,
+    metric: (c) => c.callBells,
+    target: () => 9,
+    tier: 3,
+    minLevel: 4,
+  },
+  {
+    key: "critical-2",
+    category: "urgency",
+    icon: "🆘",
+    label: (t) => `Save the day for ${t} critical patients`,
+    metric: (c) => c.criticalOk,
+    target: () => 2,
+    tier: 2,
+    minLevel: 2,
+  },
+  {
+    key: "urgent-6",
+    category: "urgency",
+    icon: "🚑",
+    label: (t) => `Clear ${t} urgent patients`,
+    metric: (c) => c.urgentOk,
+    target: () => 6,
+    tier: 3,
+    minLevel: 4,
+  },
+  {
+    key: "routine-7",
+    category: "urgency",
+    icon: "☕",
+    label: (t) => `Little things matter: ${t} routine jobs`,
+    metric: (c) => c.routineOk,
+    target: () => 7,
+    tier: 2,
+    minLevel: 3,
+  },
+  {
+    key: "urgency-double",
+    category: "urgency",
+    icon: "⚖️",
+    label: () => `Two critical or urgent patients sorted`,
+    metric: (c) => c.criticalOk + c.urgentOk,
+    target: () => 2,
+    tier: 1,
+  },
+  {
+    key: "mini-3",
+    category: "minigames",
+    icon: "🕹️",
+    label: (t) => `Complete ${t} bonus rounds`,
+    metric: (c) => c.miniDone,
+    target: () => 3,
+    tier: 3,
+    minLevel: 3,
+  },
+  {
+    key: "mini-perfect-2",
+    category: "minigames",
+    icon: "🏅",
+    label: (t) => `${t} flawless bonus rounds`,
+    metric: (c) => c.miniPerfect,
+    target: () => 2,
+    tier: 3,
+    minLevel: 4,
+  },
+  {
+    key: "mini-variety",
+    category: "minigames",
+    icon: "🎲",
+    label: (t) => `Play ${t} different bonus rounds`,
+    metric: (c) => Object.values(c.miniByKey).filter((n) => n > 0).length,
+    target: () => 2,
+    tier: 3,
+    minLevel: 3,
+  },
+  {
+    key: "style-bells-and-points",
+    category: "style",
+    icon: "🧹",
+    label: (t) => `Keep on top: ${t} bells answered and 100 points`,
+    metric: (c) => Math.min(c.callBells, 4) + (c.points >= 100 ? 1 : 0),
+    target: () => 5,
+    tier: 2,
+    minLevel: 2,
+  },
+  {
+    key: "style-calm-and-quick",
+    category: "style",
+    icon: "🧊",
+    label: (t) => `Cool head: ${t}-streak and 5 patients`,
+    metric: (c) => Math.min(c.streak, 4) + Math.min(c.patients, 5),
+    target: () => 9,
+    tier: 3,
+    minLevel: 2,
+  },
 ];
+
+/** Current progress toward an objective, capped at its target. */
+export function objectiveProgress(key: string, counters: ShiftCounters): number {
+  const def = OBJECTIVE_POOL.find((d) => d.key === key);
+  return def ? def.metric(counters) : 0;
+}
+
 
 /* ---------------- rewards ---------------- */
 
@@ -351,7 +504,7 @@ function rewardFor(tier: 1 | 2 | 3, type: "points" | "xp"): ObjectiveReward {
 
 const HISTORY_KEY = "shift-fight-objective-history";
 /** how many recently used objective keys we avoid re-offering */
-const HISTORY_LEN = 18;
+const HISTORY_LEN = 30;
 
 function readHistory(): string[] {
   if (typeof window === "undefined") return [];

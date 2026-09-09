@@ -38,6 +38,7 @@ import {
 import {
   emptyCounters,
   evaluateObjectives,
+  objectiveProgress,
   pickObjectives,
   type ShiftCounters,
   type ShiftObjective,
@@ -859,22 +860,35 @@ export function WardScreen({
           </span>
         </div>
 
-        {/* this shift's challenges — compact tracker */}
-        <div className="flex items-center gap-1.5 overflow-hidden">
-          {objectives.map((o) => (
-            <span
-              key={o.key}
-              title={o.label}
-              className={cn(
-                "flex min-w-0 flex-1 items-center gap-1 rounded-xl border-2 border-border px-1.5 py-0.5 text-[10px] font-bold leading-tight",
-                o.done ? "bg-calm text-calm-foreground line-through" : "bg-card",
-              )}
-            >
-              <span className="text-sm leading-none">{o.done ? "✅" : o.icon}</span>
-              <span className="truncate">{o.label}</span>
-            </span>
-          ))}
+        {/* this shift's challenges — compact tracker with live progress */}
+        <div className="flex items-stretch gap-1.5 overflow-hidden">
+          {objectives.map((o) => {
+            const prog = Math.min(
+              o.target,
+              objectiveProgress(o.key, {
+                ...counters.current,
+                points: stats.current.points,
+              }),
+            );
+            return (
+              <span
+                key={o.key}
+                title={o.label}
+                className={cn(
+                  "flex min-w-0 flex-1 items-center gap-1 rounded-xl border-2 border-border px-1.5 py-0.5 text-[10px] font-bold leading-tight",
+                  o.done ? "bg-calm text-calm-foreground" : "bg-card",
+                )}
+              >
+                <span className="text-sm leading-none">{o.done ? "✅" : o.icon}</span>
+                <span className={cn("truncate", o.done && "line-through")}>{o.label}</span>
+                <span className="font-display ml-auto shrink-0">
+                  {prog}/{o.target}
+                </span>
+              </span>
+            );
+          })}
         </div>
+
       </div>
 
 
