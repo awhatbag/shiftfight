@@ -3,7 +3,15 @@ import { useEffect, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
+import { FiredScreen } from "@/components/game/FiredScreen";
+import { JobSecurityBar } from "@/components/game/JobSecurityBar";
 import { bedsForLevel, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
+import {
+  JOB_SECURITY_REHIRE,
+  JOB_SECURITY_START,
+  reviewShift,
+  type ShiftReview,
+} from "@/game/don";
 import { DevMode, DevPinPrompt, type DevApi } from "@/components/dev/DevMode";
 import { DEV_PIN, subscribeDevInfo } from "@/game/dev";
 import {
@@ -39,6 +47,8 @@ type SaveData = {
   upgrades: Upgrades;
   bedCount: number;
   staff: string[];
+  /** added with the DON system — older saves simply start at 100% */
+  jobSecurity?: number;
 };
 
 function readSave(): SaveData | null {
@@ -51,7 +61,7 @@ function readSave(): SaveData | null {
   }
 }
 
-type Phase = "intro" | "shift" | "summary" | "shop" | "dev";
+type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired";
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
@@ -64,6 +74,8 @@ function Game() {
   });
   const [staff, setStaff] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
+  const [review, setReview] = useState<ShiftReview | null>(null);
+  const [jobSecurity, setJobSecurity] = useState(JOB_SECURITY_START);
   const [runKey, setRunKey] = useState(0);
   const [level, setLevel] = useState(1);
   const [soundOn, setSoundOn] = useState(true);
@@ -98,7 +110,7 @@ function Game() {
   }
 
   function saveProgress() {
-    const data: SaveData = { points, xp, level, upgrades, bedCount, staff };
+    const data: SaveData = { points, xp, level, upgrades, bedCount, staff, jobSecurity };
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       setHasSave(true);
@@ -117,6 +129,7 @@ function Game() {
     setLevel(d.level ?? 1);
     setUpgrades(d.upgrades ?? { speed: 0, response: 0, equipment: 0 });
     setStaff(d.staff ?? []);
+    setJobSecurity(d.jobSecurity ?? JOB_SECURITY_START);
     setSaveNote("Saved progress loaded ✓");
     window.setTimeout(() => setSaveNote(""), 2500);
   }
@@ -132,6 +145,25 @@ function Game() {
     setPoints((p) => p + s.points);
     setXp((x) => x + s.xp);
     if (!s.collapsed) setLevel((l) => Math.min(MAX_LEVEL, l + 1));
+    /** the DON reviews the shift using the stats the game already tracks */
+    const r = reviewShift(
+      {
+        helped: s.helped,
+        handled: s.handled,
+        mistakes: s.mistakes,
+        miniGames: s.miniGames,
+        miniFailed: s.miniFailed,
+        miniAbandoned: s.miniAbandoned,
+        overdue: s.overdue,
+        collapsed: s.collapsed,
+        objectivesDone: s.objectives.filter((o) => o.done).length,
+        donVisited: s.donVisited,
+        donAnnoyed: s.donAnnoyed,
+      },
+      jobSecurity,
+    );
+    setReview(r);
+    setJobSecurity(r.after);
     setPhase("summary");
   }
 
@@ -178,6 +210,7 @@ function Game() {
       setStaff([]);
       setBedOverride(null);
       setTutorialDone(false);
+      setJobSecurity(JOB_SECURITY_START);
     },
     debugOverlay,
     setDebugOverlay,
@@ -196,6 +229,7 @@ function Game() {
             xp={xp}
             points={points}
             level={level}
+            jobSecurity={jobSecurity}
             soundOn={soundOn}
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
@@ -241,6 +275,7 @@ function Game() {
             onToggleSound={toggleSound}
             onToggleHaptics={toggleHaptics}
             onEnd={endShift}
+            jobSecurity={jobSecurity}
             tutorial={!tutorialDone}
             onTutorialDone={completeTutorial}
           />
@@ -250,7 +285,18 @@ function Game() {
             stats={last}
             totalPoints={points}
             totalXp={xp}
-            onNext={() => setPhase("shop")}
+            review={review}
+            onNext={() => setPhase(review?.fired ? "fired" : "shop")}
+          />
+        )}
+        {phase === "fired" && (
+          <FiredScreen
+            reason={review?.reason ?? "The DON has requested that you return your ID badge."}
+            onContinue={() => {
+              setJobSecurity(JOB_SECURITY_REHIRE);
+              setReview((r) => (r ? { ...r, fired: false, after: JOB_SECURITY_REHIRE } : r));
+              setPhase("shop");
+            }}
           />
         )}
         {phase === "shop" && (
@@ -284,6 +330,7 @@ function IntroScreen({
   xp,
   points,
   level,
+  jobSecurity,
   soundOn,
   hapticsOn,
   onToggleSound,
@@ -298,6 +345,7 @@ function IntroScreen({
   xp: number;
   points: number;
   level: number;
+  jobSecurity: number;
   soundOn: boolean;
   hapticsOn: boolean;
   onToggleSound: () => void;
@@ -339,6 +387,11 @@ function IntroScreen({
       <p className="font-display text-xs font-black uppercase text-muted-foreground">
         Shift Lv {level} · ⭐ {points} · ✨ {xp} XP · {nurseRank(xp).title}
       </p>
+
+      <div className="w-full">
+        <JobSecurityBar value={jobSecurity} />
+      </div>
+
 
       <div className="grid w-full grid-cols-2 gap-2">
         <button

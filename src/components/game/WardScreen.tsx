@@ -43,6 +43,12 @@ import {
   type ShiftCounters,
   type ShiftObjective,
 } from "@/game/objectives";
+import {
+  DON_LINES,
+  DON_VISIT_MS,
+  FINAL_WARNING_AT,
+  donVisitChance,
+} from "@/game/don";
 
 export type ShiftStats = {
   level: number;
@@ -59,6 +65,12 @@ export type ShiftStats = {
   quirks: Quirk[];
   collapsed: boolean;
   objectives: ShiftObjective[];
+  /** job security / DON inputs — reuse of the existing shift tracking */
+  miniFailed: number;
+  miniAbandoned: number;
+  overdue: number;
+  donVisited: boolean;
+  donAnnoyed: number;
 };
 
 
@@ -109,6 +121,7 @@ export function WardScreen({
   onToggleSound,
   onToggleHaptics,
   onEnd,
+  jobSecurity = 100,
   tutorial = false,
   onTutorialDone,
 }: {
@@ -122,6 +135,8 @@ export function WardScreen({
   onToggleSound: () => void;
   onToggleHaptics: () => void;
   onEnd: (s: ShiftStats) => void;
+  /** persistent job security — drives DON visit odds and the final warning */
+  jobSecurity?: number;
   /** show the first-shift walkthrough */
   tutorial?: boolean;
   onTutorialDone?: () => void;
@@ -191,12 +206,28 @@ export function WardScreen({
     quirks: [],
     collapsed: false,
     objectives: [],
+    miniFailed: 0,
+    miniAbandoned: 0,
+    overdue: 0,
+    donVisited: false,
+    donAnnoyed: 0,
   });
   const streak = useRef(0);
   const uid = useRef(1);
   const ended = useRef(false);
   const bannerId = useRef(1);
   const [, force] = useState(0);
+
+  /* ---------------- the DON's ward visit ---------------- */
+  const [don, setDon] = useState<null | { line: string }>(null);
+  const donOn = useRef(false);
+  donOn.current = !!don;
+  const donScheduled = useRef(false);
+  const donSay = useCallback((line: string, annoyed = false) => {
+    if (!donOn.current) return;
+    if (annoyed) stats.current.donAnnoyed++;
+    setDon({ line });
+  }, []);
 
   /* ---------------- shift objectives ---------------- */
   const [briefing, setBriefing] = useState(true);
@@ -428,6 +459,7 @@ export function WardScreen({
     for (const e of expired) {
       dmg += (5 + e.def.severity * 5) * damageMult(upgrades) * cfg.damage;
       stats.current.mistakes++;
+      stats.current.overdue++;
       say("TOO SLOW", e.def.fail, false);
     }
     if (dmg) {
@@ -436,8 +468,37 @@ export function WardScreen({
       streak.current = 0;
       setStability((s) => Math.max(0, s - dmg));
     }
+    donSay(DON_LINES.overdue, true);
     if (selected !== null && expired.some((e) => e.bed === selected)) setSelected(null);
-  }, [tick, rate, events, upgrades, cfg, selected, say]);
+  }, [tick, rate, events, upgrades, cfg, selected, say, donSay]);
+
+  /* ---------------- DON visit scheduling ---------------- */
+  useEffect(() => {
+    if (phase !== "play" || donScheduled.current) return undefined;
+    donScheduled.current = true;
+    if (Math.random() > donVisitChance(jobSecurity)) return undefined;
+    const delay = 10000 + Math.random() * 22000;
+    const t1 = window.setTimeout(() => {
+      stats.current.donVisited = true;
+      setDon({ line: DON_LINES.arrive });
+      playCallBell();
+      buzz(30);
+      say(DON_LINES.arrive, DON_LINES.arriveSub, false);
+      window.setTimeout(() => setDon((d) => (d ? { line: "…" } : d)), 2600);
+    }, delay);
+    const t2 = window.setTimeout(() => {
+      setDon(null);
+      say(
+        "THE DON LEAVES",
+        stats.current.donAnnoyed ? DON_LINES.leaveBad : DON_LINES.leaveOk,
+        !stats.current.donAnnoyed,
+      );
+    }, delay + DON_VISIT_MS);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [phase, jobSecurity, say]);
 
   const selectedEvent = events.find((e) => e.bed === selected);
   const nurseHereBed = atBed;
@@ -698,6 +759,7 @@ export function WardScreen({
       if (ev.def.callBell) stats.current.callBells++;
       setStability((s) => Math.min(100, s + 3));
       say(isTop ? "GREAT CALL!" : "PATIENT STABLE", `+${gain} · ${ev.def.win}`, true);
+      if (isTop && newCombo >= 2) donSay(DON_LINES.good);
       streak.current++;
       const gap = streak.current <= 8 ? 4 : 5;
       if (streak.current % gap === 0) {
@@ -751,6 +813,8 @@ export function WardScreen({
 
   function miniDone(score: number, perfect: boolean) {
     const bonus = Math.round(score * 0.4 * payMult(upgrades, staffBonus));
+    /** a low score means the bonus round ran out before it was finished */
+    const flunked = !perfect && score < 60;
     stats.current.points += bonus;
     stats.current.xp += 12;
     say(perfect ? "FLAWLESS!" : "BONUS BANKED", `+${bonus} points`, true);
@@ -761,6 +825,12 @@ export function WardScreen({
     if (kind) {
       counters.current.miniByKey[kind] = (counters.current.miniByKey[kind] ?? 0) + 1;
     }
+    if (flunked) {
+      stats.current.miniFailed++;
+      donSay(DON_LINES.miniFail, true);
+    } else {
+      donSay(DON_LINES.good);
+    }
     setMini(null);
     window.setTimeout(checkObjectives, 1600);
   }
@@ -768,6 +838,8 @@ export function WardScreen({
 
   function abandonMini() {
     setMini(null);
+    stats.current.miniAbandoned++;
+    donSay(DON_LINES.struggling, true);
     say("ABANDONED", "No bonus, no harm. Back to the ward.", false);
   }
 
@@ -888,6 +960,12 @@ export function WardScreen({
             );
           })}
         </div>
+
+        {jobSecurity > 0 && jobSecurity < FINAL_WARNING_AT && (
+          <p className="font-display animate-throb rounded-xl bg-alarm px-2 py-1 text-center text-[11px] font-black uppercase tracking-wider text-alarm-foreground">
+            ⚠️ Final warning · job security {jobSecurity}%
+          </p>
+        )}
 
       </div>
 
@@ -1016,6 +1094,28 @@ export function WardScreen({
             </div>
           </div>
         )}
+
+        {/* the DON, standing in the corridor, judging quietly */}
+        {don && (
+          <div
+            className="pointer-events-none absolute left-1/2 top-[2%] z-[45] flex -translate-x-1/2 flex-col items-center"
+            aria-label="The DON is on the ward"
+          >
+            <div className="animate-pop max-w-[220px] rounded-2xl border-2 border-border bg-card px-2.5 py-1 text-center shadow-lg">
+              <p className="font-display text-[11px] font-black uppercase leading-tight">
+                {don.line}
+              </p>
+            </div>
+            <span className="animate-bob mt-0.5 grid h-11 w-11 place-items-center rounded-full border-2 border-alarm bg-card text-2xl shadow-lg ring-4 ring-alarm/30">
+              🧑‍💼
+            </span>
+            <span className="font-display rounded-full bg-alarm px-1.5 text-[8px] font-black uppercase text-alarm-foreground">
+              DON
+            </span>
+          </div>
+        )}
+
+
 
         {/* shift objectives briefing */}
         {briefing && (
