@@ -467,7 +467,7 @@ export function WardScreen({
       window.clearInterval(id);
       offDev();
     };
-  }, [rate, activeBeds, cfg, upgrades]);
+  }, [rate, activeBeds, cfg, upgrades, mods]);
 
   /* ---------------- dev info ---------------- */
   useEffect(() => {
@@ -483,7 +483,8 @@ export function WardScreen({
     setEvents((cur) => cur.filter((e) => !expired.some((x) => x.id === e.id)));
     let dmg = 0;
     for (const e of expired) {
-      dmg += (5 + e.def.severity * 5) * damageMult(upgrades) * cfg.damage;
+      dmg +=
+        (5 + e.def.severity * 5) * damageMult(upgrades) * mods.damageMult * cfg.damage;
       stats.current.mistakes++;
       stats.current.overdue++;
       say("TOO SLOW", e.def.fail, false);
@@ -596,7 +597,7 @@ export function WardScreen({
     if (rate === 0 || !journey.current.length) return;
     let remaining =
       (gameT.current - lastMoveT.current) /
-      (MS_PER_UNIT(upgrades) * (returning.current ? 1.9 : 1));
+      (MS_PER_UNIT(upgrades) * mods.travelMult * (returning.current ? 1.9 : 1));
     lastMoveT.current = gameT.current;
     let current = nurseRef.current;
     while (remaining > 0 && journey.current.length) {
@@ -822,7 +823,7 @@ export function WardScreen({
         const lvl = Math.min(9, Math.floor(n / 2) + Math.floor(level / 3));
         setMiniOffer({
           kind: randomMiniGameKey(lastMini.current),
-          bonus: 120 + lvl * 40 + level * 15,
+          bonus: Math.round((120 + lvl * 40 + level * 15) * mods.miniMult),
           lvl,
         });
       }
@@ -842,12 +843,16 @@ export function WardScreen({
       } else if (mult === 0) {
         playBad();
         stats.current.mistakes++;
-        setStability((s) => Math.max(0, s - 6 * damageMult(upgrades) * cfg.damage));
+        setStability((s) =>
+          Math.max(0, s - 6 * damageMult(upgrades) * mods.damageMult * cfg.damage),
+        );
         say("NOTHING HAPPENED", `0 points · ${ev.def.correct} was the move`, false);
       } else {
         playBad();
         stats.current.mistakes++;
-        setStability((s) => Math.max(0, s - 10 * damageMult(upgrades) * cfg.damage));
+        setStability((s) =>
+          Math.max(0, s - 10 * damageMult(upgrades) * mods.damageMult * cfg.damage),
+        );
         say("WRONG PRIORITY", `${raw} points · ${ev.def.correct} was the move`, false);
       }
     }
@@ -868,7 +873,7 @@ export function WardScreen({
   }
 
   function miniDone(score: number, perfect: boolean) {
-    const bonus = Math.round(score * 0.4 * payMult(upgrades, staffBonus));
+    const bonus = Math.round(score * 0.4 * payMult(upgrades, staffBonus) * mods.miniMult);
     /** a low score means the bonus round ran out before it was finished */
     const flunked = !perfect && score < 60;
     stats.current.points += bonus;
