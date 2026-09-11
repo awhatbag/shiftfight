@@ -107,6 +107,8 @@ function Game() {
   const [bedOverride, setBedOverride] = useState<number | null>(null);
   const [debugOverlay, setDebugOverlay] = useState(false);
   const [devEvents, setDevEvents] = useState(0);
+  /* global menu — available on every non-shift screen (in-shift the pause veil is the menu) */
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     setHasSave(!!readSave());
@@ -421,6 +423,87 @@ function Game() {
             saveNote={saveNote}
             onBack={() => setPhase("summary")}
           />
+        )}
+
+        {/* global menu — on every screen; in-shift the ⏸️ pause button opens the same menu */}
+        {phase !== "dev" && phase !== "shift" && (
+          <button
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            className="chunky chunky-press absolute right-2 top-2 z-[70] rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+          >
+            ☰ Menu
+          </button>
+        )}
+        {menuOpen && (
+          <div className="absolute inset-0 z-[75] flex flex-col items-center justify-center gap-3 bg-background/95 p-6">
+            <p className="font-display text-3xl font-black uppercase">☰ Menu</p>
+            <div className="grid w-full grid-cols-2 gap-2">
+              <button
+                onClick={toggleSound}
+                className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+              >
+                🔊 Sound {soundOn ? "ON" : "OFF"}
+              </button>
+              <button
+                onClick={toggleHaptics}
+                className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+              >
+                📳 Haptics {hapticsOn ? "ON" : "OFF"}
+              </button>
+            </div>
+            <button
+              onClick={() => {
+                saveProgress();
+              }}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+            >
+              💾 Save
+            </button>
+            {hasSave && (
+              <button
+                onClick={() => {
+                  loadProgress();
+                  setMenuOpen(false);
+                  setPhase("intro");
+                }}
+                className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+              >
+                ↩ Continue save
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                setPhase("ladder");
+              }}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+            >
+              🪜 Shift Ladder
+            </button>
+            {phase !== "intro" && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  setPhase("intro");
+                }}
+                className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+              >
+                🚪 Quit to title
+              </button>
+            )}
+            <button
+              onClick={() => setMenuOpen(false)}
+              className="chunky chunky-press w-full rounded-2xl bg-primary py-4 font-display text-lg font-black uppercase text-primary-foreground"
+            >
+              Close ✕
+            </button>
+            {saveNote && (
+              <p className="font-display text-xs font-black uppercase text-calm-foreground">
+                {saveNote}
+              </p>
+            )}
+          </div>
         )}
       </div>
     </main>
