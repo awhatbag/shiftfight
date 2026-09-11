@@ -532,6 +532,12 @@ function IntroScreen({
         Clock in ▶
       </button>
       <button
+        onClick={onLadder}
+        className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+      >
+        🪜 Shift Ladder
+      </button>
+      <button
         onClick={onDev}
         className="chunky chunky-press w-full rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
       >
