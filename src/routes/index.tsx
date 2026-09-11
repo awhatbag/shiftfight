@@ -691,3 +691,106 @@ function IntroScreen({
     </div>
   );
 }
+
+/** three named save files — used both for saving and for resuming a game */
+function SaveSlotPicker({
+  mode,
+  slots,
+  onSave,
+  onLoad,
+  onClose,
+}: {
+  mode: "save" | "load";
+  slots: SaveSlot[];
+  onSave: (index: number, name: string) => void;
+  onLoad: (index: number) => void;
+  onClose: () => void;
+}) {
+  const [naming, setNaming] = useState<number | null>(null);
+  const [name, setName] = useState("");
+
+  return (
+    <div className="absolute inset-0 z-[90] flex flex-col justify-center gap-3 bg-background/95 p-5">
+      <p className="font-display text-center text-2xl font-black uppercase">
+        {mode === "save" ? "💾 Save game" : "↩ Choose a save"}
+      </p>
+      <p className="text-center text-[11px] text-muted-foreground">
+        {mode === "save"
+          ? "Pick a slot and give this game a name."
+          : "Pick the game you want to carry on with."}
+      </p>
+
+      {slots.map((slot, i) => {
+        const empty = !slot;
+        if (mode === "save" && naming === i) {
+          return (
+            <div key={i} className="rounded-2xl border-2 border-primary bg-card p-3">
+              <input
+                autoFocus
+                value={name}
+                maxLength={18}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={`Save ${i + 1}`}
+                className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 font-display text-base font-black uppercase"
+              />
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setNaming(null)}
+                  className="chunky-press rounded-xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => onSave(i, name)}
+                  className="chunky-press rounded-xl bg-primary py-2 font-display text-sm font-black uppercase text-primary-foreground"
+                >
+                  Save here
+                </button>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <button
+            key={i}
+            disabled={mode === "load" && empty}
+            onClick={() => {
+              if (mode === "save") {
+                setName(slot?.name ?? "");
+                setNaming(i);
+              } else {
+                onLoad(i);
+              }
+            }}
+            className="chunky-press flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left disabled:opacity-50"
+          >
+            <span className="font-display grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-base font-black text-secondary-foreground">
+              {i + 1}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="font-display block truncate text-sm font-black uppercase">
+                {slot ? slot.name : "Empty slot"}
+              </span>
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {slot
+                  ? `Shift Lv ${slot.data.level ?? 1} · ⭐ ${slot.data.points ?? 0} · ${new Date(
+                      slot.savedAt,
+                    ).toLocaleDateString()}`
+                  : mode === "save"
+                    ? "Tap to start a new save file"
+                    : "Nothing saved here yet"}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+
+      <button
+        onClick={onClose}
+        className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+      >
+        Cancel ✕
+      </button>
+    </div>
+  );
+}
