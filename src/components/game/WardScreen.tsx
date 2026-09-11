@@ -1183,11 +1183,17 @@ export function WardScreen({
           <div className="absolute inset-0 z-[70] grid place-items-center bg-background/85 p-4 backdrop-blur-sm">
             <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 shadow-2xl">
               <p className="font-display text-center text-[11px] font-black uppercase tracking-widest text-primary">
-                Shift {cfg.level} briefing
+                Shift {cfg.level} · {cfg.name}
               </p>
               <h3 className="font-display mt-1 text-center text-2xl font-black uppercase leading-none">
-                This shift's challenges
+                “{story.title}”
               </h3>
+              <p className="mt-1 text-center text-sm font-semibold text-muted-foreground">
+                {story.lead}
+              </p>
+              <p className="font-display mt-3 text-center text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                This shift's challenges
+              </p>
               <div className="mt-3 space-y-2">
                 {objectives.map((o) => (
                   <div
@@ -1305,11 +1311,16 @@ export function WardScreen({
               <h3 className="font-display text-2xl font-black uppercase leading-none">
                 {miniGameByKey(miniOffer.kind).name}
               </h3>
+              <p className="mt-1 text-sm font-bold">{miniGameByKey(miniOffer.kind).blurb}</p>
               <p className="font-display mt-2 rounded-2xl bg-[image:var(--gradient-gold)] py-2 text-xl font-black text-gold-foreground">
-                up to +{miniOffer.bonus} ⭐
+                Reward: up to +{miniOffer.bonus} ⭐
+              </p>
+              <p className="font-display mt-1 text-sm font-black uppercase text-calm-foreground">
+                + 12 ✨ XP for finishing it
               </p>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                The ward keeps ticking at 1/3 speed. You can abandon any time.
+                A small bonus on top of your shift — finish it for the full reward. The ward
+                keeps ticking at 1/3 speed and you can abandon any time.
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
