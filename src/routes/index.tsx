@@ -629,10 +629,6 @@ function IntroScreen({
         ))}
       </div>
 
-      <p className="font-display text-xs font-black uppercase text-muted-foreground">
-        Shift Lv {level} · ⭐ {points} · ✨ {xp} XP · {nurseRank(xp).title}
-      </p>
-
       <div className="grid w-full grid-cols-2 gap-2">
         <button
           onClick={onToggleSound}
@@ -648,21 +644,13 @@ function IntroScreen({
         </button>
       </div>
 
-      <div className="grid w-full grid-cols-2 gap-2">
-        <button
-          onClick={onSave}
-          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
-        >
-          💾 Save progress
-        </button>
-        <button
-          onClick={onLoad}
-          disabled={!hasSave}
-          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground disabled:opacity-50"
-        >
-          ↩ Continue save
-        </button>
-      </div>
+      <button
+        onClick={onLoad}
+        disabled={!hasSave}
+        className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground disabled:opacity-50"
+      >
+        ↩ Continue save
+      </button>
       {saveNote && (
         <p className="font-display text-xs font-black uppercase text-calm-foreground">
           {saveNote}
