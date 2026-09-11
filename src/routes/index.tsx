@@ -505,10 +505,6 @@ function Game() {
             )}
           </div>
         )}
-        {menuOpen && phase === "shift" && (
-          /* in-shift the pause veil is the menu — just close and let them use ⏸️ */
-          <>{setMenuOpen(false)}</>
-        )}
       </div>
     </main>
   );
