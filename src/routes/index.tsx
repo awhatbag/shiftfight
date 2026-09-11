@@ -59,6 +59,11 @@ type SaveData = {
   staff: string[];
   /** added with the DON system — older saves simply start at 100% */
   jobSecurity?: number;
+  /** added with equipment / bed upgrades / ward architecture */
+  gear?: string[];
+  bedUpgrades?: string[];
+  highestLevel?: number;
+  wardProgress?: WardProgress;
 };
 
 function readSave(): SaveData | null {
@@ -71,7 +76,7 @@ function readSave(): SaveData | null {
   }
 }
 
-type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired";
+type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired" | "ladder";
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
@@ -83,11 +88,15 @@ function Game() {
     equipment: 0,
   });
   const [staff, setStaff] = useState<string[]>([]);
+  const [gear, setGear] = useState<string[]>([]);
+  const [bedUpgrades, setBedUpgrades] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
   const [review, setReview] = useState<ShiftReview | null>(null);
   const [jobSecurity, setJobSecurity] = useState(JOB_SECURITY_START);
   const [runKey, setRunKey] = useState(0);
   const [level, setLevel] = useState(1);
+  const [highestLevel, setHighestLevel] = useState(1);
+  const [wardProgress, setWardProgress] = useState<WardProgress>({});
   const [soundOn, setSoundOn] = useState(true);
   const [hapticsOn, setHapticsOn] = useState(true);
   const [saveNote, setSaveNote] = useState("");
@@ -120,7 +129,19 @@ function Game() {
   }
 
   function saveProgress() {
-    const data: SaveData = { points, xp, level, upgrades, bedCount, staff, jobSecurity };
+    const data: SaveData = {
+      points,
+      xp,
+      level,
+      upgrades,
+      bedCount,
+      staff,
+      jobSecurity,
+      gear,
+      bedUpgrades,
+      highestLevel,
+      wardProgress,
+    };
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       setHasSave(true);
@@ -139,6 +160,10 @@ function Game() {
     setLevel(d.level ?? 1);
     setUpgrades(d.upgrades ?? { speed: 0, response: 0, equipment: 0 });
     setStaff(d.staff ?? []);
+    setGear(d.gear ?? []);
+    setBedUpgrades(d.bedUpgrades ?? []);
+    setHighestLevel(d.highestLevel ?? d.level ?? 1);
+    setWardProgress(d.wardProgress ?? {});
     setJobSecurity(d.jobSecurity ?? JOB_SECURITY_START);
     setSaveNote("Saved progress loaded ✓");
     window.setTimeout(() => setSaveNote(""), 2500);
@@ -147,14 +172,28 @@ function Game() {
   const rank = nurseRank(xp);
   /** beds are unlocked by level progression, never bought */
   const bedCount = bedOverride ?? bedsForLevel(level);
+  const ward = wardForLevel(level);
 
-  const staffBonus = staff.includes("student") ? 0.15 : 0;
+  /** every equipment / bed upgrade / staff effect, combined into one object */
+  const mods = combineEffects([
+    gearEffects(gear),
+    ...bedUpgradeEffects(bedUpgrades),
+    ...staff.map((k) => STAFF.find((s) => s.key === k)?.effects ?? {}),
+  ]);
+  const staffBonus = mods.payBonus;
 
   function endShift(s: ShiftStats) {
     setLast(s);
     setPoints((p) => p + s.points);
-    setXp((x) => x + s.xp);
-    if (!s.collapsed) setLevel((l) => Math.min(MAX_LEVEL, l + 1));
+    setXp((x) => x + Math.round(s.xp * mods.xpMult));
+    if (!s.collapsed) {
+      setLevel((l) => {
+        const next = Math.min(MAX_LEVEL, l + 1);
+        setHighestLevel((h) => Math.max(h, next));
+        setWardProgress((w) => updateWardProgress(w, next));
+        return next;
+      });
+    }
     /** the DON reviews the shift using the stats the game already tracks */
     const r = reviewShift(
       {
