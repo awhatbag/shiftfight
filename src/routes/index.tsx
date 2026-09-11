@@ -335,10 +335,12 @@ function Game() {
     resetSave: () => {
       try {
         window.localStorage.removeItem(SAVE_KEY);
+        window.localStorage.removeItem(SLOTS_KEY);
         window.localStorage.removeItem(TUT_KEY);
       } catch {
         /* storage unavailable */
       }
+      setSlots(Array.from({ length: SLOT_COUNT }, () => null));
       setHasSave(false);
       setPoints(0);
       setXp(0);
