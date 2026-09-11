@@ -307,6 +307,7 @@ function Game() {
             saveNote={saveNote}
             onPlay={play}
             onDev={() => setPinOpen(true)}
+            onLadder={() => setPhase("ladder")}
           />
         )}
         {phase === "dev" && <DevMode api={devApi} onClose={() => setPhase("intro")} />}
@@ -440,6 +441,7 @@ function IntroScreen({
   saveNote,
   onPlay,
   onDev,
+  onLadder,
 }: {
   xp: number;
   points: number;
