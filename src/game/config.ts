@@ -1083,6 +1083,72 @@ export const STAFF_BEHAVIOUR: Record<
     maxSeverity: 3,
     line: "Dot sorted it before you blinked",
   },
+  gary: {
+    responseMs: 5200,
+    cooldownMs: 11000,
+    maxSeverity: 1,
+    line: "Gary wheeled it away, whistling",
+  },
+  moira: {
+    responseMs: 4000,
+    cooldownMs: 13000,
+    maxSeverity: 1,
+    line: "Moira answered the bell from her chair",
+  },
+  kev: {
+    responseMs: 4800,
+    cooldownMs: 12500,
+    maxSeverity: 1,
+    line: "Kev mopped it before it happened",
+  },
+  nan: {
+    responseMs: 7000,
+    cooldownMs: 15000,
+    maxSeverity: 1,
+    line: "Nan sorted it with tea and gossip",
+  },
+  duncan: {
+    responseMs: 6400,
+    cooldownMs: 14500,
+    maxSeverity: 2,
+    line: "Duncan repositioned them properly",
+  },
+  yusuf: {
+    responseMs: 6800,
+    cooldownMs: 15000,
+    maxSeverity: 2,
+    line: "Yusuf checked the chart twice. Twice.",
+  },
+  tina: {
+    responseMs: 5600,
+    cooldownMs: 13500,
+    maxSeverity: 2,
+    line: "Tina handled it, then asked about parking",
+  },
+  gwen: {
+    responseMs: 5200,
+    cooldownMs: 16000,
+    maxSeverity: 3,
+    line: "Gwen appeared. Problem left.",
+  },
+  raj: {
+    responseMs: 7200,
+    cooldownMs: 14000,
+    maxSeverity: 2,
+    line: "Raj fixed it and turned it into a teaching moment",
+  },
+  bev: {
+    responseMs: 6600,
+    cooldownMs: 14000,
+    maxSeverity: 2,
+    line: "Bev sorted it AND started the discharge letter",
+  },
+  marcus: {
+    responseMs: 4400,
+    cooldownMs: 16000,
+    maxSeverity: 3,
+    line: "Marcus was already there. Of course he was.",
+  },
 };
 
 
