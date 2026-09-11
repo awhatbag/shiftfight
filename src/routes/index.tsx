@@ -107,6 +107,8 @@ function Game() {
   const [bedOverride, setBedOverride] = useState<number | null>(null);
   const [debugOverlay, setDebugOverlay] = useState(false);
   const [devEvents, setDevEvents] = useState(0);
+  /* global menu — available on every non-shift screen (in-shift the pause veil is the menu) */
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     setHasSave(!!readSave());
