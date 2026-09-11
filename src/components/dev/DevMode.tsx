@@ -5,6 +5,10 @@ import { emitDevCommand, subscribeDevInfo, type DevInfo } from "@/game/dev";
 import { MAX_BEDS, MAX_LEVEL, STAFF, UPGRADE_INFO, type Upgrades } from "@/game/config";
 import { DON_MOOD_META, moodFor, securityBand } from "@/game/don";
 import { JobSecurityBar } from "@/components/game/JobSecurityBar";
+import { GEAR_CATEGORIES, GEAR_ITEMS, type Effects } from "@/game/gear";
+import { BED_UPGRADES } from "@/game/bedUpgrades";
+import { SHIFT_TITLES, shiftTitle } from "@/game/shifts";
+import { WARDS, wardLadder } from "@/game/wards";
 import { useEffect } from "react";
 
 export type DevApi = {
@@ -15,14 +19,23 @@ export type DevApi = {
   bedOverride: number | null;
   upgrades: Upgrades;
   staff: string[];
+  gear: string[];
+  bedUpgrades: string[];
+  highestLevel: number;
+  wardId: string;
+  mods: Effects;
   setLevel: (n: number) => void;
+  setHighestLevel: (n: number) => void;
   addPoints: (n: number) => void;
   addXp: (n: number) => void;
   setUpgrades: (u: Upgrades) => void;
   setStaff: (s: string[]) => void;
+  setGear: (g: string[]) => void;
+  setBedUpgrades: (b: string[]) => void;
   setBedOverride: (n: number | null) => void;
   jobSecurity: number;
   setJobSecurity: (n: number) => void;
+  openLadder: () => void;
   resetSave: () => void;
   debugOverlay: boolean;
   setDebugOverlay: (v: boolean) => void;
