@@ -369,14 +369,10 @@ function Game() {
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
         {phase === "intro" && (
           <IntroScreen
-            xp={xp}
-            points={points}
-            level={level}
             soundOn={soundOn}
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
             onToggleHaptics={toggleHaptics}
-            onSave={saveProgress}
             onLoad={loadProgress}
             hasSave={hasSave}
             saveNote={saveNote}
