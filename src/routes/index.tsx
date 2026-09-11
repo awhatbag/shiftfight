@@ -143,6 +143,10 @@ function Game() {
   const [hapticsOn, setHapticsOn] = useState(true);
   const [saveNote, setSaveNote] = useState("");
   const [hasSave, setHasSave] = useState(false);
+  const [slots, setSlots] = useState<SaveSlot[]>(() =>
+    Array.from({ length: SLOT_COUNT }, () => null),
+  );
+  const [slotPicker, setSlotPicker] = useState<null | "save" | "load">(null);
   const [tutorialDone, setTutorialDone] = useState(true);
   /* dev mode (developer/testing tool) */
   const [pinOpen, setPinOpen] = useState(false);
