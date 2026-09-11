@@ -157,7 +157,9 @@ function Game() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    setHasSave(!!readSave());
+    const s = readSlots();
+    setSlots(s);
+    setHasSave(s.some(Boolean));
     try {
       setTutorialDone(!!window.localStorage.getItem(TUT_KEY));
     } catch {
