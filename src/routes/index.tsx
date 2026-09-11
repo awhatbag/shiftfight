@@ -456,6 +456,7 @@ function IntroScreen({
   saveNote: string;
   onPlay: () => void;
   onDev: () => void;
+  onLadder: () => void;
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5 bg-[image:var(--gradient-sky)] p-6 text-center">
