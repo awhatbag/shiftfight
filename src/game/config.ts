@@ -1,3 +1,5 @@
+import type { Effects } from "./gear";
+
 export type ActionKind =
   | "ASSESS"
   | "INTERVENE"
@@ -780,12 +782,28 @@ export const UPGRADE_INFO = [
 /** staff tiers: how spicy an event they're allowed to take on */
 export type StaffTier = 1 | 2 | 3;
 
-export const STAFF = [
+/** the nurses' station has five seats — five hires on shift at once */
+export const MAX_STAFF = 5;
+
+export type StaffMember = {
+  key: string;
+  name: string;
+  icon: string;
+  tier: StaffTier;
+  bonus: string;
+  cost: number;
+  /** nurse rank level required to hire (defaults to 2) */
+  rank?: number;
+  /** ward-wide effects while on shift */
+  effects?: Partial<Effects>;
+};
+
+export const STAFF: StaffMember[] = [
   {
     key: "hca",
     name: "Barry the HCA",
     icon: "🧹",
-    tier: 1 as StaffTier,
+    tier: 1,
     bonus: "Tier 1 · routine call bells only",
     cost: 3500,
   },
@@ -793,17 +811,125 @@ export const STAFF = [
     key: "student",
     name: "Priya, Student Nurse",
     icon: "🎓",
-    tier: 2 as StaffTier,
+    tier: 2,
     bonus: "Tier 2 · routine + urgent, +15% points",
     cost: 9000,
+    effects: { payBonus: 0.15 },
   },
   {
     key: "charge",
     name: "Dot, Charge Nurse",
     icon: "🧑‍⚕️",
-    tier: 3 as StaffTier,
-    bonus: "Tier 3 · handles anything, even criticals",
+    tier: 3,
+    bonus: "Tier 3 · anything, even criticals",
     cost: 18000,
+    rank: 3,
+  },
+  /* ---- expanded roster ---- */
+  {
+    key: "gary",
+    name: "Gary, Porter of Legend",
+    icon: "🛒",
+    tier: 1,
+    bonus: "Tier 1 · everything arrives faster (-6% walking)",
+    cost: 3200,
+    rank: 1,
+    effects: { travelMult: 0.94 },
+  },
+  {
+    key: "moira",
+    name: "Moira, Ward Clerk",
+    icon: "🗂️",
+    tier: 1,
+    bonus: "Tier 1 · answers bells before you do (-12% silly calls)",
+    cost: 4200,
+    effects: { sillyMult: 0.88 },
+  },
+  {
+    key: "kev",
+    name: "Kev, Domestic Supervisor",
+    icon: "🧼",
+    tier: 1,
+    bonus: "Tier 1 · mops fast, judges faster (-8% stability damage)",
+    cost: 4600,
+    effects: { damageMult: 0.92 },
+  },
+  {
+    key: "nan",
+    name: "Nan, Volunteer",
+    icon: "🫖",
+    tier: 1,
+    bonus: "Tier 1 · tea trolley morale (+8% XP, +8% silly bells)",
+    cost: 2600,
+    rank: 1,
+    effects: { xpMult: 1.08, sillyMult: 1.08 },
+  },
+  {
+    key: "duncan",
+    name: "Duncan, Physio",
+    icon: "🦵",
+    tier: 2,
+    bonus: "Tier 2 · nobody slides down the bed (-10% damage)",
+    cost: 8200,
+    effects: { damageMult: 0.9 },
+  },
+  {
+    key: "yusuf",
+    name: "Yusuf, Ward Pharmacist",
+    icon: "💊",
+    tier: 2,
+    bonus: "Tier 2 · bonus rounds pay +15%",
+    cost: 9400,
+    effects: { miniMult: 1.15 },
+  },
+  {
+    key: "tina",
+    name: "Tina, Bank Nurse",
+    icon: "🧣",
+    tier: 2,
+    bonus: "Tier 2 · brilliant, but keeps checking the rota (+10% pay, -4% speed)",
+    cost: 8800,
+    effects: { payBonus: 0.1, travelMult: 1.04 },
+  },
+  {
+    key: "gwen",
+    name: "Gwen, Night Sister",
+    icon: "🌙",
+    tier: 3,
+    bonus: "Tier 3 · patients wait +10% longer under her stare",
+    cost: 16500,
+    rank: 3,
+    effects: { ttlMult: 1.1 },
+  },
+  {
+    key: "raj",
+    name: "Raj, Practice Educator",
+    icon: "📚",
+    tier: 2,
+    bonus: "Tier 2 · teaches constantly (+15% XP, -5% pay)",
+    cost: 11000,
+    rank: 3,
+    effects: { xpMult: 1.15, payBonus: -0.05 },
+  },
+  {
+    key: "bev",
+    name: "Bev, Discharge Coordinator",
+    icon: "📋",
+    tier: 2,
+    bonus: "Tier 2 · beds turn over neatly (-15% silly calls)",
+    cost: 12500,
+    rank: 4,
+    effects: { sillyMult: 0.85 },
+  },
+  {
+    key: "marcus",
+    name: "Marcus, Resus Nurse",
+    icon: "⚡",
+    tier: 3,
+    bonus: "Tier 3 · takes the scary ones and gets paid for it (+12%)",
+    cost: 24000,
+    rank: 4,
+    effects: { payBonus: 0.12 },
   },
 ];
 
@@ -956,6 +1082,72 @@ export const STAFF_BEHAVIOUR: Record<
     cooldownMs: 15000,
     maxSeverity: 3,
     line: "Dot sorted it before you blinked",
+  },
+  gary: {
+    responseMs: 5200,
+    cooldownMs: 11000,
+    maxSeverity: 1,
+    line: "Gary wheeled it away, whistling",
+  },
+  moira: {
+    responseMs: 4000,
+    cooldownMs: 13000,
+    maxSeverity: 1,
+    line: "Moira answered the bell from her chair",
+  },
+  kev: {
+    responseMs: 4800,
+    cooldownMs: 12500,
+    maxSeverity: 1,
+    line: "Kev mopped it before it happened",
+  },
+  nan: {
+    responseMs: 7000,
+    cooldownMs: 15000,
+    maxSeverity: 1,
+    line: "Nan sorted it with tea and gossip",
+  },
+  duncan: {
+    responseMs: 6400,
+    cooldownMs: 14500,
+    maxSeverity: 2,
+    line: "Duncan repositioned them properly",
+  },
+  yusuf: {
+    responseMs: 6800,
+    cooldownMs: 15000,
+    maxSeverity: 2,
+    line: "Yusuf checked the chart twice. Twice.",
+  },
+  tina: {
+    responseMs: 5600,
+    cooldownMs: 13500,
+    maxSeverity: 2,
+    line: "Tina handled it, then asked about parking",
+  },
+  gwen: {
+    responseMs: 5200,
+    cooldownMs: 16000,
+    maxSeverity: 3,
+    line: "Gwen appeared. Problem left.",
+  },
+  raj: {
+    responseMs: 7200,
+    cooldownMs: 14000,
+    maxSeverity: 2,
+    line: "Raj fixed it and turned it into a teaching moment",
+  },
+  bev: {
+    responseMs: 6600,
+    cooldownMs: 14000,
+    maxSeverity: 2,
+    line: "Bev sorted it AND started the discharge letter",
+  },
+  marcus: {
+    responseMs: 4400,
+    cooldownMs: 16000,
+    maxSeverity: 3,
+    line: "Marcus was already there. Of course he was.",
   },
 };
 

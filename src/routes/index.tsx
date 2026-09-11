@@ -4,7 +4,18 @@ import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
-import { bedsForLevel, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
+import { LadderScreen } from "@/components/game/LadderScreen";
+import {
+  bedsForLevel,
+  MAX_LEVEL,
+  MAX_STAFF,
+  nurseRank,
+  STAFF,
+  type Upgrades,
+} from "@/game/config";
+import { combineEffects, gearEffects } from "@/game/gear";
+import { bedUpgradeEffects } from "@/game/bedUpgrades";
+import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
 import {
   JOB_SECURITY_REHIRE,
   JOB_SECURITY_START,
@@ -48,6 +59,11 @@ type SaveData = {
   staff: string[];
   /** added with the DON system — older saves simply start at 100% */
   jobSecurity?: number;
+  /** added with equipment / bed upgrades / ward architecture */
+  gear?: string[];
+  bedUpgrades?: string[];
+  highestLevel?: number;
+  wardProgress?: WardProgress;
 };
 
 function readSave(): SaveData | null {
@@ -60,7 +76,7 @@ function readSave(): SaveData | null {
   }
 }
 
-type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired";
+type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired" | "ladder";
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
@@ -72,11 +88,15 @@ function Game() {
     equipment: 0,
   });
   const [staff, setStaff] = useState<string[]>([]);
+  const [gear, setGear] = useState<string[]>([]);
+  const [bedUpgrades, setBedUpgrades] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
   const [review, setReview] = useState<ShiftReview | null>(null);
   const [jobSecurity, setJobSecurity] = useState(JOB_SECURITY_START);
   const [runKey, setRunKey] = useState(0);
   const [level, setLevel] = useState(1);
+  const [highestLevel, setHighestLevel] = useState(1);
+  const [wardProgress, setWardProgress] = useState<WardProgress>({});
   const [soundOn, setSoundOn] = useState(true);
   const [hapticsOn, setHapticsOn] = useState(true);
   const [saveNote, setSaveNote] = useState("");
@@ -109,7 +129,19 @@ function Game() {
   }
 
   function saveProgress() {
-    const data: SaveData = { points, xp, level, upgrades, bedCount, staff, jobSecurity };
+    const data: SaveData = {
+      points,
+      xp,
+      level,
+      upgrades,
+      bedCount,
+      staff,
+      jobSecurity,
+      gear,
+      bedUpgrades,
+      highestLevel,
+      wardProgress,
+    };
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       setHasSave(true);
@@ -128,6 +160,10 @@ function Game() {
     setLevel(d.level ?? 1);
     setUpgrades(d.upgrades ?? { speed: 0, response: 0, equipment: 0 });
     setStaff(d.staff ?? []);
+    setGear(d.gear ?? []);
+    setBedUpgrades(d.bedUpgrades ?? []);
+    setHighestLevel(d.highestLevel ?? d.level ?? 1);
+    setWardProgress(d.wardProgress ?? {});
     setJobSecurity(d.jobSecurity ?? JOB_SECURITY_START);
     setSaveNote("Saved progress loaded ✓");
     window.setTimeout(() => setSaveNote(""), 2500);
@@ -136,14 +172,28 @@ function Game() {
   const rank = nurseRank(xp);
   /** beds are unlocked by level progression, never bought */
   const bedCount = bedOverride ?? bedsForLevel(level);
+  const ward = wardForLevel(level);
 
-  const staffBonus = staff.includes("student") ? 0.15 : 0;
+  /** every equipment / bed upgrade / staff effect, combined into one object */
+  const mods = combineEffects([
+    gearEffects(gear),
+    ...bedUpgradeEffects(bedUpgrades),
+    ...staff.map((k) => STAFF.find((s) => s.key === k)?.effects ?? {}),
+  ]);
+  const staffBonus = mods.payBonus;
 
   function endShift(s: ShiftStats) {
     setLast(s);
     setPoints((p) => p + s.points);
-    setXp((x) => x + s.xp);
-    if (!s.collapsed) setLevel((l) => Math.min(MAX_LEVEL, l + 1));
+    setXp((x) => x + Math.round(s.xp * mods.xpMult));
+    if (!s.collapsed) {
+      setLevel((l) => {
+        const next = Math.min(MAX_LEVEL, l + 1);
+        setHighestLevel((h) => Math.max(h, next));
+        setWardProgress((w) => updateWardProgress(w, next));
+        return next;
+      });
+    }
     /** the DON reviews the shift using the stats the game already tracks */
     const r = reviewShift(
       {
@@ -188,14 +238,27 @@ function Game() {
     bedOverride,
     upgrades,
     staff,
-    setLevel,
+    gear,
+    bedUpgrades,
+    highestLevel,
+    wardId: ward.id,
+    mods,
+    setLevel: (n) => {
+      setLevel(n);
+      setHighestLevel((h) => Math.max(h, n));
+      setWardProgress((w) => updateWardProgress(w, n));
+    },
+    setHighestLevel: (n) => setHighestLevel(Math.max(1, n)),
     addPoints: (n) => setPoints((p) => Math.max(0, p + n)),
     addXp: (n) => setXp((x) => Math.max(0, x + n)),
     setUpgrades,
     setStaff,
+    setGear,
+    setBedUpgrades,
     setBedOverride,
     jobSecurity,
     setJobSecurity: (n) => setJobSecurity(Math.max(0, Math.min(100, n))),
+    openLadder: () => setPhase("ladder"),
     resetSave: () => {
       try {
         window.localStorage.removeItem(SAVE_KEY);
@@ -207,8 +270,12 @@ function Game() {
       setPoints(0);
       setXp(0);
       setLevel(1);
+      setHighestLevel(1);
+      setWardProgress({});
       setUpgrades({ speed: 0, response: 0, equipment: 0 });
       setStaff([]);
+      setGear([]);
+      setBedUpgrades([]);
       setBedOverride(null);
       setTutorialDone(false);
       setJobSecurity(JOB_SECURITY_START);
@@ -240,6 +307,7 @@ function Game() {
             saveNote={saveNote}
             onPlay={play}
             onDev={() => setPinOpen(true)}
+            onLadder={() => setPhase("ladder")}
           />
         )}
         {phase === "dev" && <DevMode api={devApi} onClose={() => setPhase("intro")} />}
@@ -262,6 +330,17 @@ function Game() {
             </p>
           </div>
         )}
+        {phase === "ladder" && (
+          <LadderScreen
+            highestLevel={highestLevel}
+            currentLevel={level}
+            onPick={(l) => {
+              setLevel(l);
+              play();
+            }}
+            onBack={() => setPhase("intro")}
+          />
+        )}
         {phase === "shift" && (
           <WardScreen
             key={runKey}
@@ -270,6 +349,7 @@ function Game() {
             bedCount={bedCount}
             staffBonus={staffBonus}
             staff={staff}
+            mods={mods}
             soundOn={soundOn}
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
@@ -309,13 +389,32 @@ function Game() {
             upgrades={upgrades}
             bedCount={bedCount}
             staff={staff}
+            gear={gear}
+            bedUpgrades={bedUpgrades}
             onBuy={(k, cost) => {
               setPoints((p) => p - cost);
               setUpgrades((u) => ({ ...u, [k]: u[k] + 1 }));
             }}
             onHire={(k, cost) => {
-              setPoints((p) => p - cost);
-              setStaff((s) => [...s, k]);
+              setStaff((s) => {
+                if (s.includes(k) || s.length >= MAX_STAFF) return s;
+                setPoints((p) => p - cost);
+                return [...s, k];
+              });
+            }}
+            onBuyGear={(k, cost) => {
+              setGear((g) => {
+                if (g.includes(k)) return g;
+                setPoints((p) => p - cost);
+                return [...g, k];
+              });
+            }}
+            onBuyBedUpgrade={(k, cost) => {
+              setBedUpgrades((b) => {
+                if (b.includes(k)) return b;
+                setPoints((p) => p - cost);
+                return [...b, k];
+              });
             }}
             onPlay={play}
             onSave={saveProgress}
@@ -342,6 +441,7 @@ function IntroScreen({
   saveNote,
   onPlay,
   onDev,
+  onLadder,
 }: {
   xp: number;
   points: number;
@@ -356,6 +456,7 @@ function IntroScreen({
   saveNote: string;
   onPlay: () => void;
   onDev: () => void;
+  onLadder: () => void;
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5 bg-[image:var(--gradient-sky)] p-6 text-center">
@@ -429,6 +530,12 @@ function IntroScreen({
         className="chunky chunky-press w-full rounded-2xl bg-primary py-5 font-display text-2xl font-black uppercase tracking-wide text-primary-foreground"
       >
         Clock in ▶
+      </button>
+      <button
+        onClick={onLadder}
+        className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+      >
+        🪜 Shift Ladder
       </button>
       <button
         onClick={onDev}
