@@ -144,8 +144,8 @@ export function reviewShift(s: ReviewInput, jobSecurity: number): ShiftReview {
   const bad =
     s.mistakes * 1.4 +
     s.overdue * 0.8 +
-    s.miniFailed * 1.5 +
-    s.miniAbandoned * 0.8 +
+    s.miniFailed * 0.8 +
+    s.miniAbandoned * 1.5 +
     s.donAnnoyed * 1.5 +
     (s.collapsed ? 8 : 0);
   const ratio = good + bad <= 0 ? 0.5 : good / (good + bad);
@@ -176,7 +176,7 @@ export function reviewShift(s: ReviewInput, jobSecurity: number): ShiftReview {
   if (s.mistakes) notes.push({ label: `${s.mistakes} slip-ups`, pts: -1 });
   if (s.overdue) notes.push({ label: `${s.overdue} patients left waiting`, pts: -1 });
   if (s.miniFailed) notes.push({ label: `${s.miniFailed} bonus rounds fumbled`, pts: -1 });
-  if (s.miniAbandoned) notes.push({ label: `${s.miniAbandoned} bonus rounds abandoned`, pts: -1 });
+  if (s.miniAbandoned) notes.push({ label: `${s.miniAbandoned} bonus rounds bailed on`, pts: -2 });
   if (s.collapsed) notes.push({ label: "The ward fell over", pts: -1 });
   if (s.donAnnoyed) notes.push({ label: "The DON saw things", pts: -1 });
 
