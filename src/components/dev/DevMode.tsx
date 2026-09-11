@@ -352,6 +352,163 @@ export const DEV_CATEGORIES: Category[] = [
     ),
   },
   {
+    key: "shifttitles",
+    name: "Shift Titles",
+    icon: "📖",
+    render: (api) => (
+      <div className="space-y-2">
+        <Row label={`Story title for level ${api.level}`}>
+          <p className="rounded-2xl border-2 border-border bg-card p-3 text-sm font-bold">
+            “{shiftTitle(api.level).title}” — {shiftTitle(api.level).lead}
+          </p>
+        </Row>
+        <Row label={`Catalogue (${Object.keys(SHIFT_TITLES).length})`}>
+          <div className="space-y-1">
+            {Object.entries(SHIFT_TITLES).map(([lvl, t]) => (
+              <button
+                key={lvl}
+                onClick={() => api.setLevel(Number(lvl))}
+                className="chunky-press block w-full rounded-xl border-2 border-border bg-card p-2 text-left text-[11px]"
+              >
+                <span className="font-display font-black uppercase">Lv{lvl} · {t.title}</span>
+              </button>
+            ))}
+          </div>
+        </Row>
+      </div>
+    ),
+  },
+  {
+    key: "gear",
+    name: "Equipment & Cosmetics",
+    icon: "👟",
+    render: (api) => (
+      <div className="space-y-3">
+        {GEAR_CATEGORIES.map((c) => (
+          <Row key={c.key} label={`${c.icon} ${c.name}`}>
+            <div className="space-y-1">
+              {GEAR_ITEMS.filter((g) => g.category === c.key).map((g) => {
+                const owned = api.gear.includes(g.key);
+                return (
+                  <button
+                    key={g.key}
+                    onClick={() =>
+                      api.setGear(
+                        owned ? api.gear.filter((k) => k !== g.key) : [...api.gear, g.key],
+                      )
+                    }
+                    className="chunky-press flex w-full items-center gap-2 rounded-xl border-2 border-border bg-card p-2 text-left"
+                  >
+                    <span>{g.icon}</span>
+                    <span className="min-w-0 flex-1 truncate text-[11px]">
+                      {g.name} · {g.blurb}
+                    </span>
+                    <span
+                      className={cn(
+                        "font-display shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-black",
+                        owned ? "bg-calm text-calm-foreground" : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {owned ? "OWNED" : "OFF"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </Row>
+        ))}
+        <div className="grid grid-cols-2 gap-2">
+          <Chip onClick={() => api.setGear(GEAR_ITEMS.map((g) => g.key))}>Own all</Chip>
+          <Chip onClick={() => api.setGear([])}>Clear</Chip>
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: "bedupgrades",
+    name: "Bed Upgrades",
+    icon: "🛠️",
+    render: (api) => (
+      <div className="space-y-2">
+        {BED_UPGRADES.map((b) => {
+          const owned = api.bedUpgrades.includes(b.key);
+          return (
+            <button
+              key={b.key}
+              onClick={() =>
+                api.setBedUpgrades(
+                  owned
+                    ? api.bedUpgrades.filter((k) => k !== b.key)
+                    : [...api.bedUpgrades, b.key],
+                )
+              }
+              className="chunky-press flex w-full items-center gap-2 rounded-xl border-2 border-border bg-card p-2 text-left"
+            >
+              <span>{b.icon}</span>
+              <span className="min-w-0 flex-1 truncate text-[11px]">
+                {b.name} · {b.blurb}
+              </span>
+              <span
+                className={cn(
+                  "font-display shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-black",
+                  owned ? "bg-calm text-calm-foreground" : "bg-muted text-muted-foreground",
+                )}
+              >
+                {owned ? "ON" : "OFF"}
+              </span>
+            </button>
+          );
+        })}
+        <div className="grid grid-cols-2 gap-2">
+          <Chip onClick={() => api.setBedUpgrades(BED_UPGRADES.map((b) => b.key))}>All</Chip>
+          <Chip onClick={() => api.setBedUpgrades([])}>Clear</Chip>
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: "wards",
+    name: "Wards & Expansion",
+    icon: "🏨",
+    render: (api) => (
+      <div className="space-y-3">
+        <Row label={`Highest level reached (${api.highestLevel})`}>
+          <div className="grid grid-cols-5 gap-2">
+            {[1, 3, 5, 8, 10].map((n) => (
+              <Chip key={n} onClick={() => api.setHighestLevel(n)}>
+                {n}
+              </Chip>
+            ))}
+          </div>
+        </Row>
+        <Row label="Level ladder">
+          <Chip onClick={api.openLadder}>Open ladder screen</Chip>
+        </Row>
+        <Row label={`Wards (${WARDS.length}) · current: ${api.wardId}`}>
+          <div className="space-y-1">
+            {wardLadder(api.highestLevel).map((w) => (
+              <p
+                key={w.ward.id}
+                className="rounded-xl border-2 border-border bg-card p-2 text-[11px]"
+              >
+                <span className="font-display font-black uppercase">
+                  {w.ward.icon} {w.ward.name}
+                </span>{" "}
+                · Lv{w.ward.from}–{w.ward.to} ·{" "}
+                {w.ward.status === "live"
+                  ? w.unlocked
+                    ? "PLAYABLE"
+                    : "LOCKED"
+                  : "PLANNED"}
+              </p>
+            ))}
+          </div>
+        </Row>
+        <Placeholder text="Ward designs, ward-specific gameplay and staff takeover are future work; the architecture already supports more wards and levels." />
+      </div>
+    ),
+  },
+  {
     key: "cosmetics",
     name: "Content / Cosmetics",
     icon: "🎨",
