@@ -900,8 +900,11 @@ export function WardScreen({
   function abandonMini() {
     setMini(null);
     stats.current.miniAbandoned++;
+    /** bailing mid-round costs a little — failing it properly costs less */
+    stats.current.points = Math.max(0, stats.current.points - 15);
+    setStability((s) => Math.max(0, s - 5));
     donSay("struggling", true);
-    say("ABANDONED", "No bonus, no harm. Back to the ward.", false);
+    say("ABANDONED", "-15 points. The DON noticed.", false);
   }
 
   const lowTime = secondsLeft <= 15;
