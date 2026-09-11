@@ -49,6 +49,8 @@ export const Route = createFileRoute("/")({
 
 const SAVE_KEY = "shift-fight-save";
 const TUT_KEY = "shift-fight-tutorial-done";
+const ACTIVE_SLOT_KEY = "shift-fight-active-slot";
+const AUTO_SAVE_KEY = "shift-fight-auto-save";
 
 type SaveData = {
   points: number;
@@ -117,6 +119,46 @@ function writeSlots(slots: SaveSlot[]) {
   }
 }
 
+function readActiveSlot(): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(ACTIVE_SLOT_KEY);
+    const n = raw ? Number(raw) : NaN;
+    return Number.isInteger(n) && n >= 0 && n < SLOT_COUNT ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeActiveSlot(index: number | null) {
+  try {
+    if (index === null) {
+      window.localStorage.removeItem(ACTIVE_SLOT_KEY);
+    } else {
+      window.localStorage.setItem(ACTIVE_SLOT_KEY, String(index));
+    }
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function readAutoSave(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return window.localStorage.getItem(AUTO_SAVE_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function writeAutoSave(on: boolean) {
+  try {
+    window.localStorage.setItem(AUTO_SAVE_KEY, on ? "1" : "0");
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 
 type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired" | "ladder";
 
@@ -147,6 +189,8 @@ function Game() {
     Array.from({ length: SLOT_COUNT }, () => null),
   );
   const [slotPicker, setSlotPicker] = useState<null | "save" | "load">(null);
+  const [activeSlot, setActiveSlot] = useState<number | null>(null);
+  const [autoSaveOn, setAutoSaveOn] = useState(true);
   const [tutorialDone, setTutorialDone] = useState(true);
   /* dev mode (developer/testing tool) */
   const [pinOpen, setPinOpen] = useState(false);
@@ -160,10 +204,13 @@ function Game() {
     const s = readSlots();
     setSlots(s);
     setHasSave(s.some(Boolean));
+    setActiveSlot(readActiveSlot());
     try {
       setTutorialDone(!!window.localStorage.getItem(TUT_KEY));
+      setAutoSaveOn(readAutoSave());
     } catch {
       setTutorialDone(true);
+      setAutoSaveOn(true);
     }
   }, []);
 
@@ -199,14 +246,39 @@ function Game() {
     setSlotPicker("save");
   }
 
+  function setActiveSlotPersisted(index: number | null) {
+    setActiveSlot(index);
+    writeActiveSlot(index);
+  }
+
   function saveToSlot(index: number, name: string) {
     const next = [...slots];
     next[index] = { name: name.trim() || `Save ${index + 1}`, savedAt: Date.now(), data: currentSaveData() };
     const ok = writeSlots(next);
     setSlots(next);
     setHasSave(next.some(Boolean));
+    setActiveSlotPersisted(index);
     setSlotPicker(null);
     setSaveNote(ok ? `Saved to “${next[index]!.name}” ✓` : "Could not save on this device");
+    window.setTimeout(() => setSaveNote(""), 2500);
+  }
+
+  /** writes the supplied data to the active slot (or slot 0 if none chosen yet) */
+  function autoSaveData(data: SaveData) {
+    if (!autoSaveOn) return;
+    const index = activeSlot ?? 0;
+    const next = [...slots];
+    const existing = next[index];
+    next[index] = {
+      name: existing?.name ?? "Auto save",
+      savedAt: Date.now(),
+      data,
+    };
+    const ok = writeSlots(next);
+    setSlots(next);
+    setHasSave(true);
+    setActiveSlotPersisted(index);
+    setSaveNote(ok ? "Auto-saved ✓" : "Could not auto-save");
     window.setTimeout(() => setSaveNote(""), 2500);
   }
 
@@ -232,12 +304,21 @@ function Game() {
     const slot = slots[index];
     if (!slot) return;
     applySave(slot.data);
+    setActiveSlotPersisted(index);
     setSlotPicker(null);
     setMenuOpen(false);
     /* resuming always drops the player on the level ladder */
     setPhase("ladder");
     setSaveNote(`“${slot.name}” loaded ✓`);
     window.setTimeout(() => setSaveNote(""), 2500);
+  }
+
+  function toggleAutoSave() {
+    setAutoSaveOn((on) => {
+      const next = !on;
+      writeAutoSave(next);
+      return next;
+    });
   }
 
 
@@ -257,15 +338,20 @@ function Game() {
 
   function endShift(s: ShiftStats) {
     setLast(s);
-    setPoints((p) => p + s.points);
-    setXp((x) => x + Math.round(s.xp * mods.xpMult));
+    const nextPoints = points + s.points;
+    const nextXp = xp + Math.round(s.xp * mods.xpMult);
+    setPoints(nextPoints);
+    setXp(nextXp);
+    let nextLevel = level;
+    let nextHighest = highestLevel;
+    let nextWardProgress = wardProgress;
     if (!s.collapsed) {
-      setLevel((l) => {
-        const next = Math.min(MAX_LEVEL, l + 1);
-        setHighestLevel((h) => Math.max(h, next));
-        setWardProgress((w) => updateWardProgress(w, next));
-        return next;
-      });
+      nextLevel = Math.min(MAX_LEVEL, level + 1);
+      nextHighest = Math.max(highestLevel, nextLevel);
+      nextWardProgress = updateWardProgress(wardProgress, nextLevel);
+      setLevel(nextLevel);
+      setHighestLevel(nextHighest);
+      setWardProgress(nextWardProgress);
     }
     /** the DON reviews the shift using the stats the game already tracks */
     const r = reviewShift(
@@ -286,6 +372,19 @@ function Game() {
     );
     setReview(r);
     setJobSecurity(r.after);
+    autoSaveData({
+      points: nextPoints,
+      xp: nextXp,
+      level: nextLevel,
+      upgrades,
+      bedCount,
+      staff,
+      jobSecurity: r.after,
+      gear,
+      bedUpgrades,
+      highestLevel: nextHighest,
+      wardProgress: nextWardProgress,
+    });
     setPhase("summary");
   }
 
@@ -337,11 +436,15 @@ function Game() {
         window.localStorage.removeItem(SAVE_KEY);
         window.localStorage.removeItem(SLOTS_KEY);
         window.localStorage.removeItem(TUT_KEY);
+        window.localStorage.removeItem(ACTIVE_SLOT_KEY);
+        window.localStorage.removeItem(AUTO_SAVE_KEY);
       } catch {
         /* storage unavailable */
       }
       setSlots(Array.from({ length: SLOT_COUNT }, () => null));
       setHasSave(false);
+      setActiveSlot(null);
+      setAutoSaveOn(true);
       setPoints(0);
       setXp(0);
       setLevel(1);
@@ -425,6 +528,8 @@ function Game() {
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
             onToggleHaptics={toggleHaptics}
+            autoSaveOn={autoSaveOn}
+            onToggleAutoSave={toggleAutoSave}
             onEnd={endShift}
             onSave={saveProgress}
             onQuit={() => setPhase("intro")}
@@ -522,6 +627,12 @@ function Game() {
               </button>
             </div>
             <button
+              onClick={toggleAutoSave}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+            >
+              💾 Auto-save {autoSaveOn ? "ON" : "OFF"}
+            </button>
+            <button
               onClick={() => {
                 saveProgress();
               }}
@@ -572,6 +683,11 @@ function Game() {
                 {saveNote}
               </p>
             )}
+          </div>
+        )}
+        {saveNote && (
+          <div className="pointer-events-none absolute left-1/2 top-2 z-[70] -translate-x-1/2 rounded-full bg-calm px-3 py-1 font-display text-[11px] font-black uppercase text-calm-foreground shadow-md">
+            {saveNote}
           </div>
         )}
 

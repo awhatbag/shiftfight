@@ -124,6 +124,8 @@ export function WardScreen({
   hapticsOn,
   onToggleSound,
   onToggleHaptics,
+  autoSaveOn,
+  onToggleAutoSave,
   onEnd,
   onSave,
   onQuit,
@@ -141,6 +143,8 @@ export function WardScreen({
   hapticsOn: boolean;
   onToggleSound: () => void;
   onToggleHaptics: () => void;
+  autoSaveOn: boolean;
+  onToggleAutoSave: () => void;
   onEnd: (s: ShiftStats) => void;
   /** save progress locally from the in-shift menu */
   onSave?: () => void;
@@ -1373,6 +1377,12 @@ export function WardScreen({
                 icon="📳"
                 on={hapticsOn}
                 onToggle={onToggleHaptics}
+              />
+              <SettingRow
+                label="Auto-save"
+                icon="💾"
+                on={autoSaveOn}
+                onToggle={onToggleAutoSave}
               />
               <div className="grid grid-cols-2 gap-2">
                 <button
