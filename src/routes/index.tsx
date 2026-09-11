@@ -4,7 +4,18 @@ import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
-import { bedsForLevel, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
+import { LadderScreen } from "@/components/game/LadderScreen";
+import {
+  bedsForLevel,
+  MAX_LEVEL,
+  MAX_STAFF,
+  nurseRank,
+  STAFF,
+  type Upgrades,
+} from "@/game/config";
+import { combineEffects, gearEffects } from "@/game/gear";
+import { bedUpgradeEffects } from "@/game/bedUpgrades";
+import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
 import {
   JOB_SECURITY_REHIRE,
   JOB_SECURITY_START,
