@@ -329,6 +329,17 @@ function Game() {
             </p>
           </div>
         )}
+        {phase === "ladder" && (
+          <LadderScreen
+            highestLevel={highestLevel}
+            currentLevel={level}
+            onPick={(l) => {
+              setLevel(l);
+              play();
+            }}
+            onBack={() => setPhase("intro")}
+          />
+        )}
         {phase === "shift" && (
           <WardScreen
             key={runKey}
@@ -337,6 +348,7 @@ function Game() {
             bedCount={bedCount}
             staffBonus={staffBonus}
             staff={staff}
+            mods={mods}
             soundOn={soundOn}
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
@@ -376,13 +388,32 @@ function Game() {
             upgrades={upgrades}
             bedCount={bedCount}
             staff={staff}
+            gear={gear}
+            bedUpgrades={bedUpgrades}
             onBuy={(k, cost) => {
               setPoints((p) => p - cost);
               setUpgrades((u) => ({ ...u, [k]: u[k] + 1 }));
             }}
             onHire={(k, cost) => {
-              setPoints((p) => p - cost);
-              setStaff((s) => [...s, k]);
+              setStaff((s) => {
+                if (s.includes(k) || s.length >= MAX_STAFF) return s;
+                setPoints((p) => p - cost);
+                return [...s, k];
+              });
+            }}
+            onBuyGear={(k, cost) => {
+              setGear((g) => {
+                if (g.includes(k)) return g;
+                setPoints((p) => p - cost);
+                return [...g, k];
+              });
+            }}
+            onBuyBedUpgrade={(k, cost) => {
+              setBedUpgrades((b) => {
+                if (b.includes(k)) return b;
+                setPoints((p) => p - cost);
+                return [...b, k];
+              });
             }}
             onPlay={play}
             onSave={saveProgress}
