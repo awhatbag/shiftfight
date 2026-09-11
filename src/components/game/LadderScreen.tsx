@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { shiftTitle } from "@/game/shifts";
 import { wardLadder } from "@/game/wards";
@@ -19,6 +20,16 @@ export function LadderScreen({
 }) {
   const ladder = wardLadder(highestLevel);
 
+  /* the phone's own back button leaves the ladder, just like the BACK button */
+  const backRef = useRef(onBack);
+  backRef.current = onBack;
+  useEffect(() => {
+    window.history.pushState({ ladder: true }, "");
+    const onPop = () => backRef.current();
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
       <div className="flex items-center justify-between gap-2">
@@ -27,7 +38,7 @@ export function LadderScreen({
           onClick={onBack}
           className="chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
         >
-          Close
+          ← Back
         </button>
       </div>
       <p className="text-[11px] text-muted-foreground">

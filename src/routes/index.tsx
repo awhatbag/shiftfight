@@ -66,6 +66,11 @@ type SaveData = {
   wardProgress?: WardProgress;
 };
 
+const SLOTS_KEY = "shift-fight-saves";
+const SLOT_COUNT = 3;
+
+export type SaveSlot = { name: string; savedAt: number; data: SaveData } | null;
+
 function readSave(): SaveData | null {
   if (typeof window === "undefined") return null;
   try {
@@ -75,6 +80,43 @@ function readSave(): SaveData | null {
     return null;
   }
 }
+
+/** three named save files, with a one-time migration of the old single save */
+function readSlots(): SaveSlot[] {
+  const empty: SaveSlot[] = Array.from({ length: SLOT_COUNT }, () => null);
+  if (typeof window === "undefined") return empty;
+  try {
+    const raw = window.localStorage.getItem(SLOTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as SaveSlot[];
+      return empty.map((_, i) => parsed[i] ?? null);
+    }
+  } catch {
+    return empty;
+  }
+  const legacy = readSave();
+  if (legacy) {
+    const migrated = [...empty];
+    migrated[0] = { name: "My shift", savedAt: Date.now(), data: legacy };
+    try {
+      window.localStorage.setItem(SLOTS_KEY, JSON.stringify(migrated));
+    } catch {
+      /* storage unavailable */
+    }
+    return migrated;
+  }
+  return empty;
+}
+
+function writeSlots(slots: SaveSlot[]) {
+  try {
+    window.localStorage.setItem(SLOTS_KEY, JSON.stringify(slots));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 
 type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired" | "ladder";
 
@@ -101,6 +143,10 @@ function Game() {
   const [hapticsOn, setHapticsOn] = useState(true);
   const [saveNote, setSaveNote] = useState("");
   const [hasSave, setHasSave] = useState(false);
+  const [slots, setSlots] = useState<SaveSlot[]>(() =>
+    Array.from({ length: SLOT_COUNT }, () => null),
+  );
+  const [slotPicker, setSlotPicker] = useState<null | "save" | "load">(null);
   const [tutorialDone, setTutorialDone] = useState(true);
   /* dev mode (developer/testing tool) */
   const [pinOpen, setPinOpen] = useState(false);
@@ -111,7 +157,9 @@ function Game() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    setHasSave(!!readSave());
+    const s = readSlots();
+    setSlots(s);
+    setHasSave(s.some(Boolean));
     try {
       setTutorialDone(!!window.localStorage.getItem(TUT_KEY));
     } catch {
@@ -130,8 +178,8 @@ function Game() {
     setTutorialDone(true);
   }
 
-  function saveProgress() {
-    const data: SaveData = {
+  function currentSaveData(): SaveData {
+    return {
       points,
       xp,
       level,
@@ -144,19 +192,25 @@ function Game() {
       highestLevel,
       wardProgress,
     };
-    try {
-      window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-      setHasSave(true);
-      setSaveNote("Progress saved on this device ✓");
-    } catch {
-      setSaveNote("Could not save on this device");
-    }
+  }
+
+  /** opens the save-file picker so the player chooses (and names) a slot */
+  function saveProgress() {
+    setSlotPicker("save");
+  }
+
+  function saveToSlot(index: number, name: string) {
+    const next = [...slots];
+    next[index] = { name: name.trim() || `Save ${index + 1}`, savedAt: Date.now(), data: currentSaveData() };
+    const ok = writeSlots(next);
+    setSlots(next);
+    setHasSave(next.some(Boolean));
+    setSlotPicker(null);
+    setSaveNote(ok ? `Saved to “${next[index]!.name}” ✓` : "Could not save on this device");
     window.setTimeout(() => setSaveNote(""), 2500);
   }
 
-  function loadProgress() {
-    const d = readSave();
-    if (!d) return;
+  function applySave(d: SaveData) {
     setPoints(d.points ?? 0);
     setXp(d.xp ?? 0);
     setLevel(d.level ?? 1);
@@ -167,9 +221,26 @@ function Game() {
     setHighestLevel(d.highestLevel ?? d.level ?? 1);
     setWardProgress(d.wardProgress ?? {});
     setJobSecurity(d.jobSecurity ?? JOB_SECURITY_START);
-    setSaveNote("Saved progress loaded ✓");
+  }
+
+  /** opens the save-file picker so the player chooses which game to resume */
+  function loadProgress() {
+    setSlotPicker("load");
+  }
+
+  function loadFromSlot(index: number) {
+    const slot = slots[index];
+    if (!slot) return;
+    applySave(slot.data);
+    setSlotPicker(null);
+    setMenuOpen(false);
+    /* resuming always drops the player on the level ladder */
+    setPhase("ladder");
+    setSaveNote(`“${slot.name}” loaded ✓`);
     window.setTimeout(() => setSaveNote(""), 2500);
   }
+
+
 
   const rank = nurseRank(xp);
   /** beds are unlocked by level progression, never bought */
@@ -264,10 +335,12 @@ function Game() {
     resetSave: () => {
       try {
         window.localStorage.removeItem(SAVE_KEY);
+        window.localStorage.removeItem(SLOTS_KEY);
         window.localStorage.removeItem(TUT_KEY);
       } catch {
         /* storage unavailable */
       }
+      setSlots(Array.from({ length: SLOT_COUNT }, () => null));
       setHasSave(false);
       setPoints(0);
       setXp(0);
@@ -296,14 +369,10 @@ function Game() {
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
         {phase === "intro" && (
           <IntroScreen
-            xp={xp}
-            points={points}
-            level={level}
             soundOn={soundOn}
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
             onToggleHaptics={toggleHaptics}
-            onSave={saveProgress}
             onLoad={loadProgress}
             hasSave={hasSave}
             saveNote={saveNote}
@@ -505,20 +574,26 @@ function Game() {
             )}
           </div>
         )}
+
+        {slotPicker && (
+          <SaveSlotPicker
+            mode={slotPicker}
+            slots={slots}
+            onSave={saveToSlot}
+            onLoad={loadFromSlot}
+            onClose={() => setSlotPicker(null)}
+          />
+        )}
       </div>
     </main>
   );
 }
 
 function IntroScreen({
-  xp,
-  points,
-  level,
   soundOn,
   hapticsOn,
   onToggleSound,
   onToggleHaptics,
-  onSave,
   onLoad,
   hasSave,
   saveNote,
@@ -526,14 +601,10 @@ function IntroScreen({
   onDev,
   onLadder,
 }: {
-  xp: number;
-  points: number;
-  level: number;
   soundOn: boolean;
   hapticsOn: boolean;
   onToggleSound: () => void;
   onToggleHaptics: () => void;
-  onSave: () => void;
   onLoad: () => void;
   hasSave: boolean;
   saveNote: string;
@@ -568,10 +639,6 @@ function IntroScreen({
         ))}
       </div>
 
-      <p className="font-display text-xs font-black uppercase text-muted-foreground">
-        Shift Lv {level} · ⭐ {points} · ✨ {xp} XP · {nurseRank(xp).title}
-      </p>
-
       <div className="grid w-full grid-cols-2 gap-2">
         <button
           onClick={onToggleSound}
@@ -587,21 +654,13 @@ function IntroScreen({
         </button>
       </div>
 
-      <div className="grid w-full grid-cols-2 gap-2">
-        <button
-          onClick={onSave}
-          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
-        >
-          💾 Save progress
-        </button>
-        <button
-          onClick={onLoad}
-          disabled={!hasSave}
-          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground disabled:opacity-50"
-        >
-          ↩ Continue save
-        </button>
-      </div>
+      <button
+        onClick={onLoad}
+        disabled={!hasSave}
+        className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground disabled:opacity-50"
+      >
+        ↩ Continue save
+      </button>
       {saveNote && (
         <p className="font-display text-xs font-black uppercase text-calm-foreground">
           {saveNote}
@@ -629,6 +688,109 @@ function IntroScreen({
       <p className="text-[10px] leading-tight text-muted-foreground">
         Silly fiction. Fictional patients, fictional meds. Not medical or nursing advice.
       </p>
+    </div>
+  );
+}
+
+/** three named save files — used both for saving and for resuming a game */
+function SaveSlotPicker({
+  mode,
+  slots,
+  onSave,
+  onLoad,
+  onClose,
+}: {
+  mode: "save" | "load";
+  slots: SaveSlot[];
+  onSave: (index: number, name: string) => void;
+  onLoad: (index: number) => void;
+  onClose: () => void;
+}) {
+  const [naming, setNaming] = useState<number | null>(null);
+  const [name, setName] = useState("");
+
+  return (
+    <div className="absolute inset-0 z-[90] flex flex-col justify-center gap-3 bg-background/95 p-5">
+      <p className="font-display text-center text-2xl font-black uppercase">
+        {mode === "save" ? "💾 Save game" : "↩ Choose a save"}
+      </p>
+      <p className="text-center text-[11px] text-muted-foreground">
+        {mode === "save"
+          ? "Pick a slot and give this game a name."
+          : "Pick the game you want to carry on with."}
+      </p>
+
+      {slots.map((slot, i) => {
+        const empty = !slot;
+        if (mode === "save" && naming === i) {
+          return (
+            <div key={i} className="rounded-2xl border-2 border-primary bg-card p-3">
+              <input
+                autoFocus
+                value={name}
+                maxLength={18}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={`Save ${i + 1}`}
+                className="w-full rounded-xl border-2 border-border bg-background px-3 py-2 font-display text-base font-black uppercase"
+              />
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setNaming(null)}
+                  className="chunky-press rounded-xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => onSave(i, name)}
+                  className="chunky-press rounded-xl bg-primary py-2 font-display text-sm font-black uppercase text-primary-foreground"
+                >
+                  Save here
+                </button>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <button
+            key={i}
+            disabled={mode === "load" && empty}
+            onClick={() => {
+              if (mode === "save") {
+                setName(slot?.name ?? "");
+                setNaming(i);
+              } else {
+                onLoad(i);
+              }
+            }}
+            className="chunky-press flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left disabled:opacity-50"
+          >
+            <span className="font-display grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-base font-black text-secondary-foreground">
+              {i + 1}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="font-display block truncate text-sm font-black uppercase">
+                {slot ? slot.name : "Empty slot"}
+              </span>
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {slot
+                  ? `Shift Lv ${slot.data.level ?? 1} · ⭐ ${slot.data.points ?? 0} · ${new Date(
+                      slot.savedAt,
+                    ).toLocaleDateString()}`
+                  : mode === "save"
+                    ? "Tap to start a new save file"
+                    : "Nothing saved here yet"}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+
+      <button
+        onClick={onClose}
+        className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+      >
+        Cancel ✕
+      </button>
     </div>
   );
 }
