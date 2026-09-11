@@ -172,8 +172,8 @@ function Game() {
     setTutorialDone(true);
   }
 
-  function saveProgress() {
-    const data: SaveData = {
+  function currentSaveData(): SaveData {
+    return {
       points,
       xp,
       level,
@@ -186,19 +186,25 @@ function Game() {
       highestLevel,
       wardProgress,
     };
-    try {
-      window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-      setHasSave(true);
-      setSaveNote("Progress saved on this device ✓");
-    } catch {
-      setSaveNote("Could not save on this device");
-    }
+  }
+
+  /** opens the save-file picker so the player chooses (and names) a slot */
+  function saveProgress() {
+    setSlotPicker("save");
+  }
+
+  function saveToSlot(index: number, name: string) {
+    const next = [...slots];
+    next[index] = { name: name.trim() || `Save ${index + 1}`, savedAt: Date.now(), data: currentSaveData() };
+    const ok = writeSlots(next);
+    setSlots(next);
+    setHasSave(next.some(Boolean));
+    setSlotPicker(null);
+    setSaveNote(ok ? `Saved to “${next[index]!.name}” ✓` : "Could not save on this device");
     window.setTimeout(() => setSaveNote(""), 2500);
   }
 
-  function loadProgress() {
-    const d = readSave();
-    if (!d) return;
+  function applySave(d: SaveData) {
     setPoints(d.points ?? 0);
     setXp(d.xp ?? 0);
     setLevel(d.level ?? 1);
@@ -209,9 +215,26 @@ function Game() {
     setHighestLevel(d.highestLevel ?? d.level ?? 1);
     setWardProgress(d.wardProgress ?? {});
     setJobSecurity(d.jobSecurity ?? JOB_SECURITY_START);
-    setSaveNote("Saved progress loaded ✓");
+  }
+
+  /** opens the save-file picker so the player chooses which game to resume */
+  function loadProgress() {
+    setSlotPicker("load");
+  }
+
+  function loadFromSlot(index: number) {
+    const slot = slots[index];
+    if (!slot) return;
+    applySave(slot.data);
+    setSlotPicker(null);
+    setMenuOpen(false);
+    /* resuming always drops the player on the level ladder */
+    setPhase("ladder");
+    setSaveNote(`“${slot.name}” loaded ✓`);
     window.setTimeout(() => setSaveNote(""), 2500);
   }
+
+
 
   const rank = nurseRank(xp);
   /** beds are unlocked by level progression, never bought */
