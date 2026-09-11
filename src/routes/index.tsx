@@ -238,14 +238,27 @@ function Game() {
     bedOverride,
     upgrades,
     staff,
-    setLevel,
+    gear,
+    bedUpgrades,
+    highestLevel,
+    wardId: ward.id,
+    mods,
+    setLevel: (n) => {
+      setLevel(n);
+      setHighestLevel((h) => Math.max(h, n));
+      setWardProgress((w) => updateWardProgress(w, n));
+    },
+    setHighestLevel: (n) => setHighestLevel(Math.max(1, n)),
     addPoints: (n) => setPoints((p) => Math.max(0, p + n)),
     addXp: (n) => setXp((x) => Math.max(0, x + n)),
     setUpgrades,
     setStaff,
+    setGear,
+    setBedUpgrades,
     setBedOverride,
     jobSecurity,
     setJobSecurity: (n) => setJobSecurity(Math.max(0, Math.min(100, n))),
+    openLadder: () => setPhase("ladder"),
     resetSave: () => {
       try {
         window.localStorage.removeItem(SAVE_KEY);
@@ -257,8 +270,12 @@ function Game() {
       setPoints(0);
       setXp(0);
       setLevel(1);
+      setHighestLevel(1);
+      setWardProgress({});
       setUpgrades({ speed: 0, response: 0, equipment: 0 });
       setStaff([]);
+      setGear([]);
+      setBedUpgrades([]);
       setBedOverride(null);
       setTutorialDone(false);
       setJobSecurity(JOB_SECURITY_START);
