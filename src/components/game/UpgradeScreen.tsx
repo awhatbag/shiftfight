@@ -2,10 +2,13 @@ import { cn } from "@/lib/utils";
 import {
   bedsForLevel,
   MAX_BEDS,
+  MAX_STAFF,
   STAFF,
   UPGRADE_INFO,
   type Upgrades,
 } from "@/game/config";
+import { GEAR_CATEGORIES, GEAR_ITEMS } from "@/game/gear";
+import { BED_UPGRADES } from "@/game/bedUpgrades";
 
 export function UpgradeScreen({
   points,
@@ -14,8 +17,12 @@ export function UpgradeScreen({
   upgrades,
   bedCount,
   staff,
+  gear,
+  bedUpgrades,
   onBuy,
   onHire,
+  onBuyGear,
+  onBuyBedUpgrade,
   onPlay,
   onSave,
   saveNote,
@@ -33,19 +40,22 @@ export function UpgradeScreen({
   upgrades: Upgrades;
   bedCount: number;
   staff: string[];
+  gear: string[];
+  bedUpgrades: string[];
   onBuy: (k: keyof Upgrades, cost: number) => void;
   onHire: (k: string, cost: number) => void;
+  onBuyGear: (k: string, cost: number) => void;
+  onBuyBedUpgrade: (k: string, cost: number) => void;
   onPlay: () => void;
   onSave: () => void;
   saveNote: string;
   onBack: () => void;
 }) {
   const maxTier = rank.level >= 4 ? 5 : 4;
-  const staffUnlocked = rank.level >= 2;
+  const seatsLeft = MAX_STAFF - staff.length;
   const nextBedLevel = Array.from({ length: 10 }, (_, i) => i + 1).find(
     (l) => l > level && bedsForLevel(l) > bedCount,
   );
-
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
@@ -143,15 +153,100 @@ export function UpgradeScreen({
         </div>
       </div>
 
-
-
+      {/* ---------- nurse equipment ---------- */}
       <div className="space-y-2">
         <p className="font-display text-xs font-black uppercase text-muted-foreground">
-          Hire the team
+          Your kit · equipment & cosmetics
+        </p>
+        {GEAR_CATEGORIES.map((cat) => {
+          const items = GEAR_ITEMS.filter((g) => g.category === cat.key);
+          if (!items.length) return null;
+          return (
+            <div key={cat.key} className="space-y-1.5">
+              <p className="font-display text-[11px] font-black uppercase tracking-widest">
+                {cat.icon} {cat.name}
+              </p>
+              {items.map((g) => {
+                const owned = gear.includes(g.key);
+                const locked = rank.level < (g.rank ?? 1);
+                const can = !owned && !locked && points >= g.cost;
+                return (
+                  <button
+                    key={g.key}
+                    disabled={!can}
+                    onClick={() => onBuyGear(g.key, g.cost)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
+                      can ? "chunky chunky-press" : "opacity-60",
+                    )}
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
+                      {g.icon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display truncate text-sm font-black uppercase">
+                        {g.name}
+                      </p>
+                      <p className="text-[11px] leading-tight text-muted-foreground">
+                        {g.blurb}
+                      </p>
+                    </div>
+                    <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
+                      {owned ? "OWNED" : locked ? `🔒 Lv${g.rank}` : `⭐${g.cost}`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ---------- bed upgrades ---------- */}
+      <div className="space-y-2">
+        <p className="font-display text-xs font-black uppercase text-muted-foreground">
+          🛏️ Bed upgrades · change how the bays behave
+        </p>
+        {BED_UPGRADES.map((b) => {
+          const owned = bedUpgrades.includes(b.key);
+          const locked = rank.level < (b.rank ?? 1);
+          const can = !owned && !locked && points >= b.cost;
+          return (
+            <button
+              key={b.key}
+              disabled={!can}
+              onClick={() => onBuyBedUpgrade(b.key, b.cost)}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
+                can ? "chunky chunky-press" : "opacity-60",
+              )}
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
+                {b.icon}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-display truncate text-sm font-black uppercase">{b.name}</p>
+                <p className="text-[11px] leading-tight text-muted-foreground">{b.blurb}</p>
+              </div>
+              <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
+                {owned ? "FITTED" : locked ? `🔒 Lv${b.rank}` : `⭐${b.cost}`}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ---------- staff ---------- */}
+      <div className="space-y-2">
+        <p className="font-display text-xs font-black uppercase text-muted-foreground">
+          Hire the team · {staff.length}/{MAX_STAFF} seats filled
         </p>
         {STAFF.map((s) => {
           const hired = staff.includes(s.key);
-          const can = !hired && staffUnlocked && points >= s.cost;
+          const need = s.rank ?? 2;
+          const locked = rank.level < need;
+          const full = seatsLeft <= 0;
+          const can = !hired && !locked && !full && points >= s.cost;
           return (
             <button
               key={s.key}
@@ -166,13 +261,17 @@ export function UpgradeScreen({
                 {s.icon}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="font-display truncate text-sm font-black uppercase">
-                  {s.name}
-                </p>
-                <p className="truncate text-[11px] text-muted-foreground">{s.bonus}</p>
+                <p className="font-display truncate text-sm font-black uppercase">{s.name}</p>
+                <p className="text-[11px] leading-tight text-muted-foreground">{s.bonus}</p>
               </div>
               <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
-                {hired ? "ON SHIFT" : staffUnlocked ? `⭐${s.cost}` : "🔒 XP Lv2"}
+                {hired
+                  ? "ON SHIFT"
+                  : locked
+                    ? `🔒 XP Lv${need}`
+                    : full
+                      ? "NO SEATS"
+                      : `⭐${s.cost}`}
               </span>
             </button>
           );
