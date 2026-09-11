@@ -574,6 +574,16 @@ function Game() {
             )}
           </div>
         )}
+
+        {slotPicker && (
+          <SaveSlotPicker
+            mode={slotPicker}
+            slots={slots}
+            onSave={saveToSlot}
+            onLoad={loadFromSlot}
+            onClose={() => setSlotPicker(null)}
+          />
+        )}
       </div>
     </main>
   );
