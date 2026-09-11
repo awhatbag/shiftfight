@@ -66,6 +66,11 @@ type SaveData = {
   wardProgress?: WardProgress;
 };
 
+const SLOTS_KEY = "shift-fight-saves";
+const SLOT_COUNT = 3;
+
+export type SaveSlot = { name: string; savedAt: number; data: SaveData } | null;
+
 function readSave(): SaveData | null {
   if (typeof window === "undefined") return null;
   try {
@@ -75,6 +80,43 @@ function readSave(): SaveData | null {
     return null;
   }
 }
+
+/** three named save files, with a one-time migration of the old single save */
+function readSlots(): SaveSlot[] {
+  const empty: SaveSlot[] = Array.from({ length: SLOT_COUNT }, () => null);
+  if (typeof window === "undefined") return empty;
+  try {
+    const raw = window.localStorage.getItem(SLOTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as SaveSlot[];
+      return empty.map((_, i) => parsed[i] ?? null);
+    }
+  } catch {
+    return empty;
+  }
+  const legacy = readSave();
+  if (legacy) {
+    const migrated = [...empty];
+    migrated[0] = { name: "My shift", savedAt: Date.now(), data: legacy };
+    try {
+      window.localStorage.setItem(SLOTS_KEY, JSON.stringify(migrated));
+    } catch {
+      /* storage unavailable */
+    }
+    return migrated;
+  }
+  return empty;
+}
+
+function writeSlots(slots: SaveSlot[]) {
+  try {
+    window.localStorage.setItem(SLOTS_KEY, JSON.stringify(slots));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 
 type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired" | "ladder";
 
