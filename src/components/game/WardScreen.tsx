@@ -4,6 +4,8 @@ import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
+import { NO_EFFECTS, type Effects } from "@/game/gear";
+import { shiftTitle } from "@/game/shifts";
 import {
   buzz,
   playBad,
@@ -128,6 +130,7 @@ export function WardScreen({
   jobSecurity = 100,
   tutorial = false,
   onTutorialDone,
+  mods = NO_EFFECTS,
 }: {
   level: number;
   upgrades: Upgrades;
@@ -148,7 +151,10 @@ export function WardScreen({
   /** show the first-shift walkthrough */
   tutorial?: boolean;
   onTutorialDone?: () => void;
+  /** combined gear / bed-upgrade / staff effects for this shift */
+  mods?: Effects;
 }) {
+  const story = shiftTitle(level);
   const cfg = useMemo(() => levelConfig(level), [level]);
   /** every bed the player owns is a live bed — purchased beds unlock immediately */
   const activeBeds = Math.max(1, bedCount);
@@ -432,6 +438,8 @@ export function WardScreen({
       if (roll > w[0]) sev = 2;
       roll -= w[0];
       if (roll > w[1]) sev = 3;
+      /** bed upgrades / gear can quieten the silly routine bells */
+      if (sev === 1 && mods.sillyMult < 1 && Math.random() > mods.sillyMult) return;
       const pool = EVENTS.filter((ev) => ev.severity === sev);
       const def = pool[Math.floor(Math.random() * pool.length)]!;
       const u = URGENCY_META[urgencyOf(def)];
@@ -441,7 +449,13 @@ export function WardScreen({
         def,
         born: gameT.current,
         scores: rollOutcomes(def),
-        ttl: def.ttl * ttlMult(upgrades) * u.mult * cfg.timeMult * (1 - heat * 0.18),
+        ttl:
+          def.ttl *
+          ttlMult(upgrades) *
+          mods.ttlMult *
+          u.mult *
+          cfg.timeMult *
+          (1 - heat * 0.18),
       };
       // the bell only ever rings because this patient is ringing it
       if (def.callBell) playCallBell();
