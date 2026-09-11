@@ -580,14 +580,10 @@ function Game() {
 }
 
 function IntroScreen({
-  xp,
-  points,
-  level,
   soundOn,
   hapticsOn,
   onToggleSound,
   onToggleHaptics,
-  onSave,
   onLoad,
   hasSave,
   saveNote,
@@ -595,14 +591,10 @@ function IntroScreen({
   onDev,
   onLadder,
 }: {
-  xp: number;
-  points: number;
-  level: number;
   soundOn: boolean;
   hapticsOn: boolean;
   onToggleSound: () => void;
   onToggleHaptics: () => void;
-  onSave: () => void;
   onLoad: () => void;
   hasSave: boolean;
   saveNote: string;
