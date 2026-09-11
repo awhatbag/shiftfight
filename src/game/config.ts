@@ -1,3 +1,5 @@
+import type { Effects } from "./gear";
+
 export type ActionKind =
   | "ASSESS"
   | "INTERVENE"
