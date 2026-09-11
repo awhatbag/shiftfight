@@ -4,7 +4,6 @@ import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
-import { JobSecurityBar } from "@/components/game/JobSecurityBar";
 import { bedsForLevel, MAX_LEVEL, nurseRank, type Upgrades } from "@/game/config";
 import {
   JOB_SECURITY_REHIRE,
@@ -231,7 +230,6 @@ function Game() {
             xp={xp}
             points={points}
             level={level}
-            jobSecurity={jobSecurity}
             soundOn={soundOn}
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
@@ -334,7 +332,6 @@ function IntroScreen({
   xp,
   points,
   level,
-  jobSecurity,
   soundOn,
   hapticsOn,
   onToggleSound,
@@ -349,7 +346,6 @@ function IntroScreen({
   xp: number;
   points: number;
   level: number;
-  jobSecurity: number;
   soundOn: boolean;
   hapticsOn: boolean;
   onToggleSound: () => void;
@@ -391,11 +387,6 @@ function IntroScreen({
       <p className="font-display text-xs font-black uppercase text-muted-foreground">
         Shift Lv {level} · ⭐ {points} · ✨ {xp} XP · {nurseRank(xp).title}
       </p>
-
-      <div className="w-full">
-        <JobSecurityBar value={jobSecurity} />
-      </div>
-
 
       <div className="grid w-full grid-cols-2 gap-2">
         <button
