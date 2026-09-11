@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { shiftTitle } from "@/game/shifts";
 import { wardLadder } from "@/game/wards";
