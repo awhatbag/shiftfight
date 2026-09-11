@@ -425,8 +425,8 @@ function Game() {
           />
         )}
 
-        {/* global menu — on every screen; in-shift the pause button opens the same menu */}
-        {phase !== "dev" && (
+        {/* global menu — on every screen; in-shift the ⏸️ pause button opens the same menu */}
+        {phase !== "dev" && phase !== "shift" && (
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
@@ -435,7 +435,7 @@ function Game() {
             ☰ Menu
           </button>
         )}
-        {menuOpen && phase !== "shift" && (
+        {menuOpen && (
           <div className="absolute inset-0 z-[75] flex flex-col items-center justify-center gap-3 bg-background/95 p-6">
             <p className="font-display text-3xl font-black uppercase">☰ Menu</p>
             <div className="grid w-full grid-cols-2 gap-2">
