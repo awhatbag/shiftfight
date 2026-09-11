@@ -21,12 +21,14 @@ export function LadderScreen({
   const ladder = wardLadder(highestLevel);
 
   /* the phone's own back button leaves the ladder, just like the BACK button */
+  const backRef = useRef(onBack);
+  backRef.current = onBack;
   useEffect(() => {
     window.history.pushState({ ladder: true }, "");
-    const onPop = () => onBack();
+    const onPop = () => backRef.current();
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [onBack]);
+  }, []);
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
