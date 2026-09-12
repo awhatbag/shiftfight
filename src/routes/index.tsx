@@ -771,6 +771,7 @@ function IntroScreen({
   soundOn,
   hapticsOn,
   onToggleSound,
+  onToggleAllAudio,
   onToggleHaptics,
   onLoad,
   hasSave,
