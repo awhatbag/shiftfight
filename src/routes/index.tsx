@@ -29,6 +29,13 @@ import {
   setHapticsEnabled,
   setSoundEnabled,
 } from "@/lib/sfx";
+import {
+  isMusicOn,
+  playMusic,
+  stopMusic,
+  subscribeMusic,
+  toggleMusic,
+} from "@/lib/music";
 
 const TITLE = "Shift Fight! — Hospital Ward Arcade";
 const DESC =
@@ -748,8 +755,29 @@ function IntroScreen({
   onDev: () => void;
   onLadder: () => void;
 }) {
+  const [musicOn, setMusicOnState] = useState(isMusicOn);
+
+  useEffect(() => {
+    playMusic("title");
+    const retry = () => playMusic("title");
+    window.addEventListener("pointerdown", retry, { once: true });
+    const unsub = subscribeMusic(setMusicOnState);
+    return () => {
+      window.removeEventListener("pointerdown", retry);
+      unsub();
+      stopMusic("title");
+    };
+  }, []);
+
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-5 bg-[image:var(--gradient-sky)] p-6 text-center">
+    <div className="relative flex h-full flex-col items-center justify-center gap-5 bg-[image:var(--gradient-sky)] p-6 text-center">
+      <button
+        onClick={toggleMusic}
+        aria-label={musicOn ? "Mute music" : "Unmute music"}
+        className="chunky-press absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-secondary text-lg text-secondary-foreground"
+      >
+        {musicOn ? "🎵" : "🔇"}
+      </button>
       <div className="animate-bob text-6xl">🏥</div>
       <div>
         <h1 className="font-display text-5xl font-black leading-none tracking-tight">
