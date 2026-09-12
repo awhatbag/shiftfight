@@ -191,6 +191,7 @@ function Game() {
   const [highestLevel, setHighestLevel] = useState(1);
   const [wardProgress, setWardProgress] = useState<WardProgress>({});
   const [soundOn, setSoundOn] = useState(true);
+  const [musicOn, setMusicOnState] = useState(isMusicOn);
   const [hapticsOn, setHapticsOn] = useState(true);
   const [saveNote, setSaveNote] = useState("");
   const [hasSave, setHasSave] = useState(false);
