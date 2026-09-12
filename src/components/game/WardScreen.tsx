@@ -160,6 +160,13 @@ export function WardScreen({
   mods?: Effects;
 }) {
   const story = shiftTitle(level);
+  const [musicOn, setMusicOnState] = useState(isMusicOn);
+  useEffect(() => {
+    const unsub = subscribeMusic(setMusicOnState);
+    return () => {
+      unsub();
+    };
+  }, []);
   const cfg = useMemo(() => levelConfig(level), [level]);
   /** every bed the player owns is a live bed — purchased beds unlock immediately */
   const activeBeds = Math.max(1, bedCount);
