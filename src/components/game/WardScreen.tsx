@@ -1041,19 +1041,6 @@ export function WardScreen({
       <div ref={wardRef} className="relative flex-1 select-none overflow-hidden">
         <PixelWardRoom />
 
-        {/* curtain obstacles */}
-        {GATES.map((g) => (
-          <div
-            key={g.y}
-            className="pointer-events-none absolute h-[3px] w-[16%] bg-[var(--ward-frame)]"
-            style={{
-              top: `${g.y * 100}%`,
-              left: g.side === "left" ? "42%" : "49%",
-              transform: "translateY(-50%)",
-            }}
-          />
-        ))}
-
         {/* staff characters */}
         {staff.map((k) => {
           const info = STAFF.find((s) => s.key === k);

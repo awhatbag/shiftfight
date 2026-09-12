@@ -75,9 +75,12 @@ export function Bed({
       )}
     >
       {bed.locked ? (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
-          <span className="text-2xl">🔒</span>
-          <span className="font-display text-[10px] font-bold uppercase">Empty bay</span>
+        <div className="relative flex h-full w-full flex-col items-center justify-center gap-1 overflow-hidden text-muted-foreground">
+          <div className="absolute inset-1 opacity-20 grayscale">
+            <BedSprite mood="calm" />
+          </div>
+          <span className="relative grid h-7 w-7 place-items-center border-2 border-pixel-ink bg-card text-sm shadow-[2px_2px_0_var(--pixel-ink)]">🔒</span>
+          <span className="font-display relative bg-card/90 px-1 text-[9px] font-bold uppercase">Empty bay</span>
         </div>
       ) : (
         <>
