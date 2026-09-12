@@ -227,7 +227,12 @@ function Game() {
 
   useEffect(() => subscribeDevInfo((i) => setDevEvents(i.activeEvents)), []);
 
-  useEffect(() => subscribeMusic(setMusicOnState), []);
+  useEffect(() => {
+    const unsub = subscribeMusic(setMusicOnState);
+    return () => {
+      unsub();
+    };
+  }, []);
 
   function completeTutorial() {
     try {
