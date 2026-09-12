@@ -502,6 +502,7 @@ function Game() {
             soundOn={soundOn}
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
+            onToggleAllAudio={toggleAllAudio}
             onToggleHaptics={toggleHaptics}
             onLoad={loadProgress}
             hasSave={hasSave}
