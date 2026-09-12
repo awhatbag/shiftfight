@@ -843,7 +843,7 @@ function IntroScreen({
           onClick={onToggleAllAudio}
           className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
         >
-          🔊 Sound {soundOn ? "ON" : "OFF"}
+          🔊 Sound {soundOn && musicOn ? "ON" : "OFF"}
         </button>
         <button
           onClick={onToggleHaptics}
