@@ -47,9 +47,6 @@
   --color-sheet: var(--sheet);
   --color-linen: var(--linen);
 
-  --color-pixel-ink: var(--pixel-ink);
-  --color-pixel-panel: var(--pixel-panel);
-
   --font-display: "Baloo 2", ui-rounded, system-ui, sans-serif;
   --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
 
@@ -105,9 +102,6 @@
   --shadow-pop: 0 6px 0 0 color-mix(in oklab, var(--foreground) 18%, transparent);
   --shadow-card: 0 10px 24px -12px color-mix(in oklab, var(--foreground) 40%, transparent);
   --shadow-glow: 0 0 0 4px color-mix(in oklab, var(--gold) 45%, transparent);
-
-  --pixel-ink: oklch(0.39 0.045 235);
-  --pixel-panel: oklch(0.94 0.035 215);
 }
 
 .dark {
@@ -228,50 +222,6 @@
     transform: translateY(4px);
     box-shadow: 0 2px 0 0 color-mix(in oklab, var(--foreground) 18%, transparent);
   }
-}
-
-.ward-pixel {
-  --ward-frame: oklch(0.38 0.055 235);
-  --ward-frame-hi: oklch(0.56 0.055 225);
-  --ward-wall: oklch(0.86 0.025 85);
-  --ward-wall-light: oklch(0.95 0.018 85);
-  --ward-wall-dark: oklch(0.47 0.045 235);
-  --ward-trim: oklch(0.58 0.085 225);
-  --ward-floor: oklch(0.82 0.04 220);
-  --ward-floor-line: oklch(0.75 0.045 220);
-  --ward-floor-glint: oklch(0.91 0.025 215);
-  --ward-window: oklch(0.76 0.11 215);
-  --ward-window-dark: oklch(0.45 0.075 230);
-  --ward-window-shine: oklch(0.94 0.045 205);
-  --ward-door: oklch(0.57 0.09 225);
-  --ward-door-light: oklch(0.74 0.07 220);
-  --ward-bed: oklch(0.66 0.105 230);
-  --ward-bed-light: oklch(0.8 0.065 220);
-  --ward-desk: oklch(0.82 0.055 215);
-  --ward-desk-light: oklch(0.94 0.025 205);
-  --ward-desk-dark: oklch(0.59 0.075 230);
-  image-rendering: pixelated;
-}
-
-.ward-level-2 { --ward-wall: oklch(0.9 0.035 115); --ward-trim: oklch(0.62 0.09 165); --ward-floor: oklch(0.85 0.045 155); --ward-floor-line: oklch(0.76 0.055 160); --ward-bed: oklch(0.66 0.11 175); --ward-desk: oklch(0.82 0.06 160); }
-.ward-level-3 { --ward-wall: oklch(0.91 0.04 75); --ward-trim: oklch(0.68 0.11 55); --ward-floor: oklch(0.86 0.045 75); --ward-floor-line: oklch(0.78 0.055 70); --ward-bed: oklch(0.71 0.12 55); --ward-desk: oklch(0.87 0.065 70); }
-.ward-level-4 { --ward-wall: oklch(0.89 0.035 345); --ward-trim: oklch(0.65 0.1 345); --ward-floor: oklch(0.85 0.04 340); --ward-floor-line: oklch(0.76 0.05 340); --ward-bed: oklch(0.69 0.11 345); --ward-desk: oklch(0.86 0.055 345); }
-.ward-level-5 { --ward-wall: oklch(0.88 0.04 280); --ward-trim: oklch(0.61 0.1 275); --ward-floor: oklch(0.82 0.045 275); --ward-floor-line: oklch(0.73 0.055 275); --ward-bed: oklch(0.64 0.115 275); --ward-desk: oklch(0.81 0.065 275); }
-.ward-level-6 { --ward-wall: oklch(0.9 0.035 195); --ward-trim: oklch(0.58 0.105 195); --ward-floor: oklch(0.83 0.045 195); --ward-floor-line: oklch(0.74 0.055 195); --ward-bed: oklch(0.61 0.12 195); --ward-desk: oklch(0.82 0.065 195); }
-.ward-level-7 { --ward-wall: oklch(0.9 0.045 130); --ward-trim: oklch(0.61 0.115 135); --ward-floor: oklch(0.84 0.05 130); --ward-floor-line: oklch(0.75 0.06 135); --ward-bed: oklch(0.65 0.13 135); --ward-desk: oklch(0.83 0.07 130); }
-.ward-level-8 { --ward-wall: oklch(0.9 0.045 40); --ward-trim: oklch(0.63 0.13 30); --ward-floor: oklch(0.85 0.05 38); --ward-floor-line: oklch(0.76 0.06 35); --ward-bed: oklch(0.67 0.14 28); --ward-desk: oklch(0.84 0.075 40); }
-.ward-level-9 { --ward-wall: oklch(0.86 0.035 250); --ward-trim: oklch(0.52 0.105 250); --ward-floor: oklch(0.77 0.045 250); --ward-floor-line: oklch(0.68 0.055 250); --ward-bed: oklch(0.58 0.13 250); --ward-desk: oklch(0.75 0.07 250); }
-.ward-level-10 { --ward-wall: oklch(0.87 0.035 15); --ward-trim: oklch(0.57 0.14 15); --ward-floor: oklch(0.79 0.04 15); --ward-floor-line: oklch(0.7 0.055 15); --ward-bed: oklch(0.62 0.15 15); --ward-desk: oklch(0.77 0.075 15); }
-
-.ward-pixel-image,
-.ward-pixel svg {
-  image-rendering: pixelated;
-  shape-rendering: crispEdges;
-}
-
-.pixel-panel {
-  border-radius: 3px;
-  box-shadow: 3px 3px 0 var(--ward-frame);
 }
 
 .game-frozen *,
