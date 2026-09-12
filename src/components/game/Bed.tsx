@@ -11,35 +11,28 @@ function BedSprite({ mood }: { mood: "calm" | "worried" | "urgent" }) {
   const face =
     mood === "urgent" ? "😫" : mood === "worried" ? "😕" : "😌";
   return (
-    <svg viewBox="0 0 120 64" className="h-full w-full">
-      {/* head board */}
-      <rect x="4" y="10" width="8" height="38" rx="3" fill="oklch(0.72 0.03 235)" />
-      <rect x="6" y="12" width="4" height="20" rx="2" fill="oklch(0.86 0.02 235)" />
-      {/* foot board */}
-      <rect x="108" y="20" width="8" height="28" rx="3" fill="oklch(0.72 0.03 235)" />
-      {/* mattress */}
-      <rect x="10" y="30" width="100" height="14" rx="6" fill="var(--color-linen)" stroke="oklch(0.7 0.03 235)" strokeWidth="1.5" />
-      {/* blanket */}
-      <path d="M52 30h56a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4H52z" fill="var(--color-sheet)" />
-      <path d="M52 33h60" stroke="oklch(0.72 0.05 230)" strokeWidth="2" />
-      {/* pillow */}
-      <rect x="14" y="22" width="24" height="11" rx="5" fill="oklch(0.99 0.005 240)" stroke="oklch(0.8 0.02 235)" strokeWidth="1.5" />
-      {/* patient head */}
-      <circle cx="40" cy="24" r="9" fill="oklch(0.87 0.06 60)" stroke="oklch(0.66 0.07 55)" strokeWidth="1.2" />
-      <text x="40" y="28" textAnchor="middle" fontSize="11">
+    <svg viewBox="0 0 72 104" className="h-full w-full ward-pixel-image">
+      {/* curtain rail and stepped blue curtain */}
+      <path d="M7 11V3H65V11M10 3h52" fill="none" stroke="var(--ward-frame)" strokeWidth="3" />
+      <rect x="4" y="9" width="8" height="61" fill="var(--ward-bed)" />
+      <rect x="7" y="12" width="3" height="55" fill="var(--ward-bed-light)" />
+      <rect x="60" y="9" width="8" height="61" fill="var(--ward-bed)" />
+      <rect x="62" y="12" width="3" height="55" fill="var(--ward-bed-light)" />
+      {/* top-down bed frame */}
+      <rect x="15" y="13" width="42" height="82" fill="var(--ward-frame)" />
+      <rect x="18" y="16" width="36" height="72" fill="var(--color-linen)" />
+      <rect x="20" y="20" width="32" height="17" fill="var(--ward-wall-light)" />
+      <rect x="19" y="49" width="34" height="37" fill="var(--ward-bed)" />
+      <rect x="22" y="52" width="28" height="5" fill="var(--ward-bed-light)" />
+      {/* patient, retained as the existing simple character marker */}
+      <circle cx="36" cy="40" r="9" fill="oklch(0.87 0.06 60)" stroke="var(--ward-frame)" strokeWidth="2" />
+      <text x="36" y="44" textAnchor="middle" fontSize="10">
         {face}
       </text>
-      {/* body lump under blanket */}
-      <path d="M50 32q14-8 26 0" stroke="oklch(0.72 0.05 230)" strokeWidth="2" fill="none" />
-      {/* frame + legs */}
-      <rect x="10" y="44" width="100" height="4" rx="2" fill="oklch(0.65 0.03 235)" />
-      <rect x="20" y="48" width="4" height="9" fill="oklch(0.6 0.02 235)" />
-      <rect x="96" y="48" width="4" height="9" fill="oklch(0.6 0.02 235)" />
-      <circle cx="22" cy="59" r="4" fill="oklch(0.38 0.02 250)" />
-      <circle cx="98" cy="59" r="4" fill="oklch(0.38 0.02 250)" />
-      {/* drip stand */}
-      <rect x="100" y="2" width="2.5" height="30" fill="oklch(0.7 0.02 240)" />
-      <rect x="96" y="4" width="11" height="14" rx="3" fill="oklch(0.85 0.1 155 / 0.8)" stroke="oklch(0.6 0.1 160)" strokeWidth="1.2" />
+      <rect x="17" y="88" width="38" height="8" fill="var(--ward-frame-hi)" />
+      <rect x="25" y="90" width="22" height="3" fill="var(--ward-window-dark)" />
+      <rect x="18" y="96" width="5" height="5" fill="var(--ward-frame)" />
+      <rect x="49" y="96" width="5" height="5" fill="var(--ward-frame)" />
     </svg>
   );
 }
@@ -70,10 +63,10 @@ export function Bed({
       onClick={onTap}
       disabled={bed.locked}
       className={cn(
-        "relative flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl border-2 p-1.5 text-left transition-transform",
+        "pixel-panel relative flex h-full w-full flex-col justify-between overflow-hidden border-2 p-1 text-left transition-transform",
         bed.locked
           ? "border-dashed border-border bg-muted/40"
-          : "border-border bg-linen shadow-[var(--shadow-card)]",
+          : "border-pixel-ink bg-linen",
         (active || nurseHere) && "scale-[1.02] border-gold ring-2 ring-gold",
         event && !urgent && "border-gold",
         urgent && "animate-shake border-alarm",
@@ -97,7 +90,7 @@ export function Bed({
             </span>
           </div>
 
-          <div className="relative mx-auto h-11 w-full">
+          <div className="relative mx-auto min-h-0 flex-1 w-full">
             <BedSprite mood={urgent ? "urgent" : event ? "worried" : "calm"} />
           </div>
 
@@ -105,7 +98,7 @@ export function Bed({
             <div className="animate-pop space-y-1">
               <div
                 className={cn(
-                  "flex items-center gap-1 rounded-lg px-1.5 py-1",
+                "flex items-center gap-1 rounded-sm px-1 py-0.5",
                   urgent ? "bg-alarm text-alarm-foreground" : "bg-gold text-gold-foreground",
                 )}
               >
@@ -114,10 +107,10 @@ export function Bed({
                   {revealed ? event.label : "Needs you"}
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-2 w-full overflow-hidden border border-pixel-ink bg-muted">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-[width] duration-100 ease-linear",
+                    "h-full transition-[width] duration-100 ease-linear",
                     urgent ? "bg-alarm" : "bg-calm",
                   )}
                   style={{ width: `${Math.max(0, progress) * 100}%` }}
@@ -125,7 +118,7 @@ export function Bed({
               </div>
             </div>
           ) : (
-            <div className="rounded-lg bg-muted/70 px-1.5 py-0.5 text-center font-display text-[10px] font-bold uppercase text-muted-foreground">
+            <div className="bg-muted/70 px-1 py-0.5 text-center font-display text-[9px] font-bold uppercase text-muted-foreground">
               stable
             </div>
           )}

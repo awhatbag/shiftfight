@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
+import { PixelCrescentDesk, PixelWardRoom } from "./WardArt";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import { NO_EFFECTS, type Effects } from "@/game/gear";
@@ -93,23 +94,21 @@ type Point = { x: number; y: number };
 
 /** bed layout in ward-percentage coords; corridor runs down the middle */
 const BED_SLOTS: Point[] = [
-  { x: 0.16, y: 0.105 },
-  { x: 0.84, y: 0.105 },
-  { x: 0.16, y: 0.285 },
-  { x: 0.84, y: 0.285 },
-  { x: 0.16, y: 0.465 },
-  { x: 0.84, y: 0.465 },
-  { x: 0.16, y: 0.655 },
-  { x: 0.84, y: 0.655 },
+  { x: 0.14, y: 0.29 },
+  { x: 0.38, y: 0.29 },
+  { x: 0.62, y: 0.29 },
+  { x: 0.86, y: 0.29 },
+  { x: 0.14, y: 0.66 },
+  { x: 0.38, y: 0.66 },
+  { x: 0.62, y: 0.66 },
+  { x: 0.86, y: 0.66 },
 ];
 
-const STATION: Point = { x: 0.5, y: 0.94 };
+const STATION: Point = { x: 0.5, y: 0.91 };
 
 /** curtain sections in the corridor the nurse must walk around */
 const GATES = [
-  { y: 0.25, side: "left" as const, lane: 0.6 },
-  { y: 0.49, side: "right" as const, lane: 0.4 },
-  { y: 0.73, side: "left" as const, lane: 0.6 },
+  { y: 0.47, side: "left" as const, lane: 0.5 },
 ];
 
 const MS_PER_UNIT = (u: Upgrades) => Math.max(620, 1500 - u.speed * 230);
@@ -278,7 +277,7 @@ export function WardScreen({
   const staffHome = useCallback(
     (k: string): Point => {
       const i = Math.max(0, staff.indexOf(k));
-      return { x: i === 0 ? 0.38 : 0.62, y: 0.9 };
+      return { x: i === 0 ? 0.4 : 0.6, y: 0.89 };
     },
     [staff],
   );
@@ -916,16 +915,16 @@ export function WardScreen({
   return (
     <div
       className={cn(
-        "relative flex h-full w-full flex-col bg-[image:var(--gradient-sky)]",
+        `ward-pixel ward-level-${Math.min(10, Math.max(1, level))} relative flex h-full w-full flex-col bg-[var(--ward-wall-dark)]`,
         (manualPause || settingsOpen) && "game-frozen",
       )}
     >
       {/* HUD */}
-      <div className="z-10 space-y-2 px-3 pt-2">
+      <div className="z-10 space-y-1.5 border-b-[3px] border-[var(--ward-frame)] bg-[var(--ward-wall)] px-2 pb-2 pt-2">
         <div className="flex items-stretch gap-2">
           <div
             className={cn(
-              "flex flex-1 items-center gap-2 rounded-2xl border-2 border-border bg-card px-3 py-1.5",
+              "pixel-panel flex flex-1 items-center gap-2 border-2 border-pixel-ink bg-card px-3 py-1.5",
               lowTime && "animate-throb border-alarm",
             )}
           >
@@ -959,21 +958,21 @@ export function WardScreen({
               });
             }}
             aria-label={manualPause ? "Resume shift" : "Pause shift"}
-            className="chunky chunky-press grid w-14 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
+            className="pixel-panel chunky-press grid w-14 shrink-0 place-items-center border-2 border-pixel-ink bg-secondary text-2xl text-secondary-foreground"
           >
             {manualPause ? "▶️" : "⏸️"}
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
             aria-label="Settings"
-            className="chunky chunky-press grid w-14 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
+            className="pixel-panel chunky-press grid w-14 shrink-0 place-items-center border-2 border-pixel-ink bg-secondary text-2xl text-secondary-foreground"
           >
             ⚙️
           </button>
         </div>
 
         <div className="flex items-stretch gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-2xl border-2 border-border bg-card px-2.5 py-1.5">
+          <div className="pixel-panel flex flex-1 items-center gap-2 border-2 border-pixel-ink bg-card px-2.5 py-1.5">
             <span className="text-xl leading-none">❤️</span>
             <div className="min-w-0 flex-1">
               <div className="h-3 overflow-hidden rounded-full bg-muted">
@@ -987,12 +986,12 @@ export function WardScreen({
               </div>
             </div>
           </div>
-          <span className="font-display grid place-items-center rounded-2xl border-2 border-border bg-card px-2 text-sm font-black">
+          <span className="pixel-panel font-display grid place-items-center border-2 border-pixel-ink bg-card px-2 text-sm font-black">
             ⭐{stats.current.points}
           </span>
           <span
             className={cn(
-              "font-display grid place-items-center rounded-2xl border-2 border-border px-2 text-sm font-black",
+              "pixel-panel font-display grid place-items-center border-2 border-pixel-ink px-2 text-sm font-black",
               combo > 2 ? "animate-throb bg-gold text-gold-foreground" : "bg-card",
             )}
           >
@@ -1015,7 +1014,7 @@ export function WardScreen({
                 key={o.key}
                 title={o.label}
                 className={cn(
-                  "flex min-w-0 flex-1 items-center gap-1 rounded-xl border-2 border-border px-1.5 py-0.5 text-[10px] font-bold leading-tight",
+                  "pixel-panel flex min-w-0 flex-1 items-center gap-1 border-2 border-pixel-ink px-1.5 py-0.5 text-[10px] font-bold leading-tight",
                   o.done ? "bg-calm text-calm-foreground" : "bg-card",
                 )}
               >
@@ -1039,20 +1038,17 @@ export function WardScreen({
 
 
       {/* WARD */}
-      <div ref={wardRef} className="relative flex-1 select-none overflow-hidden px-1 py-2">
-        {/* wide corridor floor */}
-        <div className="pointer-events-none absolute inset-y-0 left-1/2 w-[46%] -translate-x-1/2 rounded-3xl bg-floor shadow-[inset_0_0_0_2px_var(--color-border)]">
-          <div className="absolute inset-x-[46%] inset-y-3 rounded-full bg-primary/10" />
-        </div>
+      <div ref={wardRef} className="relative flex-1 select-none overflow-hidden">
+        <PixelWardRoom />
 
         {/* curtain obstacles */}
         {GATES.map((g) => (
           <div
             key={g.y}
-            className="pointer-events-none absolute h-[8%] w-[22%] rounded-xl bg-[repeating-linear-gradient(90deg,var(--color-sheet)_0_6px,var(--color-linen)_6px_12px)] shadow-[inset_0_0_0_2px_var(--color-border)]"
+            className="pointer-events-none absolute h-[3px] w-[16%] bg-[var(--ward-frame)]"
             style={{
               top: `${g.y * 100}%`,
-              left: g.side === "left" ? "29%" : "49%",
+              left: g.side === "left" ? "42%" : "49%",
               transform: "translateY(-50%)",
             }}
           />
@@ -1095,7 +1091,7 @@ export function WardScreen({
           return (
             <div
               key={b.id}
-              className="absolute h-[15%] w-[29%]"
+              className="absolute h-[29%] w-[21%]"
               style={{
                 left: `${slot.x * 100}%`,
                 top: `${slot.y * 100}%`,
@@ -1480,28 +1476,27 @@ export function WardScreen({
             })()}
           </div>
         ) : (
-          <div className="relative mx-auto h-[112px] max-w-[430px]">
+          <div className="relative mx-auto h-[112px] max-w-[440px]">
             <button
               onClick={goStation}
-              className="pointer-events-auto absolute inset-x-0 bottom-0 h-[96px] overflow-hidden rounded-t-[2.25rem] rounded-b-xl border-2 border-border bg-secondary text-left shadow-[0_-8px_20px_-14px_color-mix(in_oklab,var(--foreground)_45%,transparent)]"
+              className="pointer-events-auto absolute inset-x-0 bottom-0 h-[100px] overflow-hidden text-left"
             >
-              <div className="absolute inset-x-9 top-3 h-[55px] rounded-t-[1.65rem] border-2 border-border bg-background/55" />
-              <div className="absolute inset-x-3 bottom-2 h-7 rounded-lg border-2 border-border bg-card/70" />
+              <PixelCrescentDesk />
 
-              <div className="absolute left-4 top-2 h-12 w-[25%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
-              <div className="absolute right-4 top-2 h-12 w-[25%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
+              <div className="absolute left-5 top-5 h-8 w-[24%] border-2 border-[var(--ward-frame)] bg-[var(--ward-desk-light)]/60" aria-label="Open desk space for future upgrades" />
+              <div className="absolute right-5 top-5 h-8 w-[24%] border-2 border-[var(--ward-frame)] bg-[var(--ward-desk-light)]/60" aria-label="Open desk space for future upgrades" />
 
               <div className="absolute left-1/2 top-0 -translate-x-1/2">
-                <div className="grid h-12 w-16 place-items-center rounded-md border-[3px] border-border bg-primary/20 shadow-md" aria-label="Nurses station computer">
+                <div className="grid h-11 w-16 place-items-center border-[3px] border-[var(--ward-frame)] bg-[var(--ward-window)] shadow-[3px_3px_0_var(--ward-frame)]" aria-label="Nurses station computer">
                   <span className="text-2xl">🖥️</span>
                 </div>
-                <div className="mx-auto h-2 w-8 rounded-b-md bg-border" />
+                <div className="mx-auto h-2 w-8 bg-[var(--ward-frame)]" />
               </div>
               <span className="absolute right-[21%] top-4 grid h-9 w-10 place-items-center text-2xl" aria-label="Nurses station phone">
                 ☎️
               </span>
 
-              <div className="absolute left-4 top-3 w-[25%] px-1 text-center">
+              <div className="absolute left-5 top-6 w-[24%] px-1 text-center">
                 <p className="font-display truncate text-xs font-black uppercase">
                   Lv {cfg.level}
                 </p>
@@ -1509,7 +1504,7 @@ export function WardScreen({
               </div>
             </button>
 
-            <div className="pointer-events-none absolute inset-x-4 bottom-0 grid grid-cols-5 gap-2" aria-label="Five station chairs">
+            <div className="pointer-events-none absolute inset-x-5 bottom-0 grid grid-cols-5 gap-2" aria-label="Five station chairs">
               {Array.from({ length: 5 }, (_, i) => {
                 const staffKey = i > 0 ? staff[i - 1] : undefined;
                 const info = staffKey ? STAFF.find((s) => s.key === staffKey) : undefined;
@@ -1523,11 +1518,11 @@ export function WardScreen({
                     onClick={() => staffKey ? tapStaff(staffKey) : goStation()}
                     aria-label={staffKey ? `Send ${info?.name ?? "staff"}` : i === 0 ? "Nurse chair" : "Empty chair"}
                     className={cn(
-                      "pointer-events-auto relative grid h-9 place-items-center rounded-b-xl border-2 border-t-0 border-border bg-card text-xl shadow-md",
+                      "pointer-events-auto relative grid h-9 place-items-center border-2 border-t-0 border-[var(--ward-frame)] bg-[var(--ward-desk-dark)] text-xl shadow-[2px_2px_0_var(--ward-frame)]",
                       activated && "animate-throb border-alarm ring-4 ring-alarm/30",
                     )}
                   >
-                    <span className="absolute -top-5 grid h-9 w-9 place-items-center rounded-full border-2 border-border bg-card">
+                    <span className="absolute -top-5 grid h-9 w-9 place-items-center border-2 border-[var(--ward-frame)] bg-card">
                       {playerSeated ? (
                         <span className="block h-8 w-7 overflow-hidden">
                           <Nurse moving={false} />
