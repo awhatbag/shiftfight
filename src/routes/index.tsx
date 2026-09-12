@@ -5,6 +5,7 @@ import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
 import { LadderScreen } from "@/components/game/LadderScreen";
+import { CreditsScreen } from "@/components/game/CreditsScreen";
 import {
   bedsForLevel,
   MAX_LEVEL,
@@ -199,6 +200,7 @@ function Game() {
   const [devEvents, setDevEvents] = useState(0);
   /* global menu — available on every non-shift screen (in-shift the pause veil is the menu) */
   const [menuOpen, setMenuOpen] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
 
   useEffect(() => {
     const s = readSlots();
