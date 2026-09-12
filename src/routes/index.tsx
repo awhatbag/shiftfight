@@ -397,11 +397,20 @@ function Game() {
     setPhase("summary");
   }
 
+  /** game sound effects only */
   function toggleSound() {
     setSoundOn((on) => {
       setSoundEnabled(!on);
       return !on;
     });
+  }
+
+  /** master switch — turns every sound (effects + music) on or off together */
+  function toggleAllAudio() {
+    const next = !(soundOn && musicOn);
+    setSoundOn(next);
+    setSoundEnabled(next);
+    setMusicEnabled(next);
   }
 
   function toggleHaptics() {
