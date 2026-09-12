@@ -639,20 +639,37 @@ function Game() {
         {menuOpen && (
           <div className="absolute inset-0 z-[75] flex flex-col items-center justify-center gap-3 bg-background/95 p-6">
             <p className="font-display text-3xl font-black uppercase">☰ Menu</p>
-            <div className="grid w-full grid-cols-2 gap-2">
+            <div className="w-full space-y-2 rounded-2xl border-2 border-border bg-card/80 p-2">
+              <p className="font-display text-xs font-black uppercase tracking-widest text-muted-foreground">
+                Audio
+              </p>
               <button
-                onClick={toggleSound}
-                className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+                onClick={toggleAllAudio}
+                className="chunky chunky-press w-full rounded-2xl bg-primary py-3 font-display text-base font-black uppercase text-primary-foreground"
               >
-                🔊 Sound {soundOn ? "ON" : "OFF"}
+                🔊 All sound {soundOn && musicOn ? "ON" : "OFF"}
               </button>
-              <button
-                onClick={toggleHaptics}
-                className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
-              >
-                📳 Haptics {hapticsOn ? "ON" : "OFF"}
-              </button>
+              <div className="grid w-full grid-cols-2 gap-2">
+                <button
+                  onClick={toggleSound}
+                  className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+                >
+                  🎮 Game sounds {soundOn ? "ON" : "OFF"}
+                </button>
+                <button
+                  onClick={toggleMusic}
+                  className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+                >
+                  🎵 Music {musicOn ? "ON" : "OFF"}
+                </button>
+              </div>
             </div>
+            <button
+              onClick={toggleHaptics}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+            >
+              📳 Haptics {hapticsOn ? "ON" : "OFF"}
+            </button>
             <button
               onClick={toggleAutoSave}
               className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
