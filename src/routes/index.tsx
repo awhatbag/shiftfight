@@ -32,6 +32,7 @@ import {
 import {
   isMusicOn,
   playMusic,
+  setMusicEnabled,
   stopMusic,
   subscribeMusic,
   toggleMusic,
