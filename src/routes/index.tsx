@@ -794,11 +794,8 @@ function IntroScreen({
 
   useEffect(() => {
     playMusic("title");
-    const retry = () => playMusic("title");
-    window.addEventListener("pointerdown", retry, { once: true });
     const unsub = subscribeMusic(setMusicOnState);
     return () => {
-      window.removeEventListener("pointerdown", retry);
       unsub();
       stopMusic("title");
     };
