@@ -5,6 +5,7 @@ import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
 import { LadderScreen } from "@/components/game/LadderScreen";
+import { CreditsScreen } from "@/components/game/CreditsScreen";
 import {
   bedsForLevel,
   MAX_LEVEL,
@@ -199,6 +200,7 @@ function Game() {
   const [devEvents, setDevEvents] = useState(0);
   /* global menu — available on every non-shift screen (in-shift the pause veil is the menu) */
   const [menuOpen, setMenuOpen] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
 
   useEffect(() => {
     const s = readSlots();
@@ -661,6 +663,15 @@ function Game() {
             >
               🪜 Shift Ladder
             </button>
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                setCreditsOpen(true);
+              }}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+            >
+              🎬 Credits &amp; Contact
+            </button>
             {phase !== "intro" && (
               <button
                 onClick={() => {
@@ -689,6 +700,15 @@ function Game() {
           <div className="pointer-events-none absolute left-1/2 top-2 z-[70] -translate-x-1/2 rounded-full bg-calm px-3 py-1 font-display text-[11px] font-black uppercase text-calm-foreground shadow-md">
             {saveNote}
           </div>
+        )}
+
+        {creditsOpen && (
+          <CreditsScreen
+            onBack={() => {
+              setCreditsOpen(false);
+              setMenuOpen(true);
+            }}
+          />
         )}
 
         {slotPicker && (
