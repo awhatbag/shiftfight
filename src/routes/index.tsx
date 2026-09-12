@@ -783,6 +783,7 @@ function IntroScreen({
   soundOn: boolean;
   hapticsOn: boolean;
   onToggleSound: () => void;
+  onToggleAllAudio: () => void;
   onToggleHaptics: () => void;
   onLoad: () => void;
   hasSave: boolean;
