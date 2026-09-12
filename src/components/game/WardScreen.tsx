@@ -1367,10 +1367,26 @@ export function WardScreen({
             <div className="w-full space-y-2 rounded-3xl border-4 border-border bg-card p-4">
               <h3 className="font-display text-2xl font-black uppercase">Settings</h3>
               <SettingRow
-                label="Sound"
+                label="All sound"
                 icon="🔊"
+                on={soundOn && musicOn}
+                onToggle={() => {
+                  const next = !(soundOn && musicOn);
+                  if (soundOn !== next) onToggleSound();
+                  setMusicEnabled(next);
+                }}
+              />
+              <SettingRow
+                label="Game sounds"
+                icon="🎮"
                 on={soundOn}
                 onToggle={onToggleSound}
+              />
+              <SettingRow
+                label="Music"
+                icon="🎵"
+                on={musicOn}
+                onToggle={toggleMusic}
               />
               <SettingRow
                 label="Haptics"
