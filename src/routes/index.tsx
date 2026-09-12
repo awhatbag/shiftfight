@@ -32,6 +32,7 @@ import {
 import {
   isMusicOn,
   playMusic,
+  setMusicEnabled,
   stopMusic,
   subscribeMusic,
   toggleMusic,
@@ -190,6 +191,7 @@ function Game() {
   const [highestLevel, setHighestLevel] = useState(1);
   const [wardProgress, setWardProgress] = useState<WardProgress>({});
   const [soundOn, setSoundOn] = useState(true);
+  const [musicOn, setMusicOnState] = useState(isMusicOn);
   const [hapticsOn, setHapticsOn] = useState(true);
   const [saveNote, setSaveNote] = useState("");
   const [hasSave, setHasSave] = useState(false);
@@ -224,6 +226,13 @@ function Game() {
   }, []);
 
   useEffect(() => subscribeDevInfo((i) => setDevEvents(i.activeEvents)), []);
+
+  useEffect(() => {
+    const unsub = subscribeMusic(setMusicOnState);
+    return () => {
+      unsub();
+    };
+  }, []);
 
   function completeTutorial() {
     try {
@@ -397,11 +406,20 @@ function Game() {
     setPhase("summary");
   }
 
+  /** game sound effects only */
   function toggleSound() {
     setSoundOn((on) => {
       setSoundEnabled(!on);
       return !on;
     });
+  }
+
+  /** master switch — turns every sound (effects + music) on or off together */
+  function toggleAllAudio() {
+    const next = !(soundOn && musicOn);
+    setSoundOn(next);
+    setSoundEnabled(next);
+    setMusicEnabled(next);
   }
 
   function toggleHaptics() {
@@ -484,6 +502,7 @@ function Game() {
             soundOn={soundOn}
             hapticsOn={hapticsOn}
             onToggleSound={toggleSound}
+            onToggleAllAudio={toggleAllAudio}
             onToggleHaptics={toggleHaptics}
             onLoad={loadProgress}
             hasSave={hasSave}
@@ -621,20 +640,37 @@ function Game() {
         {menuOpen && (
           <div className="absolute inset-0 z-[75] flex flex-col items-center justify-center gap-3 bg-background/95 p-6">
             <p className="font-display text-3xl font-black uppercase">☰ Menu</p>
-            <div className="grid w-full grid-cols-2 gap-2">
+            <div className="w-full space-y-2 rounded-2xl border-2 border-border bg-card/80 p-2">
+              <p className="font-display text-xs font-black uppercase tracking-widest text-muted-foreground">
+                Audio
+              </p>
               <button
-                onClick={toggleSound}
-                className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+                onClick={toggleAllAudio}
+                className="chunky chunky-press w-full rounded-2xl bg-primary py-3 font-display text-base font-black uppercase text-primary-foreground"
               >
-                🔊 Sound {soundOn ? "ON" : "OFF"}
+                🔊 All sound {soundOn && musicOn ? "ON" : "OFF"}
               </button>
-              <button
-                onClick={toggleHaptics}
-                className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
-              >
-                📳 Haptics {hapticsOn ? "ON" : "OFF"}
-              </button>
+              <div className="grid w-full grid-cols-2 gap-2">
+                <button
+                  onClick={toggleSound}
+                  className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+                >
+                  🎮 Game sounds {soundOn ? "ON" : "OFF"}
+                </button>
+                <button
+                  onClick={toggleMusic}
+                  className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+                >
+                  🎵 Music {musicOn ? "ON" : "OFF"}
+                </button>
+              </div>
             </div>
+            <button
+              onClick={toggleHaptics}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+            >
+              📳 Haptics {hapticsOn ? "ON" : "OFF"}
+            </button>
             <button
               onClick={toggleAutoSave}
               className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
@@ -736,6 +772,7 @@ function IntroScreen({
   soundOn,
   hapticsOn,
   onToggleSound,
+  onToggleAllAudio,
   onToggleHaptics,
   onLoad,
   hasSave,
@@ -747,6 +784,7 @@ function IntroScreen({
   soundOn: boolean;
   hapticsOn: boolean;
   onToggleSound: () => void;
+  onToggleAllAudio: () => void;
   onToggleHaptics: () => void;
   onLoad: () => void;
   hasSave: boolean;
@@ -759,11 +797,8 @@ function IntroScreen({
 
   useEffect(() => {
     playMusic("title");
-    const retry = () => playMusic("title");
-    window.addEventListener("pointerdown", retry, { once: true });
     const unsub = subscribeMusic(setMusicOnState);
     return () => {
-      window.removeEventListener("pointerdown", retry);
       unsub();
       stopMusic("title");
     };
@@ -805,10 +840,10 @@ function IntroScreen({
 
       <div className="grid w-full grid-cols-2 gap-2">
         <button
-          onClick={onToggleSound}
+          onClick={onToggleAllAudio}
           className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
         >
-          🔊 Sound {soundOn ? "ON" : "OFF"}
+          🔊 Sound {soundOn && musicOn ? "ON" : "OFF"}
         </button>
         <button
           onClick={onToggleHaptics}
