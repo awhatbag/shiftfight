@@ -227,6 +227,8 @@ function Game() {
 
   useEffect(() => subscribeDevInfo((i) => setDevEvents(i.activeEvents)), []);
 
+  useEffect(() => subscribeMusic(setMusicOnState), []);
+
   function completeTutorial() {
     try {
       window.localStorage.setItem(TUT_KEY, "1");
