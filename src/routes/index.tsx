@@ -29,6 +29,13 @@ import {
   setHapticsEnabled,
   setSoundEnabled,
 } from "@/lib/sfx";
+import {
+  isMusicOn,
+  playMusic,
+  stopMusic,
+  subscribeMusic,
+  toggleMusic,
+} from "@/lib/music";
 
 const TITLE = "Shift Fight! — Hospital Ward Arcade";
 const DESC =
