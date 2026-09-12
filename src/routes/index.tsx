@@ -837,7 +837,7 @@ function IntroScreen({
 
       <div className="grid w-full grid-cols-2 gap-2">
         <button
-          onClick={onToggleSound}
+          onClick={onToggleAllAudio}
           className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
         >
           🔊 Sound {soundOn ? "ON" : "OFF"}
