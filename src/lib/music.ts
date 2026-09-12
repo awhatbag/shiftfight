@@ -77,6 +77,31 @@ function fadeTo(p: Playing, to: number, done?: () => void) {
   }, STEP_MS);
 }
 
+const GESTURES = ["pointerdown", "touchstart", "keydown", "click"] as const;
+
+/**
+ * Browsers block autoplay until the user interacts. Listen for the first few
+ * gesture types and retry playback until it actually succeeds.
+ */
+function armAutoplay(key: MusicKey) {
+  if (typeof window === "undefined") return;
+  const retry = () => {
+    const p = players.get(key);
+    if (!p || !musicOn || p.target <= 0) return disarm();
+    void p.el
+      .play()
+      .then(() => {
+        fadeTo(p, p.target);
+        disarm();
+      })
+      .catch(() => {});
+  };
+  const disarm = () => {
+    for (const g of GESTURES) window.removeEventListener(g, retry);
+  };
+  for (const g of GESTURES) window.addEventListener(g, retry);
+}
+
 /** Start (or resume) a looping track with a quick fade in. Safe to call twice. */
 export function playMusic(key: MusicKey) {
   if (typeof window === "undefined") return;
@@ -92,9 +117,11 @@ export function playMusic(key: MusicKey) {
   }
   p.target = def.volume;
   if (!musicOn) return;
-  // autoplay may be blocked — fail silently, a later user gesture retries
-  void p.el.play().catch(() => {});
-  fadeTo(p, def.volume);
+  const player = p;
+  void player.el
+    .play()
+    .then(() => fadeTo(player, def.volume))
+    .catch(() => armAutoplay(key));
 }
 
 /** Fade out quickly and pause. */
