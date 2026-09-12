@@ -15,6 +15,7 @@ import {
   playWhistle,
   primeAudio,
 } from "@/lib/sfx";
+import { isMusicOn, setMusicEnabled, subscribeMusic, toggleMusic } from "@/lib/music";
 import {
   ACTION_META,
   EVENTS,
