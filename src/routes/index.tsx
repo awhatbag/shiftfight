@@ -702,6 +702,15 @@ function Game() {
           </div>
         )}
 
+        {creditsOpen && (
+          <CreditsScreen
+            onBack={() => {
+              setCreditsOpen(false);
+              setMenuOpen(true);
+            }}
+          />
+        )}
+
         {slotPicker && (
           <SaveSlotPicker
             mode={slotPicker}
