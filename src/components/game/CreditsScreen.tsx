@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { sendContactMessage } from "@/lib/contact.functions";
 
-type Status = "idle" | "sending" | "sent" | "error";
+const CONTACT_TO = "awhatbag@gmail.com";
+
+type Status = "idle" | "opened" | "error";
 
 export function CreditsScreen({ onBack }: { onBack: () => void }) {
-  const send = useServerFn(sendContactMessage);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -14,31 +13,36 @@ export function CreditsScreen({ onBack }: { onBack: () => void }) {
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
-  async function submit(e: React.FormEvent) {
+  function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!name.trim()) return setError("Please enter your name.");
     if (!emailValid) return setError("Please enter a valid email address.");
     if (!message.trim()) return setError("Please enter a message.");
 
-    setStatus("sending");
-    try {
-      const result = await send({
-        data: { name: name.trim(), email: email.trim(), message: message.trim() },
-      });
-      if (result.ok) {
-        setStatus("sent");
-        setName("");
-        setEmail("");
-        setMessage("");
-      } else {
-        setStatus("error");
-        setError(result.error);
-      }
-    } catch {
-      setStatus("error");
-      setError("We couldn't send your message. Please try again later.");
-    }
+    const body = [
+      "New Shift Fight! contact message",
+      "",
+      `Name: ${name.trim()}`,
+      `Email: ${email.trim()}`,
+      "",
+      "Message:",
+      message.trim(),
+    ].join("\n");
+
+    const url =
+      `mailto:${CONTACT_TO}` +
+      `?subject=${encodeURIComponent(
+        `Shift Fight! contact message from ${name.trim()}`
+      )}` +
+      `&body=${encodeURIComponent(body)}` +
+      `&reply-to=${encodeURIComponent(email.trim())}`;
+
+    window.location.href = url;
+    setStatus("opened");
+    setName("");
+    setEmail("");
+    setMessage("");
   }
 
   return (
@@ -77,10 +81,10 @@ export function CreditsScreen({ onBack }: { onBack: () => void }) {
 
       <section className="mt-3 rounded-2xl bg-card p-4 shadow-[var(--shadow-card)]">
         <h2 className="font-display text-xl font-black uppercase text-foreground">Contact</h2>
-        {status === "sent" ? (
+        {status === "opened" ? (
           <div className="mt-3">
             <p className="font-display text-base font-black uppercase text-calm-foreground">
-              Message sent! Thanks for getting in touch.
+              Email app opened! Send the message to finish.
             </p>
             <button
               onClick={() => setStatus("idle")}
@@ -125,10 +129,9 @@ export function CreditsScreen({ onBack }: { onBack: () => void }) {
             )}
             <button
               type="submit"
-              disabled={status === "sending"}
-              className="chunky chunky-press w-full rounded-2xl bg-primary py-4 font-display text-lg font-black uppercase text-primary-foreground disabled:opacity-60"
+              className="chunky chunky-press w-full rounded-2xl bg-primary py-4 font-display text-lg font-black uppercase text-primary-foreground"
             >
-              {status === "sending" ? "Sending…" : "Send Message"}
+              Send Message
             </button>
           </form>
         )}
