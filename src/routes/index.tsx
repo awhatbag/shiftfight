@@ -661,6 +661,15 @@ function Game() {
             >
               🪜 Shift Ladder
             </button>
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                setCreditsOpen(true);
+              }}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+            >
+              🎬 Credits &amp; Contact
+            </button>
             {phase !== "intro" && (
               <button
                 onClick={() => {
