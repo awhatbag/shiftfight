@@ -172,7 +172,7 @@ function writeAutoSave(on: boolean) {
 type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired" | "ladder";
 
 function Game() {
-  const [phase, setPhase] = useState<Phase>("shop");
+  const [phase, setPhase] = useState<Phase>("intro");
   const [points, setPoints] = useState(0);
   const [xp, setXp] = useState(0);
   const [upgrades, setUpgrades] = useState<Upgrades>({
