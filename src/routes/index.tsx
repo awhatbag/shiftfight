@@ -714,6 +714,15 @@ function Game() {
             >
               🎬 Credits &amp; Contact
             </button>
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                setPinOpen(true);
+              }}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+            >
+              🛠️ Dev Mode
+            </button>
             {phase !== "intro" && (
               <button
                 onClick={() => {
@@ -874,12 +883,6 @@ function IntroScreen({
         className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
       >
         🪜 Shift Ladder
-      </button>
-      <button
-        onClick={onDev}
-        className="chunky chunky-press w-full rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
-      >
-        🛠️ Dev Mode
       </button>
       <p className="text-[10px] leading-tight text-muted-foreground">
         Silly fiction. Fictional patients, fictional meds. Not medical or nursing advice.
