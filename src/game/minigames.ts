@@ -66,7 +66,7 @@ export const MINI_GAMES: MiniGameDef[] = [
   {
     key: "training",
     name: "Mandatory Training",
-    blurb: "Finish fast. Nobody actually expects you to read it.",
+    blurb: "Complete your training quickly. Nobody actually expects you to read it.",
     component: MandatoryTrainingGame,
   },
 ];

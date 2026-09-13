@@ -500,7 +500,7 @@ export function MandatoryTrainingGame({ level, paused, onDone }: MiniGameProps) 
       </div>
 
       <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground">
-        <span>Training progress: {index}/{slides.length}</span>
+        <span>Training progress: {complete ? slides.length : index}/{slides.length}</span>
         <span className={cn(remaining < 5000 && "font-black text-alarm")}>
           Time left: {formatTime(remaining)}
         </span>
