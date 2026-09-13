@@ -30,7 +30,7 @@ export function SummaryScreen({
   ];
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
+    <div className="flex h-full flex-col gap-3 overflow-y-auto p-4 pt-16">
       <div className="animate-pop rounded-3xl bg-[image:var(--gradient-gold)] p-4 text-center text-gold-foreground shadow-[var(--shadow-card)]">
         <p className="font-display text-xs font-bold uppercase tracking-widest">
           {stats.collapsed ? "Ward went sideways" : "Shift complete"}
