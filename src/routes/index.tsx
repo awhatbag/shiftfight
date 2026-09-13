@@ -508,7 +508,6 @@ function Game() {
             hasSave={hasSave}
             saveNote={saveNote}
             onPlay={play}
-            onDev={() => setPinOpen(true)}
             onLadder={() => setPhase("ladder")}
           />
         )}
@@ -778,7 +777,6 @@ function IntroScreen({
   hasSave,
   saveNote,
   onPlay,
-  onDev,
   onLadder,
 }: {
   soundOn: boolean;
@@ -790,7 +788,6 @@ function IntroScreen({
   hasSave: boolean;
   saveNote: string;
   onPlay: () => void;
-  onDev: () => void;
   onLadder: () => void;
 }) {
   const [musicOn, setMusicOnState] = useState(isMusicOn);
