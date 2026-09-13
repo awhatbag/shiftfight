@@ -5,6 +5,7 @@ import { VomitGame } from "@/components/game/VomitGame";
 import { WeeGame } from "@/components/game/WeeGame";
 import { IVMixGame } from "@/components/game/IVMixGame";
 import { SutureGame } from "@/components/game/SutureGame";
+import { MandatoryTrainingGame } from "@/components/game/MandatoryTrainingGame";
 
 /** Shared contract every mini-game must satisfy. */
 export type MiniGameProps = {
@@ -61,6 +62,12 @@ export const MINI_GAMES: MiniGameDef[] = [
     name: "Wound Suturing",
     blurb: "Drag the needle across the wound to close it.",
     component: SutureGame,
+  },
+  {
+    key: "training",
+    name: "Mandatory Training",
+    blurb: "Finish fast. Nobody actually expects you to read it.",
+    component: MandatoryTrainingGame,
   },
 ];
 

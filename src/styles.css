@@ -102,6 +102,19 @@
   --shadow-pop: 0 6px 0 0 color-mix(in oklab, var(--foreground) 18%, transparent);
   --shadow-card: 0 10px 24px -12px color-mix(in oklab, var(--foreground) 40%, transparent);
   --shadow-glow: 0 0 0 4px color-mix(in oklab, var(--gold) 45%, transparent);
+
+  --training-desk: oklch(0.47 0.035 58);
+  --training-plastic: oklch(0.83 0.055 86);
+  --training-plastic-highlight: oklch(0.91 0.04 88);
+  --training-plastic-edge: oklch(0.68 0.055 79);
+  --training-plastic-shadow: oklch(0.48 0.045 70);
+  --training-bezel: oklch(0.29 0.02 75);
+  --training-screen: oklch(0.98 0.008 230);
+  --training-screen-shadow: oklch(0.23 0.05 220 / 55%);
+  --training-label: oklch(0.39 0.04 70);
+  --training-slot: oklch(0.31 0.025 70);
+  --training-key: oklch(0.74 0.045 82);
+  --training-key-shadow: oklch(0.48 0.04 70);
 }
 
 .dark {
@@ -120,6 +133,13 @@
   --floor: oklch(0.28 0.04 245);
   --linen: oklch(0.36 0.03 240);
   --sheet: oklch(0.34 0.04 245);
+
+  --training-desk: oklch(0.31 0.025 58);
+  --training-plastic: oklch(0.7 0.045 84);
+  --training-plastic-highlight: oklch(0.79 0.04 86);
+  --training-plastic-edge: oklch(0.54 0.045 76);
+  --training-plastic-shadow: oklch(0.3 0.035 68);
+  --training-screen: oklch(0.93 0.012 230);
 }
 
 @keyframes pop {
@@ -185,6 +205,22 @@
   }
 }
 
+@keyframes training-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0.985;
+  }
+  50% {
+    opacity: 0.94;
+  }
+  52% {
+    opacity: 0.99;
+  }
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -228,6 +264,32 @@
 .game-frozen *::before,
 .game-frozen *::after {
   animation-play-state: paused !important;
+}
+
+.training-crt::after {
+  animation: training-flicker 4.8s linear infinite;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 3px,
+    color-mix(in oklab, var(--foreground) 5%, transparent) 4px
+  );
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 30;
+}
+
+.training-slide {
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--primary) 8%, transparent), transparent 44%),
+    var(--training-screen);
+}
+
+.training-slide-complete {
+  background:
+    linear-gradient(145deg, color-mix(in oklab, var(--calm) 20%, transparent), transparent 55%),
+    var(--training-screen);
 }
 
 .suture-skin-light {
