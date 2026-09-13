@@ -836,6 +836,7 @@ function IntroScreen({
           ["👆", "Tap the bed that needs you most"],
           ["⚡", "ASSESS · INTERVENE · ESCALATE"],
           ["🎯", "Nail mini-games, bank the combo"],
+          ["👵", "Don't get fired by the DON"],
         ].map(([i, t]) => (
           <p key={t} className="flex items-center gap-2 text-sm font-semibold">
             <span className="text-lg">{i}</span>
@@ -885,7 +886,7 @@ function IntroScreen({
         🪜 Shift Ladder
       </button>
       <p className="text-[10px] leading-tight text-muted-foreground">
-        Silly fiction. Fictional patients, fictional meds. Not medical or nursing advice.
+        A silly, fast-paced work of fiction. Fictional patients, fictional meds. Definitely not medical or nursing advice... maybe 👀
       </p>
     </div>
   );
