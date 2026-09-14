@@ -550,41 +550,8 @@ function Game() {
     }
   }
 
-  function TopBar({
-    phase,
-    onBack,
-    onMenu,
-  }: {
-    phase: Phase;
-    onBack: () => void;
-    onMenu: () => void;
-  }) {
-    return (
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-background px-2 py-2">
-        {phase === "intro" ? (
-          <span className="px-3 py-2 font-display text-sm font-black uppercase text-muted-foreground">
-            Shift Fight!
-          </span>
-        ) : (
-          <button
-            onClick={onBack}
-            className="chunky chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
-          >
-            ← Back
-          </button>
-        )}
-        <button
-          onClick={onMenu}
-          aria-label="Open menu"
-          className="chunky chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
-        >
-          ☰ Menu
-        </button>
-      </div>
-    );
-  }
-
   function play() {
+
     setRunKey((k) => k + 1);
     setPhase("shift");
   }
