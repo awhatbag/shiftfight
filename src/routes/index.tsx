@@ -806,10 +806,11 @@ function Game() {
           </div>
         )}
         {saveNote && (
-          <div className="pointer-events-none absolute left-1/2 top-2 z-[70] -translate-x-1/2 rounded-full bg-calm px-3 py-1 font-display text-[11px] font-black uppercase text-calm-foreground shadow-md">
+          <div className="pointer-events-none absolute left-1/2 top-14 z-[70] -translate-x-1/2 rounded-full bg-calm px-3 py-1 font-display text-[11px] font-black uppercase text-calm-foreground shadow-md">
             {saveNote}
           </div>
         )}
+
 
         {creditsOpen && (
           <CreditsScreen
@@ -870,14 +871,8 @@ function IntroScreen({
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-5 bg-[image:var(--gradient-sky)] p-6 text-center">
-      <button
-        onClick={toggleMusic}
-        aria-label={musicOn ? "Mute music" : "Unmute music"}
-        className="chunky-press absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-secondary text-lg text-secondary-foreground"
-      >
-        {musicOn ? "🎵" : "🔇"}
-      </button>
       <div className="animate-bob text-6xl">🏥</div>
+
       <div>
         <h1 className="font-display text-5xl font-black leading-none tracking-tight">
           SHIFT
