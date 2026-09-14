@@ -558,6 +558,11 @@ function Game() {
   return (
     <main className="flex min-h-dvh justify-center bg-ward-deep">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
+        {phase !== "dev" && phase !== "shift" && (
+          <TopBar phase={phase} onBack={handleBack} onMenu={() => setMenuOpen(true)} />
+        )}
+        <div className="relative flex-1 overflow-hidden">
+
         {phase === "intro" && (
           <IntroScreen
             soundOn={soundOn}
@@ -687,16 +692,8 @@ function Game() {
           />
         )}
 
-        {/* global menu — on every screen; in-shift the ⏸️ pause button opens the same menu */}
-        {phase !== "dev" && phase !== "shift" && (
-          <button
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
-            className="chunky chunky-press absolute right-2 top-2 z-[70] rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
-          >
-            ☰ Menu
-          </button>
-        )}
+        </div>
+
         {menuOpen && (
           <div className="absolute inset-0 z-[75] flex flex-col items-center justify-center gap-3 bg-background/95 p-6">
             <p className="font-display text-3xl font-black uppercase">☰ Menu</p>
