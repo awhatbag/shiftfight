@@ -171,6 +171,41 @@ function writeAutoSave(on: boolean) {
 
 type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired" | "ladder";
 
+function TopBar({
+  phase,
+  onBack,
+  onMenu,
+}: {
+  phase: Phase;
+  onBack: () => void;
+  onMenu: () => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-background px-2 py-2">
+      {phase === "intro" ? (
+        <span className="px-3 py-2 font-display text-sm font-black uppercase text-muted-foreground">
+          Shift Fight!
+        </span>
+      ) : (
+        <button
+          onClick={onBack}
+          className="chunky chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+        >
+          ← Back
+        </button>
+      )}
+      <button
+        onClick={onMenu}
+        aria-label="Open menu"
+        className="chunky chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+      >
+        ☰ Menu
+      </button>
+    </div>
+  );
+}
+
+
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [points, setPoints] = useState(0);
@@ -489,14 +524,47 @@ function Game() {
     setDebugOverlay,
   };
 
+  function handleBack() {
+    if (slotPicker) {
+      setSlotPicker(null);
+      return;
+    }
+    if (creditsOpen) {
+      setCreditsOpen(false);
+      setMenuOpen(true);
+      return;
+    }
+    switch (phase) {
+      case "ladder":
+        setPhase("intro");
+        break;
+      case "summary":
+        setPhase("intro");
+        break;
+      case "shop":
+        setPhase("summary");
+        break;
+      case "fired":
+        setPhase("intro");
+        break;
+    }
+  }
+
   function play() {
+
     setRunKey((k) => k + 1);
     setPhase("shift");
   }
 
+
   return (
     <main className="flex min-h-dvh justify-center bg-ward-deep">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
+        {phase !== "dev" && phase !== "shift" && (
+          <TopBar phase={phase} onBack={handleBack} onMenu={() => setMenuOpen(true)} />
+        )}
+        <div className="relative flex-1 overflow-hidden">
+
         {phase === "intro" && (
           <IntroScreen
             soundOn={soundOn}
@@ -626,16 +694,8 @@ function Game() {
           />
         )}
 
-        {/* global menu — on every screen; in-shift the ⏸️ pause button opens the same menu */}
-        {phase !== "dev" && phase !== "shift" && (
-          <button
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
-            className="chunky chunky-press absolute right-2 top-2 z-[70] rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
-          >
-            ☰ Menu
-          </button>
-        )}
+        </div>
+
         {menuOpen && (
           <div className="absolute inset-0 z-[75] flex flex-col items-center justify-center gap-3 bg-background/95 p-6">
             <p className="font-display text-3xl font-black uppercase">☰ Menu</p>
@@ -748,10 +808,11 @@ function Game() {
           </div>
         )}
         {saveNote && (
-          <div className="pointer-events-none absolute left-1/2 top-2 z-[70] -translate-x-1/2 rounded-full bg-calm px-3 py-1 font-display text-[11px] font-black uppercase text-calm-foreground shadow-md">
+          <div className="pointer-events-none absolute left-1/2 top-14 z-[70] -translate-x-1/2 rounded-full bg-calm px-3 py-1 font-display text-[11px] font-black uppercase text-calm-foreground shadow-md">
             {saveNote}
           </div>
         )}
+
 
         {creditsOpen && (
           <CreditsScreen
@@ -812,14 +873,8 @@ function IntroScreen({
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-5 bg-[image:var(--gradient-sky)] p-6 text-center">
-      <button
-        onClick={toggleMusic}
-        aria-label={musicOn ? "Mute music" : "Unmute music"}
-        className="chunky-press absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-secondary text-lg text-secondary-foreground"
-      >
-        {musicOn ? "🎵" : "🔇"}
-      </button>
       <div className="animate-bob text-6xl">🏥</div>
+
       <div>
         <h1 className="font-display text-5xl font-black leading-none tracking-tight">
           SHIFT

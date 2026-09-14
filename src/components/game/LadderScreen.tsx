@@ -32,15 +32,8 @@ export function LadderScreen({
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="font-display text-2xl font-black uppercase">🪜 Level Ladder</h2>
-        <button
-          onClick={onBack}
-          className="chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
-        >
-          ← Back
-        </button>
-      </div>
+      <h2 className="font-display text-2xl font-black uppercase">🪜 Level Ladder</h2>
+
       <p className="text-[11px] text-muted-foreground">
         Replay any shift you've reached. New sections of the hospital open after Level 10.
       </p>

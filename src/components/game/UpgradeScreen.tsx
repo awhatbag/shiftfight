@@ -58,7 +58,7 @@ export function UpgradeScreen({
   );
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-4 pt-16">
+    <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
       <div className="rounded-2xl border-2 border-border bg-card p-3">
         <div className="flex items-center justify-between gap-2">
           <p className="font-display text-sm font-black uppercase">
