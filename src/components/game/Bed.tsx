@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { EventDef } from "@/game/config";
-import leftSideBed from "@/assets/left-side-bed.png";
-import rightSideBed from "@/assets/right-side-bed.png";
+import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
+import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
 
 export type BedState = {
   id: number;
@@ -12,7 +12,7 @@ export type BedState = {
 function BedSprite({ side }: { side: "left" | "right" }) {
   return (
     <img
-      src={side === "left" ? leftSideBed : rightSideBed}
+      src={side === "left" ? leftSideBedAsset.url : rightSideBedAsset.url}
       alt=""
       aria-hidden="true"
       draggable={false}
