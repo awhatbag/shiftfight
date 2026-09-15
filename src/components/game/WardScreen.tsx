@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import wardBackgroundAsset from "@/assets/shift-fight-ward-background.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
@@ -1047,11 +1048,17 @@ export function WardScreen({
 
 
       {/* WARD */}
-      <div ref={wardRef} className="relative flex-1 select-none overflow-hidden px-1 py-2">
-        {/* wide corridor floor */}
-        <div className="pointer-events-none absolute inset-y-0 left-1/2 w-[46%] -translate-x-1/2 rounded-3xl bg-floor shadow-[inset_0_0_0_2px_var(--color-border)]">
-          <div className="absolute inset-x-[46%] inset-y-3 rounded-full bg-primary/10" />
-        </div>
+      <div
+        ref={wardRef}
+        className="relative flex-1 select-none overflow-hidden bg-ward px-1 py-2"
+      >
+        <img
+          src={wardBackgroundAsset.url}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+          draggable={false}
+        />
 
         {/* curtain obstacles */}
         {GATES.map((g) => (
