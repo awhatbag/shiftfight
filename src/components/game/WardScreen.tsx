@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import wardBackgroundAsset from "@/assets/shift-fight-ward-background.png.asset.json";
 import curtainAsset from "@/assets/curtain-partition.png.asset.json";
+import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
@@ -106,7 +107,17 @@ const BED_SLOTS: Point[] = [
   { x: 0.84, y: 0.655 },
 ];
 
-const STATION: Point = { x: 0.5, y: 0.94 };
+/** chair centres in the nurses' station artwork, from left to right */
+const STATION_CHAIRS: Point[] = [
+  { x: 0.195, y: 0.485 },
+  { x: 0.35, y: 0.49 },
+  { x: 0.5, y: 0.5 },
+  { x: 0.645, y: 0.49 },
+  { x: 0.795, y: 0.485 },
+];
+
+/** ward-space destination matching the first visible chair */
+const STATION: Point = { x: STATION_CHAIRS[0].x, y: 0.92 };
 
 /** curtain sections in the corridor the nurse must walk around */
 const GATES = [
@@ -288,7 +299,8 @@ export function WardScreen({
   const staffHome = useCallback(
     (k: string): Point => {
       const i = Math.max(0, staff.indexOf(k));
-      return { x: i === 0 ? 0.38 : 0.62, y: 0.9 };
+      const chair = STATION_CHAIRS[Math.min(i + 1, STATION_CHAIRS.length - 1)];
+      return { x: chair?.x ?? STATION_CHAIRS[1].x, y: 0.92 };
     },
     [staff],
   );
@@ -1520,36 +1532,28 @@ export function WardScreen({
             })()}
           </div>
         ) : (
-          <div className="relative mx-auto h-[112px] max-w-[430px]">
+          <div className="relative mx-auto aspect-[1774/887] w-full max-w-[430px]">
             <button
               onClick={goStation}
-              className="pointer-events-auto absolute inset-x-0 bottom-0 h-[96px] overflow-hidden rounded-t-[2.25rem] rounded-b-xl border-2 border-border bg-secondary text-left shadow-[0_-8px_20px_-14px_color-mix(in_oklab,var(--foreground)_45%,transparent)]"
+              className="pointer-events-auto absolute inset-0 text-left"
+              aria-label="Return to nurses station"
             >
-              <div className="absolute inset-x-9 top-3 h-[55px] rounded-t-[1.65rem] border-2 border-border bg-background/55" />
-              <div className="absolute inset-x-3 bottom-2 h-7 rounded-lg border-2 border-border bg-card/70" />
-
-              <div className="absolute left-4 top-2 h-12 w-[25%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
-              <div className="absolute right-4 top-2 h-12 w-[25%] rounded-xl border-2 border-border bg-card/65" aria-label="Open desk space for future upgrades" />
-
-              <div className="absolute left-1/2 top-0 -translate-x-1/2">
-                <div className="grid h-12 w-16 place-items-center rounded-md border-[3px] border-border bg-primary/20 shadow-md" aria-label="Nurses station computer">
-                  <span className="text-2xl">🖥️</span>
-                </div>
-                <div className="mx-auto h-2 w-8 rounded-b-md bg-border" />
-              </div>
-              <span className="absolute right-[21%] top-4 grid h-9 w-10 place-items-center text-2xl" aria-label="Nurses station phone">
-                ☎️
-              </span>
-
-              <div className="absolute left-4 top-3 w-[25%] px-1 text-center">
-                <p className="font-display truncate text-xs font-black uppercase">
+              <img
+                src={nursesStationAsset.url}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+              />
+              <div className="absolute bottom-[17%] left-1/2 w-[22%] -translate-x-1/2 text-center text-primary-foreground">
+                <p className="font-display truncate text-[9px] font-black uppercase leading-none">
                   Lv {cfg.level}
                 </p>
-                <p className="font-display truncate text-[8px] font-black uppercase text-muted-foreground">{cfg.name}</p>
+                <p className="font-display truncate text-[6px] font-black uppercase leading-none">{cfg.name}</p>
               </div>
             </button>
 
-            <div className="pointer-events-none absolute inset-x-4 bottom-0 grid grid-cols-5 gap-2" aria-label="Five station chairs">
+            <div className="pointer-events-none absolute inset-0" aria-label="Five station chairs">
               {Array.from({ length: 5 }, (_, i) => {
                 const staffKey = i > 0 ? staff[i - 1] : undefined;
                 const info = staffKey ? STAFF.find((s) => s.key === staffKey) : undefined;
@@ -1557,19 +1561,21 @@ export function WardScreen({
                 const playerSeated = i === 0 && !walking && atBed === null;
                 const seated = playerSeated || (!!staffKey && !rt?.eventId && !rt?.path.length);
                 const activated = !!staffKey && seated && redAlert;
+                const chair = STATION_CHAIRS[i] ?? STATION_CHAIRS[0];
                 return (
                   <button
                     key={i}
                     onClick={() => staffKey ? tapStaff(staffKey) : goStation()}
                     aria-label={staffKey ? `Send ${info?.name ?? "staff"}` : i === 0 ? "Nurse chair" : "Empty chair"}
                     className={cn(
-                      "pointer-events-auto relative grid h-9 place-items-center rounded-b-xl border-2 border-t-0 border-border bg-card text-xl shadow-md",
-                      activated && "animate-throb border-alarm ring-4 ring-alarm/30",
+                      "pointer-events-auto absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center text-xl",
+                      activated && "animate-throb rounded-full ring-4 ring-alarm/30",
                     )}
+                    style={{ left: `${chair.x * 100}%`, top: `${chair.y * 100}%` }}
                   >
-                    <span className="absolute -top-5 grid h-9 w-9 place-items-center rounded-full border-2 border-border bg-card">
+                    <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-full">
                       {playerSeated ? (
-                        <span className="block h-8 w-7 overflow-hidden">
+                        <span className="block h-10 w-8 overflow-hidden">
                           <Nurse moving={false} />
                         </span>
                       ) : seated && info ? (
@@ -1578,7 +1584,6 @@ export function WardScreen({
                         ""
                       )}
                     </span>
-                    <span className="mt-2 text-xs text-muted-foreground">▰</span>
                   </button>
                 );
               })}
