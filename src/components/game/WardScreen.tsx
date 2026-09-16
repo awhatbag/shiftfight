@@ -108,7 +108,7 @@ const BED_SLOTS: Point[] = [
 ];
 
 /** chair centres in the nurses' station artwork, from left to right */
-const STATION_CHAIRS: Point[] = [
+const STATION_CHAIRS: readonly [Point, Point, Point, Point, Point] = [
   { x: 0.195, y: 0.485 },
   { x: 0.35, y: 0.49 },
   { x: 0.5, y: 0.5 },
@@ -116,8 +116,12 @@ const STATION_CHAIRS: Point[] = [
   { x: 0.795, y: 0.485 },
 ];
 
+function stationChair(index: number): Point {
+  return STATION_CHAIRS[index] ?? STATION_CHAIRS[0];
+}
+
 /** ward-space destination matching the first visible chair */
-const STATION: Point = { x: STATION_CHAIRS[0].x, y: 0.92 };
+const STATION: Point = { x: stationChair(0).x, y: 0.92 };
 
 /** curtain sections in the corridor the nurse must walk around */
 const GATES = [
@@ -299,8 +303,8 @@ export function WardScreen({
   const staffHome = useCallback(
     (k: string): Point => {
       const i = Math.max(0, staff.indexOf(k));
-      const chair = STATION_CHAIRS[Math.min(i + 1, STATION_CHAIRS.length - 1)];
-      return { x: chair?.x ?? STATION_CHAIRS[1].x, y: 0.92 };
+      const chair = stationChair(Math.min(i + 1, STATION_CHAIRS.length - 1));
+      return { x: chair.x, y: 0.92 };
     },
     [staff],
   );
@@ -1561,7 +1565,7 @@ export function WardScreen({
                 const playerSeated = i === 0 && !walking && atBed === null;
                 const seated = playerSeated || (!!staffKey && !rt?.eventId && !rt?.path.length);
                 const activated = !!staffKey && seated && redAlert;
-                const chair = STATION_CHAIRS[i] ?? STATION_CHAIRS[0];
+                const chair = stationChair(i);
                 return (
                   <button
                     key={i}
