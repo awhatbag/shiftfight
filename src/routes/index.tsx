@@ -6,6 +6,15 @@ import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
 import { LadderScreen } from "@/components/game/LadderScreen";
 import { CreditsScreen } from "@/components/game/CreditsScreen";
+import { CharacterScreen } from "@/components/game/CharacterScreen";
+import {
+  clearCharacter,
+  normalizeCharacter,
+  readCharacter,
+  writeCharacter,
+  DEFAULT_CHARACTER,
+  type PlayerCharacter,
+} from "@/game/character";
 import {
   bedsForLevel,
   MAX_LEVEL,
@@ -75,6 +84,8 @@ type SaveData = {
   bedUpgrades?: string[];
   highestLevel?: number;
   wardProgress?: WardProgress;
+  /** character identity + cosmetics (separate from gameplay equipment) */
+  character?: PlayerCharacter;
 };
 
 const SLOTS_KEY = "shift-fight-saves";
@@ -169,7 +180,15 @@ function writeAutoSave(on: boolean) {
 }
 
 
-type Phase = "intro" | "shift" | "summary" | "shop" | "dev" | "fired" | "ladder";
+type Phase =
+  | "intro"
+  | "character"
+  | "shift"
+  | "summary"
+  | "shop"
+  | "dev"
+  | "fired"
+  | "ladder";
 
 function TopBar({
   phase,
@@ -245,12 +264,18 @@ function Game() {
   /* global menu — available on every non-shift screen (in-shift the pause veil is the menu) */
   const [menuOpen, setMenuOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
+  const [character, setCharacter] = useState<PlayerCharacter>(() => ({
+    ...DEFAULT_CHARACTER,
+    cosmetics: { ...DEFAULT_CHARACTER.cosmetics },
+  }));
 
   useEffect(() => {
     const s = readSlots();
     setSlots(s);
     setHasSave(s.some(Boolean));
     setActiveSlot(readActiveSlot());
+    const c = readCharacter();
+    if (c) setCharacter(c);
     try {
       setTutorialDone(!!window.localStorage.getItem(TUT_KEY));
       setAutoSaveOn(readAutoSave());
@@ -291,6 +316,7 @@ function Game() {
       bedUpgrades,
       highestLevel,
       wardProgress,
+      character,
     };
   }
 
@@ -346,6 +372,11 @@ function Game() {
     setHighestLevel(d.highestLevel ?? d.level ?? 1);
     setWardProgress(d.wardProgress ?? {});
     setJobSecurity(d.jobSecurity ?? JOB_SECURITY_START);
+    if (d.character) {
+      const c = normalizeCharacter(d.character);
+      setCharacter(c);
+      writeCharacter(c);
+    }
   }
 
   /** opens the save-file picker so the player chooses which game to resume */
@@ -437,6 +468,7 @@ function Game() {
       bedUpgrades,
       highestLevel: nextHighest,
       wardProgress: nextWardProgress,
+      character,
     });
     setPhase("summary");
   }
@@ -500,6 +532,7 @@ function Game() {
         window.localStorage.removeItem(TUT_KEY);
         window.localStorage.removeItem(ACTIVE_SLOT_KEY);
         window.localStorage.removeItem(AUTO_SAVE_KEY);
+        clearCharacter();
       } catch {
         /* storage unavailable */
       }
@@ -519,6 +552,7 @@ function Game() {
       setBedOverride(null);
       setTutorialDone(false);
       setJobSecurity(JOB_SECURITY_START);
+      setCharacter({ ...DEFAULT_CHARACTER, cosmetics: { ...DEFAULT_CHARACTER.cosmetics } });
     },
     debugOverlay,
     setDebugOverlay,
@@ -545,6 +579,9 @@ function Game() {
         setPhase("summary");
         break;
       case "fired":
+        setPhase("intro");
+        break;
+      case "character":
         setPhase("intro");
         break;
     }
@@ -575,8 +612,20 @@ function Game() {
             onLoad={loadProgress}
             hasSave={hasSave}
             saveNote={saveNote}
-            onPlay={play}
+            onPlay={() => setPhase("character")}
             onLadder={() => setPhase("ladder")}
+          />
+        )}
+        {phase === "character" && (
+          <CharacterScreen
+            character={character}
+            onChange={setCharacter}
+            onConfirm={(c) => {
+              const next = normalizeCharacter(c);
+              setCharacter(next);
+              writeCharacter(next);
+              play();
+            }}
           />
         )}
         {phase === "dev" && <DevMode api={devApi} onClose={() => setPhase("intro")} />}
