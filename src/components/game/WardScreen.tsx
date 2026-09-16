@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import wardBackgroundAsset from "@/assets/shift-fight-ward-background.png.asset.json";
+import curtainAsset from "@/assets/curtain-partition.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
@@ -1064,13 +1065,21 @@ export function WardScreen({
         {GATES.map((g) => (
           <div
             key={g.y}
-            className="pointer-events-none absolute h-[8%] w-[22%] rounded-xl bg-[repeating-linear-gradient(90deg,var(--color-sheet)_0_6px,var(--color-linen)_6px_12px)] shadow-[inset_0_0_0_2px_var(--color-border)]"
+            className="pointer-events-none absolute h-[8%] w-[22%] -translate-y-1/2 overflow-visible"
             style={{
               top: `${g.y * 100}%`,
               left: g.side === "left" ? "29%" : "49%",
-              transform: "translateY(-50%)",
             }}
-          />
+          >
+            <img
+              src={curtainAsset.url}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="h-full w-full object-contain"
+              style={{ transform: g.side === "right" ? "scaleX(-1)" : undefined }}
+            />
+          </div>
         ))}
 
         {/* staff characters */}
