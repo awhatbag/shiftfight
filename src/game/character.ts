@@ -122,12 +122,10 @@ export function normalizeCharacter(c: Partial<PlayerCharacter> | null | undefine
         ? c.presentation
         : DEFAULT_CHARACTER.presentation,
     cosmetics: {
-      skin: SKIN_TONES.some((o) => o.key === c.cosmetics?.skin)
-        ? c.cosmetics!.skin
-        : DEFAULT_CHARACTER.cosmetics.skin,
-      hair: HAIR_COLORS.some((o) => o.key === c.cosmetics?.hair)
-        ? c.cosmetics!.hair
-        : DEFAULT_CHARACTER.cosmetics.hair,
+      skin:
+        SKIN_TONES.find((o) => o.key === c.cosmetics?.skin)?.key ?? SKIN_TONES[0]!.key,
+      hair:
+        HAIR_COLORS.find((o) => o.key === c.cosmetics?.hair)?.key ?? HAIR_COLORS[1]!.key,
     },
   };
 }
