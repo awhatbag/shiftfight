@@ -1150,7 +1150,7 @@ export function WardScreen({
         {GATES.map((g) => (
           <div
             key={g.y}
-            className="pointer-events-none absolute h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
+            className="pointer-events-none absolute z-[30] h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
             style={{
               top: `${g.y * 100}%`,
               left: g.side === "left" ? "27%" : "44%",
