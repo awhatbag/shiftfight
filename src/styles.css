@@ -247,6 +247,21 @@
   }
 }
 
+/* One immutable portrait game world; the surrounding area is only a viewport. */
+.ward-viewport {
+  container-type: size;
+}
+
+.ward-world {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100cqw, calc(100cqh * 890 / 1123));
+  height: max(100cqh, calc(100cqw * 1123 / 890));
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+}
+
 @utility chunky {
   box-shadow: var(--shadow-pop);
   transition:
