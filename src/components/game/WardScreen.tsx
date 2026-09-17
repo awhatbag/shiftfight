@@ -95,17 +95,19 @@ type ActiveEvent = {
 type Banner = { id: number; title: string; sub: string; good: boolean };
 type Point = { x: number; y: number };
 
-/** bed layout in ward-percentage coords; corridor runs down the middle */
+/** Fixed 890 × 1123 ward-world coordinates, matching the supplied layout mock-up. */
 const BED_SLOTS: Point[] = [
-  { x: 0.16, y: 0.105 },
-  { x: 0.84, y: 0.105 },
-  { x: 0.16, y: 0.285 },
-  { x: 0.84, y: 0.285 },
-  { x: 0.16, y: 0.465 },
-  { x: 0.84, y: 0.465 },
-  { x: 0.16, y: 0.655 },
-  { x: 0.84, y: 0.655 },
+  { x: 0.245, y: 0.375 },
+  { x: 0.755, y: 0.375 },
+  { x: 0.245, y: 0.545 },
+  { x: 0.755, y: 0.545 },
+  { x: 0.245, y: 0.71 },
+  { x: 0.755, y: 0.71 },
+  { x: 0.245, y: 0.865 },
+  { x: 0.755, y: 0.865 },
 ];
+
+const STATION_FRAME = { x: 0.21, y: 0.11, width: 0.58, height: 0.22 };
 
 /** chair centres in the nurses' station artwork, from left to right */
 const STATION_CHAIRS: readonly [Point, Point, Point, Point, Point] = [
@@ -120,14 +122,22 @@ function stationChair(index: number): Point {
   return STATION_CHAIRS[index] ?? STATION_CHAIRS[0];
 }
 
+function stationChairInWard(index: number): Point {
+  const chair = stationChair(index);
+  return {
+    x: STATION_FRAME.x + chair.x * STATION_FRAME.width,
+    y: STATION_FRAME.y + chair.y * STATION_FRAME.height,
+  };
+}
+
 /** ward-space destination matching the first visible chair */
-const STATION: Point = { x: stationChair(0).x, y: 0.92 };
+const STATION: Point = stationChairInWard(0);
 
 /** curtain sections in the corridor the nurse must walk around */
 const GATES = [
-  { y: 0.25, side: "left" as const, lane: 0.6 },
-  { y: 0.49, side: "right" as const, lane: 0.4 },
-  { y: 0.73, side: "left" as const, lane: 0.6 },
+  { y: 0.405, side: "left" as const, lane: 0.61 },
+  { y: 0.57, side: "right" as const, lane: 0.39 },
+  { y: 0.735, side: "left" as const, lane: 0.61 },
 ];
 
 const MS_PER_UNIT = (u: Upgrades) => Math.max(620, 1500 - u.speed * 230);
@@ -303,8 +313,7 @@ export function WardScreen({
   const staffHome = useCallback(
     (k: string): Point => {
       const i = Math.max(0, staff.indexOf(k));
-      const chair = stationChair(Math.min(i + 1, STATION_CHAIRS.length - 1));
-      return { x: chair.x, y: 0.92 };
+      return stationChairInWard(Math.min(i + 1, STATION_CHAIRS.length - 1));
     },
     [staff],
   );
@@ -1067,24 +1076,84 @@ export function WardScreen({
       {/* WARD */}
       <div
         ref={wardRef}
-        className="relative flex-1 select-none overflow-hidden bg-ward px-1 py-2"
+        className="ward-viewport relative flex-1 select-none overflow-hidden bg-ward-deep"
       >
-        <img
-          src={wardBackgroundAsset.url}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-          draggable={false}
-        />
+        <div className="ward-world">
+          <img
+            src={wardBackgroundAsset.url}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            draggable={false}
+          />
+
+          {/* nurses station — fixed to the floor plan, with its original chair anchors */}
+          <div
+            className="absolute z-10"
+            style={{
+              left: `${STATION_FRAME.x * 100}%`,
+              top: `${STATION_FRAME.y * 100}%`,
+              width: `${STATION_FRAME.width * 100}%`,
+              height: `${STATION_FRAME.height * 100}%`,
+            }}
+          >
+            <button
+              onClick={goStation}
+              className="pointer-events-auto absolute inset-0 text-left"
+              aria-label="Return to nurses station"
+            >
+              <img
+                src={nursesStationAsset.url}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+              />
+              <div className="absolute bottom-[17%] left-1/2 w-[22%] -translate-x-1/2 text-center text-primary-foreground">
+                <p className="font-display truncate text-[9px] font-black uppercase leading-none">Lv {cfg.level}</p>
+                <p className="font-display truncate text-[6px] font-black uppercase leading-none">{cfg.name}</p>
+              </div>
+            </button>
+
+            <div className="pointer-events-none absolute inset-0" aria-label="Five station chairs">
+              {Array.from({ length: 5 }, (_, i) => {
+                const staffKey = i > 0 ? staff[i - 1] : undefined;
+                const info = staffKey ? STAFF.find((s) => s.key === staffKey) : undefined;
+                const rt = staffKey ? staffRt.current[staffKey] : undefined;
+                const playerSeated = i === 0 && !walking && atBed === null;
+                const seated = playerSeated || (!!staffKey && !rt?.eventId && !rt?.path.length);
+                const activated = !!staffKey && seated && redAlert;
+                const chair = stationChair(i);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => staffKey ? tapStaff(staffKey) : goStation()}
+                    aria-label={staffKey ? `Send ${info?.name ?? "staff"}` : i === 0 ? "Nurse chair" : "Empty chair"}
+                    className={cn(
+                      "pointer-events-auto absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center text-xl",
+                      activated && "animate-throb rounded-full ring-4 ring-alarm/30",
+                    )}
+                    style={{ left: `${chair.x * 100}%`, top: `${chair.y * 100}%` }}
+                  >
+                    <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-full">
+                      {playerSeated ? (
+                        <span className="block h-10 w-8 overflow-hidden"><Nurse moving={false} /></span>
+                      ) : seated && info ? info.icon : ""}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
         {/* curtain obstacles */}
         {GATES.map((g) => (
           <div
             key={g.y}
-            className="pointer-events-none absolute h-[8%] w-[22%] -translate-y-1/2 overflow-visible"
+            className="pointer-events-none absolute h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
             style={{
               top: `${g.y * 100}%`,
-              left: g.side === "left" ? "29%" : "49%",
+              left: g.side === "left" ? "27%" : "44%",
             }}
           >
             <img
@@ -1135,7 +1204,7 @@ export function WardScreen({
           return (
             <div
               key={b.id}
-              className="absolute h-[15%] w-[29%]"
+              className="absolute h-[13%] w-[22%]"
               style={{
                 left: `${slot.x * 100}%`,
                 top: `${slot.y * 100}%`,
@@ -1181,6 +1250,7 @@ export function WardScreen({
           }}
         >
           <Nurse moving={walking} />
+        </div>
         </div>
 
         {/* banner */}
@@ -1535,65 +1605,7 @@ export function WardScreen({
               );
             })()}
           </div>
-        ) : (
-          <div className="relative mx-auto aspect-[1774/887] w-full max-w-[430px]">
-            <button
-              onClick={goStation}
-              className="pointer-events-auto absolute inset-0 text-left"
-              aria-label="Return to nurses station"
-            >
-              <img
-                src={nursesStationAsset.url}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-              />
-              <div className="absolute bottom-[17%] left-1/2 w-[22%] -translate-x-1/2 text-center text-primary-foreground">
-                <p className="font-display truncate text-[9px] font-black uppercase leading-none">
-                  Lv {cfg.level}
-                </p>
-                <p className="font-display truncate text-[6px] font-black uppercase leading-none">{cfg.name}</p>
-              </div>
-            </button>
-
-            <div className="pointer-events-none absolute inset-0" aria-label="Five station chairs">
-              {Array.from({ length: 5 }, (_, i) => {
-                const staffKey = i > 0 ? staff[i - 1] : undefined;
-                const info = staffKey ? STAFF.find((s) => s.key === staffKey) : undefined;
-                const rt = staffKey ? staffRt.current[staffKey] : undefined;
-                const playerSeated = i === 0 && !walking && atBed === null;
-                const seated = playerSeated || (!!staffKey && !rt?.eventId && !rt?.path.length);
-                const activated = !!staffKey && seated && redAlert;
-                const chair = stationChair(i);
-                return (
-                  <button
-                    key={i}
-                    onClick={() => staffKey ? tapStaff(staffKey) : goStation()}
-                    aria-label={staffKey ? `Send ${info?.name ?? "staff"}` : i === 0 ? "Nurse chair" : "Empty chair"}
-                    className={cn(
-                      "pointer-events-auto absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center text-xl",
-                      activated && "animate-throb rounded-full ring-4 ring-alarm/30",
-                    )}
-                    style={{ left: `${chair.x * 100}%`, top: `${chair.y * 100}%` }}
-                  >
-                    <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-full">
-                      {playerSeated ? (
-                        <span className="block h-10 w-8 overflow-hidden">
-                          <Nurse moving={false} />
-                        </span>
-                      ) : seated && info ? (
-                        info.icon
-                      ) : (
-                        ""
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
 
       {/* mini-game overlay + controls */}
