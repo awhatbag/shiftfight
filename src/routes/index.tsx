@@ -215,13 +215,13 @@ function TopBar({
           ← Back
         </button>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {phase === "shop" && onContinue && (
           <button
             onClick={onContinue}
-            className="chunky chunky-press rounded-xl bg-primary px-3 py-2 font-display text-sm font-black uppercase text-primary-foreground"
+            className="chunky chunky-press rounded-xl bg-primary px-6 py-4 font-display text-lg font-black uppercase text-primary-foreground shadow-[0_6px_0_rgb(0,0,0,0.2)] ring-2 ring-primary-foreground/40"
           >
-            Next shift ▶
+            NEXT SHIFT ▶
           </button>
         )}
         <button
