@@ -107,7 +107,7 @@ const BED_SLOTS: Point[] = [
   { x: 0.755, y: 0.865 },
 ];
 
-const STATION_FRAME = { x: 0.2, y: 0.105, width: 0.6, height: 0.3 };
+const STATION_FRAME = { x: 0.21, y: 0.11, width: 0.58, height: 0.22 };
 
 /** chair centres in the nurses' station artwork, from left to right */
 const STATION_CHAIRS: readonly [Point, Point, Point, Point, Point] = [
@@ -1153,7 +1153,7 @@ export function WardScreen({
             className="pointer-events-none absolute h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
             style={{
               top: `${g.y * 100}%`,
-              left: g.side === "left" ? "27%" : "54%",
+              left: g.side === "left" ? "27%" : "44%",
             }}
           >
             <img
