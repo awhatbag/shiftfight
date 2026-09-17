@@ -58,7 +58,7 @@ export function Bed({
         flash === "bad" && "border-alarm",
       )}
     >
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[72%] w-[118%] -translate-x-1/2 -translate-y-1/2">
+      <div className="pointer-events-none absolute inset-0">
         <BedSprite side={bed.id % 2 === 0 ? "left" : "right"} />
       </div>
 
