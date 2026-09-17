@@ -1204,7 +1204,7 @@ export function WardScreen({
           return (
             <div
               key={b.id}
-              className="absolute h-[13%] w-[22%]"
+              className="absolute h-[14%] w-[26%]"
               style={{
                 left: `${slot.x * 100}%`,
                 top: `${slot.y * 100}%`,
