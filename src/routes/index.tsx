@@ -194,10 +194,12 @@ function TopBar({
   phase,
   onBack,
   onMenu,
+  onContinue,
 }: {
   phase: Phase;
   onBack: () => void;
   onMenu: () => void;
+  onContinue?: () => void;
 }) {
   return (
     <div className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-background px-2 py-2">
@@ -213,13 +215,23 @@ function TopBar({
           ← Back
         </button>
       )}
-      <button
-        onClick={onMenu}
-        aria-label="Open menu"
-        className="chunky chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
-      >
-        ☰ Menu
-      </button>
+      <div className="flex items-center gap-2">
+        {phase === "shop" && onContinue && (
+          <button
+            onClick={onContinue}
+            className="chunky chunky-press rounded-xl bg-primary px-3 py-2 font-display text-sm font-black uppercase text-primary-foreground"
+          >
+            Next shift ▶
+          </button>
+        )}
+        <button
+          onClick={onMenu}
+          aria-label="Open menu"
+          className="chunky chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+        >
+          ☰ Menu
+        </button>
+      </div>
     </div>
   );
 }
@@ -598,7 +610,7 @@ function Game() {
     <main className="flex min-h-dvh justify-center bg-ward-deep">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
         {phase !== "dev" && phase !== "shift" && (
-          <TopBar phase={phase} onBack={handleBack} onMenu={() => setMenuOpen(true)} />
+          <TopBar phase={phase} onBack={handleBack} onMenu={() => setMenuOpen(true)} onContinue={play} />
         )}
         <div className="relative flex-1 overflow-hidden">
 
@@ -736,7 +748,6 @@ function Game() {
                 return [...b, k];
               });
             }}
-            onPlay={play}
             onSave={saveProgress}
             saveNote={saveNote}
             onBack={() => setPhase("summary")}

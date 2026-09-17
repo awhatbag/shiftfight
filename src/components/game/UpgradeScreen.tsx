@@ -23,7 +23,6 @@ export function UpgradeScreen({
   onHire,
   onBuyGear,
   onBuyBedUpgrade,
-  onPlay,
   onSave,
   saveNote,
   onBack,
@@ -46,7 +45,6 @@ export function UpgradeScreen({
   onHire: (k: string, cost: number) => void;
   onBuyGear: (k: string, cost: number) => void;
   onBuyBedUpgrade: (k: string, cost: number) => void;
-  onPlay: () => void;
   onSave: () => void;
   saveNote: string;
   onBack: () => void;
@@ -279,12 +277,6 @@ export function UpgradeScreen({
       </div>
 
       <div className="mt-auto space-y-2">
-        <button
-          onClick={onPlay}
-          className="chunky chunky-press w-full rounded-2xl bg-[image:var(--gradient-calm)] py-4 font-display text-lg font-black uppercase text-primary-foreground"
-        >
-          Continue to Next Shift (Level {level})
-        </button>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onBack}
