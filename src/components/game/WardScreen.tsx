@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import wardBackgroundAsset from "@/assets/shift-fight-ward-background.png.asset.json";
+import wardBackgroundAsset from "@/assets/shift-fight-ward-spring-background.png.asset.json";
 import curtainAsset from "@/assets/curtain-partition.png.asset.json";
 import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
 import { cn } from "@/lib/utils";
