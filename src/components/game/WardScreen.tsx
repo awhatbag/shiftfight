@@ -716,90 +716,52 @@ export function WardScreen({
   /* ---------------- movement ---------------- */
   const routeTo = useCallback(
     (dest: Point, from: Point): Point[] => {
+      const atStation = (p: Point) => p.y < 0.3;
       const pts: Point[] = [];
 
-      /* the station is a solid U — its side arms reach north, and the counter
-         closes the south. Characters leave/enter over the open north top,
-         then use the clear side aisles beside the desk. */
-      const DESK_TOP_Y = 0.14;
-      const DESK_EXIT_Y = 0.36;
-      const AISLE_LEFT = 0.195;
-      const AISLE_RIGHT = 0.805;
-      const atStation = (p: Point) => p.y < 0.3;
-      const aisleFor = (p: Point) => (p.x < 0.5 ? AISLE_LEFT : AISLE_RIGHT);
+      /* leaving a chair: step north over the open top of the desk first */
+      const startNode = atStation(from)
+        ? (pts.push({ x: from.x, y: DESK_TOP_Y }),
+          from.x < 0.5 ? deskTopL : deskTopR)
+        : nearestNavNode(from);
+      if (atStation(from)) pts.push(NAV[startNode]!.p);
 
-      /* travel happens in the bedside aisle on the destination's own side —
-         both aisles run clear of every curtain, so no zig-zag is needed */
-      const lane = atStation(dest) ? aisleFor(from) : aisleFor(dest);
+      const endNode = atStation(dest)
+        ? dest.x < 0.5
+          ? deskTopL
+          : deskTopR
+        : nearestNavNode(dest);
 
-      let start = from;
-      if (atStation(from) && !atStation(dest)) {
-        pts.push({ x: from.x, y: DESK_TOP_Y });
-        pts.push({ x: lane, y: DESK_TOP_Y });
-        pts.push({ x: lane, y: DESK_EXIT_Y });
-        start = { x: lane, y: DESK_EXIT_Y };
-      }
-
-      let target = dest;
-      let tail: Point[] = [];
-      if (atStation(dest) && !atStation(from)) {
-        target = { x: lane, y: DESK_EXIT_Y };
-        tail = [
-          { x: lane, y: DESK_EXIT_Y },
-          { x: lane, y: DESK_TOP_Y },
-          { x: dest.x, y: DESK_TOP_Y },
-          dest,
-        ];
-      }
-
-      /* curtain solid boxes in ward space */
-      const CURTAINS = GATES.map((g) => ({
-        x0: g.side === "left" ? 0.25 : 0.44,
-        x1: g.side === "left" ? 0.46 : 0.65,
-        y0: g.y - 0.075,
-        y1: g.y + 0.075,
-      }));
-      const blocker = (y: number, xa: number, xb: number) =>
-        CURTAINS.find(
-          (b) =>
-            y > b.y0 &&
-            y < b.y1 &&
-            Math.max(xa, xb) > b.x0 &&
-            Math.min(xa, xb) < b.x1,
-        );
-      const lateral = (y: number, xa: number, xb: number, into: Point[]) => {
-        const b = blocker(y, xa, xb);
-        if (!b) {
-          into.push({ x: xb, y });
-          return;
-        }
-        const clearY = y < (b.y0 + b.y1) / 2 ? b.y0 - 0.025 : b.y1 + 0.025;
-        into.push({ x: xa, y: clearY });
-        into.push({ x: xb, y: clearY });
-        into.push({ x: xb, y });
-      };
-
-      if (Math.abs(start.x - lane) > 0.02) lateral(start.y, start.x, lane, pts);
-      const lastY = pts.length ? pts[pts.length - 1]!.y : start.y;
-      if (Math.abs(lastY - target.y) > 0.002)
-        pts.push({ x: lane, y: target.y });
-      if (tail.length) pts.push(...tail);
-      else if (Math.abs(target.x - lane) > 0.005)
-        lateral(target.y, lane, target.x, pts);
-      else pts.push(target);
+      pts.push(...navPath(startNode, endNode));
+      if (atStation(dest)) pts.push({ x: dest.x, y: DESK_TOP_Y });
+      pts.push(dest);
 
       /* prune duplicate / collinear waypoints for smooth motion */
       const out: Point[] = [];
       for (const p of pts) {
-        const prev = out[out.length - 1] ?? start;
-        if (Math.abs(prev.x - p.x) < 0.002 && Math.abs(prev.y - p.y) < 0.002)
+        const prev = out[out.length - 1] ?? from;
+        if (Math.abs(prev.x - p.x) < 0.004 && Math.abs(prev.y - p.y) < 0.004)
           continue;
+        const before = out[out.length - 2] ?? from;
+        if (
+          out.length &&
+          Math.abs(before.x - prev.x) < 0.004 &&
+          Math.abs(prev.x - p.x) < 0.004
+        )
+          out.pop();
+        else if (
+          out.length &&
+          Math.abs(before.y - prev.y) < 0.004 &&
+          Math.abs(prev.y - p.y) < 0.004
+        )
+          out.pop();
         out.push(p);
       }
       return out;
     },
     [],
   );
+
 
 
   const walkTo = useCallback(
