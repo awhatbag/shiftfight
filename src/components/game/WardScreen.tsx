@@ -602,40 +602,40 @@ export function WardScreen({
   const routeTo = useCallback(
     (dest: Point, from: Point): Point[] => {
       const pts: Point[] = [];
-      const lane = 0.5;
 
       /* the station is a solid U — its side arms reach north, and the counter
          closes the south. Characters leave/enter over the open north top,
          then use the clear side aisles beside the desk. */
       const DESK_TOP_Y = 0.14;
       const DESK_EXIT_Y = 0.36;
-      const AISLE_LEFT = 0.16;
-      const AISLE_RIGHT = 0.84;
+      const AISLE_LEFT = 0.195;
+      const AISLE_RIGHT = 0.805;
       const atStation = (p: Point) => p.y < 0.3;
       const aisleFor = (p: Point) => (p.x < 0.5 ? AISLE_LEFT : AISLE_RIGHT);
 
+      /* travel happens in the bedside aisle on the destination's own side —
+         both aisles run clear of every curtain, so no zig-zag is needed */
+      const lane = atStation(dest) ? aisleFor(from) : aisleFor(dest);
+
       let start = from;
       if (atStation(from) && !atStation(dest)) {
-        const aisle = aisleFor(from);
         pts.push({ x: from.x, y: DESK_TOP_Y });
-        pts.push({ x: aisle, y: DESK_TOP_Y });
-        pts.push({ x: aisle, y: DESK_EXIT_Y });
-        start = { x: aisle, y: DESK_EXIT_Y };
+        pts.push({ x: lane, y: DESK_TOP_Y });
+        pts.push({ x: lane, y: DESK_EXIT_Y });
+        start = { x: lane, y: DESK_EXIT_Y };
       }
 
       let target = dest;
       let tail: Point[] = [];
       if (atStation(dest) && !atStation(from)) {
-        const aisle = aisleFor(dest);
-        target = { x: aisle, y: DESK_EXIT_Y };
+        target = { x: lane, y: DESK_EXIT_Y };
         tail = [
-          { x: aisle, y: DESK_EXIT_Y },
-          { x: aisle, y: DESK_TOP_Y },
+          { x: lane, y: DESK_EXIT_Y },
+          { x: lane, y: DESK_TOP_Y },
           { x: dest.x, y: DESK_TOP_Y },
           dest,
         ];
       }
-
 
       /* curtain solid boxes in ward space */
       const CURTAINS = GATES.map((g) => ({
@@ -664,24 +664,24 @@ export function WardScreen({
         into.push({ x: xb, y });
       };
 
-      if (Math.abs(start.x - lane) > 0.04) lateral(start.y, start.x, lane, pts);
-      const y0 = start.y;
-      const y1 = target.y;
-      const gates = GATES.filter(
-        (g) => g.y > Math.min(y0, y1) && g.y < Math.max(y0, y1),
-      ).sort((a, b) => (y1 > y0 ? a.y - b.y : b.y - a.y));
-      for (const g of gates) {
-        pts.push({ x: g.lane, y: g.y - 0.085 * (y1 > y0 ? 1 : -1) });
-        pts.push({ x: g.lane, y: g.y + 0.085 * (y1 > y0 ? 1 : -1) });
-      }
-      const laneY = pts.length ? pts[pts.length - 1]!.y : start.y;
-      const lastX = pts.length ? pts[pts.length - 1]!.x : start.x;
-      if (Math.abs(lastX - lane) > 0.001) lateral(laneY, lastX, lane, pts);
-      pts.push({ x: lane, y: target.y });
+      if (Math.abs(start.x - lane) > 0.02) lateral(start.y, start.x, lane, pts);
+      const lastY = pts.length ? pts[pts.length - 1]!.y : start.y;
+      if (Math.abs(lastY - target.y) > 0.002)
+        pts.push({ x: lane, y: target.y });
       if (tail.length) pts.push(...tail);
-      else lateral(target.y, lane, target.x, pts);
-      return pts;
+      else if (Math.abs(target.x - lane) > 0.005)
+        lateral(target.y, lane, target.x, pts);
+      else pts.push(target);
 
+      /* prune duplicate / collinear waypoints for smooth motion */
+      const out: Point[] = [];
+      for (const p of pts) {
+        const prev = out[out.length - 1] ?? start;
+        if (Math.abs(prev.x - p.x) < 0.002 && Math.abs(prev.y - p.y) < 0.002)
+          continue;
+        out.push(p);
+      }
+      return out;
     },
     [],
   );
@@ -1221,12 +1221,15 @@ export function WardScreen({
           {/* station facade — counter, side arms and outer rims drawn over
               nurses; only the inner floor (chairs) stays open */}
           <div
-            className="pointer-events-none absolute z-[250]"
+            className="pointer-events-none absolute"
             style={{
               left: `${STATION_FRAME.x * 100}%`,
               top: `${STATION_FRAME.y * 100}%`,
               width: `${STATION_FRAME.width * 100}%`,
               height: `${STATION_FRAME.height * 100}%`,
+              /* depth-sorted on the desk's front edge so anyone standing
+                 south of the counter walks in front of it */
+              zIndex: Math.round((STATION_FRAME.y + STATION_FRAME.height) * 100),
               clipPath:
                 "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 13% 24%, 13% 62%, 87% 62%, 87% 24%, 13% 24%)",
             }}
