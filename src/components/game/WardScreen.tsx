@@ -140,7 +140,122 @@ const GATES = [
   { y: 0.735, side: "left" as const, lane: 0.61 },
 ];
 
+/** bedside standing spots, one per bed, taken from the ward path map */
+const BED_ARRIVAL: Point[] = [
+  { x: 0.24, y: 0.33 },
+  { x: 0.79, y: 0.33 },
+  { x: 0.23, y: 0.6 },
+  { x: 0.79, y: 0.5 },
+  { x: 0.24, y: 0.77 },
+  { x: 0.76, y: 0.75 },
+  { x: 0.24, y: 0.92 },
+  { x: 0.76, y: 0.92 },
+];
+
+/* ---------- walkable network (fixed ward-world coordinates) ----------
+   Horizontal lanes run in the clear floor between bed rows; a single
+   central spine joins them, and the station is entered/left over the
+   open north top of the desk and down the outer side aisles. */
+const LANE_Y = [0.33, 0.46, 0.628, 0.7875, 0.94];
+const LANE_X = [0.24, 0.5, 0.79];
+const DESK_TOP_Y = 0.14;
+const SIDE_X = [0.16, 0.84];
+
+type NavNode = { p: Point; edges: number[] };
+
+const NAV: NavNode[] = [];
+function navAdd(p: Point) {
+  NAV.push({ p, edges: [] });
+  return NAV.length - 1;
+}
+function navLink(a: number, b: number) {
+  NAV[a]!.edges.push(b);
+  NAV[b]!.edges.push(a);
+}
+
+const laneNode: number[][] = LANE_Y.map((y) => LANE_X.map((x) => navAdd({ x, y })));
+LANE_Y.forEach((_, r) => {
+  navLink(laneNode[r]![0]!, laneNode[r]![1]!);
+  navLink(laneNode[r]![1]!, laneNode[r]![2]!);
+  if (r > 0) navLink(laneNode[r - 1]![1]!, laneNode[r]![1]!);
+});
+
+/* station approach: outer side aisles up over the desk arms */
+const deskTopL = navAdd({ x: SIDE_X[0]!, y: DESK_TOP_Y });
+const deskTopR = navAdd({ x: SIDE_X[1]!, y: DESK_TOP_Y });
+const deskTopC = navAdd({ x: 0.5, y: DESK_TOP_Y });
+const outL = navAdd({ x: SIDE_X[0]!, y: LANE_Y[0]! });
+const outR = navAdd({ x: SIDE_X[1]!, y: LANE_Y[0]! });
+navLink(deskTopL, deskTopC);
+navLink(deskTopC, deskTopR);
+navLink(deskTopL, outL);
+navLink(deskTopR, outR);
+navLink(outL, laneNode[0]![0]!);
+navLink(outR, laneNode[0]![2]!);
+
+/* bedside spots hang off their own lane */
+const bedNode = BED_ARRIVAL.map((p, i) => {
+  const id = navAdd(p);
+  const lane = [0, 0, 2, 1, 3, 3, 4, 4][i]!;
+  const col = i % 2 === 0 ? 0 : 2;
+  const anchor = laneNode[lane]![col]!;
+  if (anchor !== id) navLink(id, anchor);
+  return id;
+});
+
+function dist(a: Point, b: Point) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function nearestNavNode(p: Point) {
+  let best = 0;
+  let bd = Infinity;
+  NAV.forEach((n, i) => {
+    const d = dist(n.p, p);
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
+  });
+  return best;
+}
+
+function navPath(a: number, b: number): Point[] {
+  const dists = NAV.map(() => Infinity);
+  const prev = NAV.map(() => -1);
+  const seen = NAV.map(() => false);
+  dists[a] = 0;
+  for (;;) {
+    let cur = -1;
+    let cd = Infinity;
+    dists.forEach((d, i) => {
+      if (!seen[i] && d < cd) {
+        cd = d;
+        cur = i;
+      }
+    });
+    if (cur === -1 || cur === b) break;
+    seen[cur] = true;
+    for (const e of NAV[cur]!.edges) {
+      const nd = cd + dist(NAV[cur]!.p, NAV[e]!.p);
+      if (nd < dists[e]!) {
+        dists[e] = nd;
+        prev[e] = cur;
+      }
+    }
+  }
+  const out: Point[] = [];
+  let cur = b;
+  while (cur !== -1) {
+    out.unshift(NAV[cur]!.p);
+    if (cur === a) break;
+    cur = prev[cur]!;
+  }
+  return out;
+}
+
 const MS_PER_UNIT = (u: Upgrades) => Math.max(620, 1500 - u.speed * 230);
+
 
 export function WardScreen({
   level,
@@ -601,90 +716,52 @@ export function WardScreen({
   /* ---------------- movement ---------------- */
   const routeTo = useCallback(
     (dest: Point, from: Point): Point[] => {
+      const atStation = (p: Point) => p.y < 0.3;
       const pts: Point[] = [];
 
-      /* the station is a solid U — its side arms reach north, and the counter
-         closes the south. Characters leave/enter over the open north top,
-         then use the clear side aisles beside the desk. */
-      const DESK_TOP_Y = 0.14;
-      const DESK_EXIT_Y = 0.36;
-      const AISLE_LEFT = 0.195;
-      const AISLE_RIGHT = 0.805;
-      const atStation = (p: Point) => p.y < 0.3;
-      const aisleFor = (p: Point) => (p.x < 0.5 ? AISLE_LEFT : AISLE_RIGHT);
+      /* leaving a chair: step north over the open top of the desk first */
+      const startNode = atStation(from)
+        ? (pts.push({ x: from.x, y: DESK_TOP_Y }),
+          from.x < 0.5 ? deskTopL : deskTopR)
+        : nearestNavNode(from);
+      if (atStation(from)) pts.push(NAV[startNode]!.p);
 
-      /* travel happens in the bedside aisle on the destination's own side —
-         both aisles run clear of every curtain, so no zig-zag is needed */
-      const lane = atStation(dest) ? aisleFor(from) : aisleFor(dest);
+      const endNode = atStation(dest)
+        ? dest.x < 0.5
+          ? deskTopL
+          : deskTopR
+        : nearestNavNode(dest);
 
-      let start = from;
-      if (atStation(from) && !atStation(dest)) {
-        pts.push({ x: from.x, y: DESK_TOP_Y });
-        pts.push({ x: lane, y: DESK_TOP_Y });
-        pts.push({ x: lane, y: DESK_EXIT_Y });
-        start = { x: lane, y: DESK_EXIT_Y };
-      }
-
-      let target = dest;
-      let tail: Point[] = [];
-      if (atStation(dest) && !atStation(from)) {
-        target = { x: lane, y: DESK_EXIT_Y };
-        tail = [
-          { x: lane, y: DESK_EXIT_Y },
-          { x: lane, y: DESK_TOP_Y },
-          { x: dest.x, y: DESK_TOP_Y },
-          dest,
-        ];
-      }
-
-      /* curtain solid boxes in ward space */
-      const CURTAINS = GATES.map((g) => ({
-        x0: g.side === "left" ? 0.25 : 0.44,
-        x1: g.side === "left" ? 0.46 : 0.65,
-        y0: g.y - 0.075,
-        y1: g.y + 0.075,
-      }));
-      const blocker = (y: number, xa: number, xb: number) =>
-        CURTAINS.find(
-          (b) =>
-            y > b.y0 &&
-            y < b.y1 &&
-            Math.max(xa, xb) > b.x0 &&
-            Math.min(xa, xb) < b.x1,
-        );
-      const lateral = (y: number, xa: number, xb: number, into: Point[]) => {
-        const b = blocker(y, xa, xb);
-        if (!b) {
-          into.push({ x: xb, y });
-          return;
-        }
-        const clearY = y < (b.y0 + b.y1) / 2 ? b.y0 - 0.025 : b.y1 + 0.025;
-        into.push({ x: xa, y: clearY });
-        into.push({ x: xb, y: clearY });
-        into.push({ x: xb, y });
-      };
-
-      if (Math.abs(start.x - lane) > 0.02) lateral(start.y, start.x, lane, pts);
-      const lastY = pts.length ? pts[pts.length - 1]!.y : start.y;
-      if (Math.abs(lastY - target.y) > 0.002)
-        pts.push({ x: lane, y: target.y });
-      if (tail.length) pts.push(...tail);
-      else if (Math.abs(target.x - lane) > 0.005)
-        lateral(target.y, lane, target.x, pts);
-      else pts.push(target);
+      pts.push(...navPath(startNode, endNode));
+      if (atStation(dest)) pts.push({ x: dest.x, y: DESK_TOP_Y });
+      pts.push(dest);
 
       /* prune duplicate / collinear waypoints for smooth motion */
       const out: Point[] = [];
       for (const p of pts) {
-        const prev = out[out.length - 1] ?? start;
-        if (Math.abs(prev.x - p.x) < 0.002 && Math.abs(prev.y - p.y) < 0.002)
+        const prev = out[out.length - 1] ?? from;
+        if (Math.abs(prev.x - p.x) < 0.004 && Math.abs(prev.y - p.y) < 0.004)
           continue;
+        const before = out[out.length - 2] ?? from;
+        if (
+          out.length &&
+          Math.abs(before.x - prev.x) < 0.004 &&
+          Math.abs(prev.x - p.x) < 0.004
+        )
+          out.pop();
+        else if (
+          out.length &&
+          Math.abs(before.y - prev.y) < 0.004 &&
+          Math.abs(prev.y - p.y) < 0.004
+        )
+          out.pop();
         out.push(p);
       }
       return out;
     },
     [],
   );
+
 
 
   const walkTo = useCallback(
@@ -745,7 +822,7 @@ export function WardScreen({
       rt.eventId = ev.id;
       rt.goingHome = false;
       rt.lastT = gameT.current;
-      rt.path = routeTo(BED_SLOTS[ev.bed]!, staffPosRef.current[key] ?? staffHome(key));
+      rt.path = routeTo(BED_ARRIVAL[ev.bed] ?? BED_SLOTS[ev.bed]!, staffPosRef.current[key] ?? staffHome(key));
     },
     [routeTo, staffHome],
   );
@@ -869,11 +946,8 @@ export function WardScreen({
     buzz(10);
     if (tutStep === 1) setTutStep(2);
     setSelected(bed);
-    const slot = BED_SLOTS[bed]!;
-    walkTo(
-      { x: slot.x < 0.5 ? slot.x - 0.05 : slot.x + 0.05, y: slot.y + 0.055 },
-      bed,
-    );
+    walkTo(BED_ARRIVAL[bed] ?? BED_SLOTS[bed]!, bed);
+
 
   }
 
