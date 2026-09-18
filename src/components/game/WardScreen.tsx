@@ -637,20 +637,51 @@ export function WardScreen({
       }
 
 
-      if (Math.abs(start.x - lane) > 0.04) pts.push({ x: lane, y: start.y });
+      /* curtain solid boxes in ward space */
+      const CURTAINS = GATES.map((g) => ({
+        x0: g.side === "left" ? 0.25 : 0.44,
+        x1: g.side === "left" ? 0.46 : 0.65,
+        y0: g.y - 0.075,
+        y1: g.y + 0.075,
+      }));
+      const blocker = (y: number, xa: number, xb: number) =>
+        CURTAINS.find(
+          (b) =>
+            y > b.y0 &&
+            y < b.y1 &&
+            Math.max(xa, xb) > b.x0 &&
+            Math.min(xa, xb) < b.x1,
+        );
+      const lateral = (y: number, xa: number, xb: number, into: Point[]) => {
+        const b = blocker(y, xa, xb);
+        if (!b) {
+          into.push({ x: xb, y });
+          return;
+        }
+        const clearY = y < (b.y0 + b.y1) / 2 ? b.y0 - 0.025 : b.y1 + 0.025;
+        into.push({ x: xa, y: clearY });
+        into.push({ x: xb, y: clearY });
+        into.push({ x: xb, y });
+      };
+
+      if (Math.abs(start.x - lane) > 0.04) lateral(start.y, start.x, lane, pts);
       const y0 = start.y;
       const y1 = target.y;
       const gates = GATES.filter(
         (g) => g.y > Math.min(y0, y1) && g.y < Math.max(y0, y1),
       ).sort((a, b) => (y1 > y0 ? a.y - b.y : b.y - a.y));
       for (const g of gates) {
-        pts.push({ x: g.lane, y: g.y - 0.05 * (y1 > y0 ? 1 : -1) });
-        pts.push({ x: g.lane, y: g.y + 0.05 * (y1 > y0 ? 1 : -1) });
+        pts.push({ x: g.lane, y: g.y - 0.085 * (y1 > y0 ? 1 : -1) });
+        pts.push({ x: g.lane, y: g.y + 0.085 * (y1 > y0 ? 1 : -1) });
       }
+      const laneY = pts.length ? pts[pts.length - 1]!.y : start.y;
+      const lastX = pts.length ? pts[pts.length - 1]!.x : start.x;
+      if (Math.abs(lastX - lane) > 0.001) lateral(laneY, lastX, lane, pts);
       pts.push({ x: lane, y: target.y });
       if (tail.length) pts.push(...tail);
-      else pts.push(target);
+      else lateral(target.y, lane, target.x, pts);
       return pts;
+
     },
     [],
   );
@@ -1216,11 +1247,13 @@ export function WardScreen({
         {GATES.map((g) => (
           <div
             key={g.y}
-            className="pointer-events-none absolute z-[300] h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
+            className="pointer-events-none absolute h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
             style={{
               top: `${g.y * 100}%`,
               left: g.side === "left" ? "27%" : "44%",
+              zIndex: Math.round((g.y + 0.0325) * 100),
             }}
+
           >
             <img
               src={curtainAsset.url}
