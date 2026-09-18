@@ -133,11 +133,28 @@ function stationChairInWard(index: number): Point {
 /** ward-space destination matching the first visible chair */
 const STATION: Point = stationChairInWard(0);
 
-/** curtain sections in the corridor the nurse must walk around */
+/** curtain sections in the corridor the nurse must walk around.
+    box = exact placement measured from the ward reference artwork
+    (890x1123 world space), expressed as fractions of the ward world. */
 const GATES = [
-  { y: 0.405, side: "left" as const, lane: 0.61 },
-  { y: 0.57, side: "right" as const, lane: 0.39 },
-  { y: 0.735, side: "left" as const, lane: 0.61 },
+  {
+    y: 0.405,
+    side: "left" as const,
+    lane: 0.61,
+    box: { left: 0.2921, top: 0.3401, width: 0.1663, height: 0.1470 },
+  },
+  {
+    y: 0.57,
+    side: "right" as const,
+    lane: 0.39,
+    box: { left: 0.5281, top: 0.4934, width: 0.1685, height: 0.1416 },
+  },
+  {
+    y: 0.735,
+    side: "left" as const,
+    lane: 0.61,
+    box: { left: 0.3146, top: 0.6608, width: 0.1629, height: 0.1630 },
+  },
 ];
 
 /** bedside standing spots, one per bed, taken from the ward path map */
@@ -1324,20 +1341,21 @@ export function WardScreen({
         {GATES.map((g) => (
           <div
             key={g.y}
-            className="pointer-events-none absolute h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
+            className="pointer-events-none absolute overflow-visible"
             style={{
-              top: `${g.y * 100}%`,
-              left: g.side === "left" ? "27%" : "44%",
+              top: `${g.box.top * 100}%`,
+              left: `${g.box.left * 100}%`,
+              width: `${g.box.width * 100}%`,
+              height: `${g.box.height * 100}%`,
               zIndex: Math.round((g.y + 0.0325) * 100),
             }}
-
           >
             <img
               src={curtainAsset.url}
               alt=""
               aria-hidden="true"
               draggable={false}
-              className="h-full w-full object-contain"
+              className="h-full w-full object-fill"
               style={{ transform: g.side === "right" ? "scaleX(-1)" : undefined }}
             />
           </div>
