@@ -603,9 +603,36 @@ export function WardScreen({
     (dest: Point, from: Point): Point[] => {
       const pts: Point[] = [];
       const lane = 0.5;
-      if (Math.abs(from.x - lane) > 0.04) pts.push({ x: lane, y: from.y });
-      const y0 = from.y;
-      const y1 = dest.y;
+
+      /* the desk counter is solid — leaving or reaching a chair uses the open
+         side flanks of the U-shaped station instead of crossing the counter */
+      const DESK_EXIT_Y = 0.36;
+      const atStation = (p: Point) => p.y < 0.3;
+      const flankFor = (p: Point) => (p.x < 0.5 ? 0.1 : 0.9);
+
+      let start = from;
+      if (atStation(from) && !atStation(dest)) {
+        const flank = flankFor(from);
+        pts.push({ x: flank, y: from.y });
+        pts.push({ x: flank, y: DESK_EXIT_Y });
+        start = { x: flank, y: DESK_EXIT_Y };
+      }
+
+      let target = dest;
+      let tail: Point[] = [];
+      if (atStation(dest) && !atStation(from)) {
+        const flank = flankFor(dest);
+        target = { x: flank, y: DESK_EXIT_Y };
+        tail = [
+          { x: flank, y: DESK_EXIT_Y },
+          { x: flank, y: dest.y },
+          dest,
+        ];
+      }
+
+      if (Math.abs(start.x - lane) > 0.04) pts.push({ x: lane, y: start.y });
+      const y0 = start.y;
+      const y1 = target.y;
       const gates = GATES.filter(
         (g) => g.y > Math.min(y0, y1) && g.y < Math.max(y0, y1),
       ).sort((a, b) => (y1 > y0 ? a.y - b.y : b.y - a.y));
@@ -613,12 +640,14 @@ export function WardScreen({
         pts.push({ x: g.lane, y: g.y - 0.05 * (y1 > y0 ? 1 : -1) });
         pts.push({ x: g.lane, y: g.y + 0.05 * (y1 > y0 ? 1 : -1) });
       }
-      pts.push({ x: lane, y: dest.y });
-      pts.push(dest);
+      pts.push({ x: lane, y: target.y });
+      if (tail.length) pts.push(...tail);
+      else pts.push(target);
       return pts;
     },
     [],
   );
+
 
   const walkTo = useCallback(
     (dest: Point, bed: number | null, slow = false) => {
