@@ -822,7 +822,7 @@ export function WardScreen({
       rt.eventId = ev.id;
       rt.goingHome = false;
       rt.lastT = gameT.current;
-      rt.path = routeTo(BED_SLOTS[ev.bed]!, staffPosRef.current[key] ?? staffHome(key));
+      rt.path = routeTo(BED_ARRIVAL[ev.bed] ?? BED_SLOTS[ev.bed]!, staffPosRef.current[key] ?? staffHome(key));
     },
     [routeTo, staffHome],
   );
