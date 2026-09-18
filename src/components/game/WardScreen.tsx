@@ -608,7 +608,7 @@ export function WardScreen({
          side flanks of the U-shaped station instead of crossing the counter */
       const DESK_EXIT_Y = 0.36;
       const atStation = (p: Point) => p.y < 0.3;
-      const flankFor = (p: Point) => (p.x < 0.5 ? 0.1 : 0.9);
+      const flankFor = (p: Point) => (p.x < 0.5 ? 0.27 : 0.73);
 
       let start = from;
       if (atStation(from) && !atStation(dest)) {
@@ -1177,7 +1177,7 @@ export function WardScreen({
 
           {/* front counter facade — drawn over nurses so they appear behind the desk */}
           <div
-            className="pointer-events-none absolute z-[25]"
+            className="pointer-events-none absolute z-[250]"
             style={{
               left: `${STATION_FRAME.x * 100}%`,
               top: `${STATION_FRAME.y * 100}%`,
@@ -1201,7 +1201,7 @@ export function WardScreen({
         {GATES.map((g) => (
           <div
             key={g.y}
-            className="pointer-events-none absolute z-[30] h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
+            className="pointer-events-none absolute z-[300] h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
             style={{
               top: `${g.y * 100}%`,
               left: g.side === "left" ? "27%" : "44%",
@@ -1260,6 +1260,7 @@ export function WardScreen({
                 left: `${slot.x * 100}%`,
                 top: `${slot.y * 100}%`,
                 transform: "translate(-50%,-50%)",
+                zIndex: Math.round(slot.y * 100),
               }}
             >
               {urg && urg !== "routine" && level <= 3 && (
@@ -1290,7 +1291,7 @@ export function WardScreen({
         {/* nurse */}
         <div
           className={cn(
-            "pointer-events-none absolute z-20 h-16 w-12 transition-all ease-linear",
+            "pointer-events-none absolute h-16 w-12 transition-all ease-linear",
             !walking && atBed === null && "invisible",
           )}
           style={{
@@ -1298,6 +1299,7 @@ export function WardScreen({
             top: `${nurse.y * 100}%`,
             transform: "translate(-50%,-60%)",
             transitionDuration: "80ms",
+            zIndex: Math.round(nurse.y * 100) + 1,
           }}
         >
           <Nurse moving={walking} />
