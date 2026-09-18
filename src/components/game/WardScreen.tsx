@@ -1273,8 +1273,8 @@ export function WardScreen({
           </div>
         )}
 
-        {/* the DON, standing in the corridor, judging quietly */}
-        {don && (
+        {/* the DON only appears on the live ward screen, never during mini-games or overlays */}
+        {don && phase === "play" && !mini && !settingsOpen && !manualPause && (
           <div
             className="pointer-events-none absolute left-1/2 top-[2%] z-[45] flex -translate-x-1/2 flex-col items-center"
             aria-label="The DON is on the ward"
