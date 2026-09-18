@@ -1175,6 +1175,28 @@ export function WardScreen({
             </div>
           </div>
 
+          {/* front counter facade — drawn over nurses so they appear behind the desk */}
+          <div
+            className="pointer-events-none absolute z-[25]"
+            style={{
+              left: `${STATION_FRAME.x * 100}%`,
+              top: `${STATION_FRAME.y * 100}%`,
+              width: `${STATION_FRAME.width * 100}%`,
+              height: `${STATION_FRAME.height * 100}%`,
+              clipPath: "inset(62% 0 0 0)",
+            }}
+          >
+            <img
+              src={nursesStationAsset.url}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+          </div>
+
+
+
         {/* curtain obstacles */}
         {GATES.map((g) => (
           <div
