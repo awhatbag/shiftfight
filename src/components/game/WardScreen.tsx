@@ -604,31 +604,38 @@ export function WardScreen({
       const pts: Point[] = [];
       const lane = 0.5;
 
-      /* the desk counter is solid — leaving or reaching a chair uses the open
-         side flanks of the U-shaped station instead of crossing the counter */
+      /* the station is a solid U — its side arms reach north, and the counter
+         closes the south. Characters leave/enter over the open north top,
+         then use the clear side aisles beside the desk. */
+      const DESK_TOP_Y = 0.14;
       const DESK_EXIT_Y = 0.36;
+      const AISLE_LEFT = 0.16;
+      const AISLE_RIGHT = 0.84;
       const atStation = (p: Point) => p.y < 0.3;
-      const flankFor = (p: Point) => (p.x < 0.5 ? 0.27 : 0.73);
+      const aisleFor = (p: Point) => (p.x < 0.5 ? AISLE_LEFT : AISLE_RIGHT);
 
       let start = from;
       if (atStation(from) && !atStation(dest)) {
-        const flank = flankFor(from);
-        pts.push({ x: flank, y: from.y });
-        pts.push({ x: flank, y: DESK_EXIT_Y });
-        start = { x: flank, y: DESK_EXIT_Y };
+        const aisle = aisleFor(from);
+        pts.push({ x: from.x, y: DESK_TOP_Y });
+        pts.push({ x: aisle, y: DESK_TOP_Y });
+        pts.push({ x: aisle, y: DESK_EXIT_Y });
+        start = { x: aisle, y: DESK_EXIT_Y };
       }
 
       let target = dest;
       let tail: Point[] = [];
       if (atStation(dest) && !atStation(from)) {
-        const flank = flankFor(dest);
-        target = { x: flank, y: DESK_EXIT_Y };
+        const aisle = aisleFor(dest);
+        target = { x: aisle, y: DESK_EXIT_Y };
         tail = [
-          { x: flank, y: DESK_EXIT_Y },
-          { x: flank, y: dest.y },
+          { x: aisle, y: DESK_EXIT_Y },
+          { x: aisle, y: DESK_TOP_Y },
+          { x: dest.x, y: DESK_TOP_Y },
           dest,
         ];
       }
+
 
       if (Math.abs(start.x - lane) > 0.04) pts.push({ x: lane, y: start.y });
       const y0 = start.y;
@@ -833,9 +840,10 @@ export function WardScreen({
     setSelected(bed);
     const slot = BED_SLOTS[bed]!;
     walkTo(
-      { x: slot.x < 0.5 ? slot.x + 0.12 : slot.x - 0.12, y: slot.y + 0.03 },
+      { x: slot.x < 0.5 ? slot.x - 0.05 : slot.x + 0.05, y: slot.y + 0.055 },
       bed,
     );
+
   }
 
   function goStation() {
@@ -1179,7 +1187,8 @@ export function WardScreen({
             </div>
           </div>
 
-          {/* front counter facade — drawn over nurses so they appear behind the desk */}
+          {/* station facade — counter, side arms and outer rims drawn over
+              nurses; only the inner floor (chairs) stays open */}
           <div
             className="pointer-events-none absolute z-[250]"
             style={{
@@ -1187,9 +1196,11 @@ export function WardScreen({
               top: `${STATION_FRAME.y * 100}%`,
               width: `${STATION_FRAME.width * 100}%`,
               height: `${STATION_FRAME.height * 100}%`,
-              clipPath: "inset(62% 0 0 0)",
+              clipPath:
+                "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 13% 24%, 13% 62%, 87% 62%, 87% 24%, 13% 24%)",
             }}
           >
+
             <img
               src={nursesStationAsset.url}
               alt=""
