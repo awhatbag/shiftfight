@@ -831,7 +831,11 @@ export function WardScreen({
     buzz(10);
     if (tutStep === 1) setTutStep(2);
     setSelected(bed);
-    walkTo(BED_SLOTS[bed]!, bed);
+    const slot = BED_SLOTS[bed]!;
+    walkTo(
+      { x: slot.x < 0.5 ? slot.x + 0.12 : slot.x - 0.12, y: slot.y + 0.03 },
+      bed,
+    );
   }
 
   function goStation() {
