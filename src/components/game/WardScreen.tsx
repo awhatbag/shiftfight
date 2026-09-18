@@ -1341,20 +1341,21 @@ export function WardScreen({
         {GATES.map((g) => (
           <div
             key={g.y}
-            className="pointer-events-none absolute h-[13%] w-[19%] -translate-y-1/2 overflow-visible"
+            className="pointer-events-none absolute overflow-visible"
             style={{
-              top: `${g.y * 100}%`,
-              left: g.side === "left" ? "27%" : "44%",
+              top: `${g.box.top * 100}%`,
+              left: `${g.box.left * 100}%`,
+              width: `${g.box.width * 100}%`,
+              height: `${g.box.height * 100}%`,
               zIndex: Math.round((g.y + 0.0325) * 100),
             }}
-
           >
             <img
               src={curtainAsset.url}
               alt=""
               aria-hidden="true"
               draggable={false}
-              className="h-full w-full object-contain"
+              className="h-full w-full object-fill"
               style={{ transform: g.side === "right" ? "scaleX(-1)" : undefined }}
             />
           </div>
