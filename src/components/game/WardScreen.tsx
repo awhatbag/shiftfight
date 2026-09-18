@@ -140,7 +140,122 @@ const GATES = [
   { y: 0.735, side: "left" as const, lane: 0.61 },
 ];
 
+/** bedside standing spots, one per bed, taken from the ward path map */
+const BED_ARRIVAL: Point[] = [
+  { x: 0.24, y: 0.33 },
+  { x: 0.79, y: 0.33 },
+  { x: 0.23, y: 0.6 },
+  { x: 0.79, y: 0.5 },
+  { x: 0.24, y: 0.77 },
+  { x: 0.76, y: 0.75 },
+  { x: 0.24, y: 0.92 },
+  { x: 0.76, y: 0.92 },
+];
+
+/* ---------- walkable network (fixed ward-world coordinates) ----------
+   Horizontal lanes run in the clear floor between bed rows; a single
+   central spine joins them, and the station is entered/left over the
+   open north top of the desk and down the outer side aisles. */
+const LANE_Y = [0.33, 0.46, 0.628, 0.7875, 0.94];
+const LANE_X = [0.24, 0.5, 0.79];
+const DESK_TOP_Y = 0.14;
+const SIDE_X = [0.16, 0.84];
+
+type NavNode = { p: Point; edges: number[] };
+
+const NAV: NavNode[] = [];
+function navAdd(p: Point) {
+  NAV.push({ p, edges: [] });
+  return NAV.length - 1;
+}
+function navLink(a: number, b: number) {
+  NAV[a]!.edges.push(b);
+  NAV[b]!.edges.push(a);
+}
+
+const laneNode: number[][] = LANE_Y.map((y) => LANE_X.map((x) => navAdd({ x, y })));
+LANE_Y.forEach((_, r) => {
+  navLink(laneNode[r]![0]!, laneNode[r]![1]!);
+  navLink(laneNode[r]![1]!, laneNode[r]![2]!);
+  if (r > 0) navLink(laneNode[r - 1]![1]!, laneNode[r]![1]!);
+});
+
+/* station approach: outer side aisles up over the desk arms */
+const deskTopL = navAdd({ x: SIDE_X[0]!, y: DESK_TOP_Y });
+const deskTopR = navAdd({ x: SIDE_X[1]!, y: DESK_TOP_Y });
+const deskTopC = navAdd({ x: 0.5, y: DESK_TOP_Y });
+const outL = navAdd({ x: SIDE_X[0]!, y: LANE_Y[0]! });
+const outR = navAdd({ x: SIDE_X[1]!, y: LANE_Y[0]! });
+navLink(deskTopL, deskTopC);
+navLink(deskTopC, deskTopR);
+navLink(deskTopL, outL);
+navLink(deskTopR, outR);
+navLink(outL, laneNode[0]![0]!);
+navLink(outR, laneNode[0]![2]!);
+
+/* bedside spots hang off their own lane */
+const bedNode = BED_ARRIVAL.map((p, i) => {
+  const id = navAdd(p);
+  const lane = [0, 0, 2, 1, 3, 3, 4, 4][i]!;
+  const col = i % 2 === 0 ? 0 : 2;
+  const anchor = laneNode[lane]![col]!;
+  if (anchor !== id) navLink(id, anchor);
+  return id;
+});
+
+function dist(a: Point, b: Point) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function nearestNavNode(p: Point) {
+  let best = 0;
+  let bd = Infinity;
+  NAV.forEach((n, i) => {
+    const d = dist(n.p, p);
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
+  });
+  return best;
+}
+
+function navPath(a: number, b: number): Point[] {
+  const dists = NAV.map(() => Infinity);
+  const prev = NAV.map(() => -1);
+  const seen = NAV.map(() => false);
+  dists[a] = 0;
+  for (;;) {
+    let cur = -1;
+    let cd = Infinity;
+    dists.forEach((d, i) => {
+      if (!seen[i] && d < cd) {
+        cd = d;
+        cur = i;
+      }
+    });
+    if (cur === -1 || cur === b) break;
+    seen[cur] = true;
+    for (const e of NAV[cur]!.edges) {
+      const nd = cd + dist(NAV[cur]!.p, NAV[e]!.p);
+      if (nd < dists[e]!) {
+        dists[e] = nd;
+        prev[e] = cur;
+      }
+    }
+  }
+  const out: Point[] = [];
+  let cur = b;
+  while (cur !== -1) {
+    out.unshift(NAV[cur]!.p);
+    if (cur === a) break;
+    cur = prev[cur]!;
+  }
+  return out;
+}
+
 const MS_PER_UNIT = (u: Upgrades) => Math.max(620, 1500 - u.speed * 230);
+
 
 export function WardScreen({
   level,
