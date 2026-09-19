@@ -1470,9 +1470,9 @@ export function WardScreen({
             className="absolute rounded-[50%] bg-black/45 blur-[6px]"
             style={{
               left: "49.4%",
-              top: "26.2%",
+              top: "33.2%",
               width: "50%",
-              height: "5%",
+              height: "4.5%",
               transform: "translate(-50%,-50%)",
             }}
           />
