@@ -1433,62 +1433,46 @@ export function WardScreen({
           );
         })}
 
-        {/* crisp contact shadows — a single low layer so characters always
+        {/* simple contact shadows — a single low layer so characters always
             walk over them, never underneath */}
         <div className="pointer-events-none absolute inset-0 z-[4]">
           {beds.map((b) => {
             const slot = BED_SLOTS[b.id]!;
             return (
-              <img
+              <div
                 key={`sh-bed-${b.id}`}
-                src={b.id % 2 === 0 ? leftSideBedAsset.url : rightSideBedAsset.url}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className="absolute h-[14%] w-[26%] object-contain"
+                className="absolute rounded-[50%] bg-black/35 blur-[3px]"
                 style={{
                   left: `${slot.x * 100}%`,
-                  top: `${slot.y * 100}%`,
-                  transform: "translate(-50%,-50%) translate(0.6%, 2.2%)",
-                  filter: "brightness(0) blur(3px)",
-                  opacity: 0.34,
+                  top: `${(slot.y + 0.058) * 100}%`,
+                  width: "23%",
+                  height: "2.6%",
+                  transform: "translate(-50%,-50%)",
                 }}
               />
             );
           })}
           {GATES.map((g) => (
-            <img
+            <div
               key={`sh-curtain-${g.y}`}
-              src={curtainAsset.url}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              className="absolute object-fill"
+              className="absolute rounded-[50%] bg-black/30 blur-[3px]"
               style={{
-                top: `${g.box.top * 100}%`,
-                left: `${g.box.left * 100}%`,
-                width: `${g.box.width * 100}%`,
-                height: `${g.box.height * 100}%`,
-                transform: `translate(0.8%, 1.8%)${g.side === "right" ? " scaleX(-1)" : ""}`,
-                filter: "brightness(0) blur(3px)",
-                opacity: 0.3,
+                left: `${(g.box.left + g.box.width / 2) * 100}%`,
+                top: `${(g.box.top + g.box.height - 0.008) * 100}%`,
+                width: `${g.box.width * 90}%`,
+                height: "2%",
+                transform: "translate(-50%,-50%)",
               }}
             />
           ))}
-          <img
-            src={nursesStationAsset.url}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            className="absolute object-contain"
+          <div
+            className="absolute rounded-[50%] bg-black/30 blur-[4px]"
             style={{
-              left: `${STATION_FRAME.x * 100}%`,
-              top: `${STATION_FRAME.y * 100}%`,
-              width: `${STATION_FRAME.width * 100}%`,
-              height: `${STATION_FRAME.height * 100}%`,
-              transform: "translate(0.5%, 1.6%)",
-              filter: "brightness(0) blur(3px)",
-              opacity: 0.32,
+              left: `${(STATION_FRAME.x + STATION_FRAME.width / 2) * 100}%`,
+              top: `${(STATION_FRAME.y + STATION_FRAME.height - 0.012) * 100}%`,
+              width: `${STATION_FRAME.width * 92}%`,
+              height: "3%",
+              transform: "translate(-50%,-50%)",
             }}
           />
         </div>
