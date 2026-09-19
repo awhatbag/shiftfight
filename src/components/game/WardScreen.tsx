@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import wardBackgroundAsset from "@/assets/shift-fight-ward-spring-background.png.asset.json";
 import curtainAsset from "@/assets/curtain-partition.png.asset.json";
+import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
+import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
 import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
