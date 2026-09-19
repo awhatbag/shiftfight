@@ -1433,7 +1433,7 @@ export function WardScreen({
           );
         })}
 
-        {/* simple contact shadows — a single low layer so characters always
+        {/* contact shadows — a single low layer so characters always
             walk over them, never underneath */}
         <div className="pointer-events-none absolute inset-0 z-[4]">
           {beds.map((b) => {
@@ -1441,12 +1441,12 @@ export function WardScreen({
             return (
               <div
                 key={`sh-bed-${b.id}`}
-                className="absolute rounded-[50%] bg-black/35 blur-[3px]"
+                className="absolute rounded-[50%] bg-black/45 blur-[5px]"
                 style={{
                   left: `${slot.x * 100}%`,
-                  top: `${(slot.y + 0.058) * 100}%`,
-                  width: "23%",
-                  height: "2.6%",
+                  top: `${(slot.y + 0.042) * 100}%`,
+                  width: "25%",
+                  height: "6%",
                   transform: "translate(-50%,-50%)",
                 }}
               />
@@ -1455,27 +1455,40 @@ export function WardScreen({
           {GATES.map((g) => (
             <div
               key={`sh-curtain-${g.y}`}
-              className="absolute rounded-[50%] bg-black/30 blur-[3px]"
+              className="absolute rounded-[50%] bg-black/45 blur-[5px]"
               style={{
                 left: `${(g.box.left + g.box.width / 2) * 100}%`,
-                top: `${(g.box.top + g.box.height - 0.008) * 100}%`,
-                width: `${g.box.width * 90}%`,
-                height: "2%",
+                top: `${(g.box.top + g.box.height - 0.02) * 100}%`,
+                width: `${g.box.width * 88}%`,
+                height: "4.5%",
                 transform: "translate(-50%,-50%)",
               }}
             />
           ))}
+          {/* front desk crescent */}
           <div
-            className="absolute rounded-[50%] bg-black/30 blur-[4px]"
+            className="absolute rounded-[50%] bg-black/45 blur-[6px]"
             style={{
-              left: `${(STATION_FRAME.x + STATION_FRAME.width / 2) * 100}%`,
-              top: `${(STATION_FRAME.y + STATION_FRAME.height - 0.012) * 100}%`,
-              width: `${STATION_FRAME.width * 92}%`,
-              height: "3%",
+              left: "49.4%",
+              top: "26.2%",
+              width: "50%",
+              height: "5%",
+              transform: "translate(-50%,-50%)",
+            }}
+          />
+          {/* rear computer desk */}
+          <div
+            className="absolute rounded-[50%] bg-black/40 blur-[5px]"
+            style={{
+              left: "50%",
+              top: "13.8%",
+              width: "16%",
+              height: "2.6%",
               transform: "translate(-50%,-50%)",
             }}
           />
         </div>
+
 
 
 
