@@ -4,6 +4,7 @@ import curtainAsset from "@/assets/curtain-partition.png.asset.json";
 import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
 import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
 import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
+import stationShadowAsset from "@/assets/nurses-station-shadow.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
@@ -1465,26 +1466,18 @@ export function WardScreen({
               }}
             />
           ))}
-          {/* front desk crescent */}
-          <div
-            className="absolute rounded-[50%] bg-black/45 blur-[6px]"
+          {/* nurses station — traced from the reference placement artwork */}
+          <img
+            src={stationShadowAsset.url}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="absolute"
             style={{
-              left: "49.4%",
-              top: "33.2%",
-              width: "50%",
-              height: "4.5%",
-              transform: "translate(-50%,-50%)",
-            }}
-          />
-          {/* rear computer desk */}
-          <div
-            className="absolute rounded-[50%] bg-black/40 blur-[5px]"
-            style={{
-              left: "50%",
-              top: "13.8%",
-              width: "16%",
-              height: "2.6%",
-              transform: "translate(-50%,-50%)",
+              left: "12.247%",
+              top: "0%",
+              width: "80.449%",
+              height: "40.873%",
             }}
           />
         </div>
