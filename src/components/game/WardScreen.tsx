@@ -1465,28 +1465,6 @@ export function WardScreen({
               }}
             />
           ))}
-          {/* front desk crescent */}
-          <div
-            className="absolute rounded-[50%] bg-black/45 blur-[6px]"
-            style={{
-              left: "49.4%",
-              top: "33.2%",
-              width: "50%",
-              height: "4.5%",
-              transform: "translate(-50%,-50%)",
-            }}
-          />
-          {/* rear computer desk */}
-          <div
-            className="absolute rounded-[50%] bg-black/40 blur-[5px]"
-            style={{
-              left: "50%",
-              top: "13.8%",
-              width: "16%",
-              height: "2.6%",
-              transform: "translate(-50%,-50%)",
-            }}
-          />
         </div>
 
 
