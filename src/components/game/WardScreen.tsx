@@ -1474,10 +1474,10 @@ export function WardScreen({
             draggable={false}
             className="absolute"
             style={{
-              left: "12.135%",
-              top: "5.432%",
-              width: "80.674%",
-              height: "24.933%",
+              left: "18%",
+              top: "15.2%",
+              width: "64%",
+              height: "19.78%",
             }}
           />
         </div>
