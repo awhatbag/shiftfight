@@ -1,8 +1,7 @@
-import {
-  cosmeticColor,
-  DEFAULT_CHARACTER,
-  type PlayerCharacter,
-} from "@/game/character";
+import { useEffect, useState } from "react";
+import previewAtlas from "@/assets/nurse-preview-sheet.png.asset.json";
+import spriteAtlas from "@/assets/nurse-sprite-atlas.png.asset.json";
+import type { PlayerCharacter } from "@/game/character";
 
 export type NurseDirection = "north" | "south" | "east" | "west";
 export type NurseAction = "idle" | "walk" | "run" | "sit" | "interact" | "check";
@@ -14,70 +13,106 @@ type NurseProps = {
   action?: NurseAction;
   direction?: NurseDirection;
   expression?: NurseExpression;
+  variant?: "ward" | "preview";
   className?: string;
 };
 
+// Sprite sheet cut directly from the supplied "nurse choices" artwork.
+// Columns: female, male, non-binary.
+// Rows: idle, walk down, walk side A, walk side B, run, interact, check, back.
+const COLS = 3;
+const CELL_W = 104;
+const CELL_H = 148;
+const ROWS = 8;
+const ROW = { idle: 0, walkS: 1, walkE1: 2, walkE2: 3, run: 4, interact: 5, check: 6, back: 7 } as const;
+const PREVIEW_W = 170;
+const PREVIEW_H = 436;
+const PRESENTATIONS = ["female", "male", "nonbinary"] as const;
+
 export function Nurse({
-  character = DEFAULT_CHARACTER,
+  character = { presentation: "female" } as PlayerCharacter,
   moving = false,
   action = moving ? "walk" : "idle",
   direction = "south",
-  expression = "neutral",
+  variant = "ward",
   className = "",
 }: NurseProps) {
-  const skin = cosmeticColor("skin", character.cosmetics.skin);
-  const hair = cosmeticColor("hair", character.cosmetics.hair);
-  const scrub = cosmeticColor("scrubs", character.cosmetics.scrubs);
-  const shoes = cosmeticColor("shoes", character.cosmetics.shoes);
-  const back = direction === "north";
-  const side = direction === "east" || direction === "west";
-  const flip = direction === "west";
-  const sitting = action === "sit";
-  const active = action === "walk" || action === "run";
-  const usingHands = action === "interact" || action === "check";
-  const hairstyle = character.cosmetics.hairstyle ?? "signature";
+  const col = Math.max(0, PRESENTATIONS.indexOf(character.presentation));
 
-  const eyes = expression === "tired" ? "M18 18h4M28 18h4" : expression === "surprised" ? "M20 17v2M30 17v2" : "M19 18h2M29 18h2";
-  const mouth = expression === "happy" ? "M21 23q4 4 8 0" : expression === "angry" || expression === "concerned" ? "M22 25q3-3 6 0" : expression === "surprised" ? "M24 23h2v3h-2z" : "M22 24q3 2 6 0";
+  if (variant === "preview") {
+    return (
+      <div
+        className={`nurse-sprite ${className}`}
+        style={{ height: "100%", aspectRatio: `${PREVIEW_W} / ${PREVIEW_H}`, margin: "0 auto" }}
+        role="img"
+        aria-label={`${character.presentation} nurse`}
+      >
+        <img
+          src={previewAtlas.url}
+          alt=""
+          draggable={false}
+          style={{
+            position: "absolute",
+            width: `${COLS * 100}%`,
+            left: `-${col * 100}%`,
+            top: 0,
+            imageRendering: "pixelated",
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Pick the sheet row(s) for the current state.
+  let frames: readonly number[] = [ROW.idle];
+  if (action === "sit" || direction === "north") frames = [ROW.back];
+  else if (action === "run") frames = [ROW.run];
+  else if (action === "interact") frames = [ROW.interact];
+  else if (action === "check") frames = [ROW.check];
+  else if (direction === "south") frames = [ROW.idle, ROW.walkS];
+  else frames = [ROW.walkE1, ROW.walkE2];
+
+  const animate = frames.length > 1 && (action === "walk" || action === "run");
+  const idx = useFrameToggle(animate, frames, action === "run" ? 110 : 170);
+  const frame = frames[idx % frames.length] as number;
+  const flip = direction === "west" && action !== "sit";
 
   return (
-    <div className={`pixel-nurse pixel-nurse--${action} ${className}`}>
-      <svg
-        viewBox="0 0 64 80"
-        className="h-full w-full overflow-visible drop-shadow-md"
-        role="img"
-        aria-label={`${character.presentation} nurse ${action}`}
-        style={{ transform: flip ? "scaleX(-1)" : undefined }}
-      >
-        <g className={active ? "pixel-nurse__stride" : ""}>
-          <ellipse cx="32" cy={sitting ? 69 : 75} rx="20" ry="3" fill="var(--character-shadow)" opacity=".28" />
-          {!sitting && <>
-            <path d="M20 55h10l-2 16H18z" fill={scrub} stroke="var(--character-outline)" strokeWidth="2" />
-            <path d="M34 55h10l2 16H36z" fill={scrub} stroke="var(--character-outline)" strokeWidth="2" />
-            <path d="M16 69h13v7H14q-3-3 2-7zM35 69h13q5 4 1 7H35z" fill={shoes} stroke="var(--character-outline)" strokeWidth="2" />
-          </>}
-          {sitting && <path d="M18 55h13v12H15v-6zM33 55h13l3 6v6H33z" fill={scrub} stroke="var(--character-outline)" strokeWidth="2" />}
-          <path d={side ? "M19 34q7-5 21 0l6 26H18z" : "M15 34q17-8 34 0l-4 28H19z"} fill={scrub} stroke="var(--character-outline)" strokeWidth="2" />
-          {!back && <path d="M26 35h12v13H26z" fill="var(--character-badge)" stroke="var(--character-outline)" strokeWidth="1.5" />}
-          <g className={usingHands ? "pixel-nurse__hands" : ""}>
-            <path d="M17 37q-7 7-5 20l7 1 5-18z" fill={scrub} stroke="var(--character-outline)" strokeWidth="2" />
-            <path d={usingHands ? "M47 37q9 4 13-2l3 5q-7 10-17 7z" : "M47 37q7 8 4 20l-7 1-4-18z"} fill={scrub} stroke="var(--character-outline)" strokeWidth="2" />
-            <circle cx="14" cy="58" r="4" fill={skin} stroke="var(--character-outline)" strokeWidth="2" />
-            <circle cx={usingHands ? 61 : 49} cy={usingHands ? 38 : 58} r="4" fill={skin} stroke="var(--character-outline)" strokeWidth="2" />
-          </g>
-          <circle cx={side ? 31 : 32} cy="23" r="15" fill={skin} stroke="var(--character-outline)" strokeWidth="2" />
-          <path d={back ? "M17 24q0-20 15-20t15 20v8q-14-9-30 0z" : side ? "M17 22Q18 5 33 5q12 1 13 17-12-9-29 0z" : "M17 22Q18 4 32 4t15 18q-15-10-30 0z"} fill={hair} stroke="var(--character-outline)" strokeWidth="2" />
-          {hairstyle === "signature" && character.presentation === "female" && <circle cx="22" cy="7" r="8" fill={hair} stroke="var(--character-outline)" strokeWidth="2" />}
-          {character.presentation === "nonbinary" && <path d="M43 8l9-5-3 11z" fill={hair} stroke="var(--character-outline)" strokeWidth="2" />}
-          {character.presentation === "male" && <path d="M18 10l5-7 4 5 5-7 4 7 6-4 3 10z" fill={hair} />}
-          {!back && <>
-            <path d={eyes} stroke="var(--character-ink)" strokeWidth="2" strokeLinecap="round" />
-            <path d={mouth} stroke="var(--character-mouth)" strokeWidth="1.7" fill={expression === "surprised" ? "var(--character-mouth)" : "none"} strokeLinecap="round" />
-          </>}
-          {character.cosmetics.ppe === "visor" && !back && <path d="M17 16h30l-3 16H20z" fill="var(--character-visor)" stroke="var(--character-outline)" strokeWidth="1.5" opacity=".72" />}
-          {usingHands && <rect x="55" y="28" width="7" height="12" rx="1" fill="var(--character-device)" stroke="var(--character-outline)" strokeWidth="1.5" />}
-        </g>
-      </svg>
+    <div
+      className={`nurse-sprite ${action === "run" ? "nurse-run" : ""} ${className}`}
+      style={{ height: "100%", aspectRatio: `${CELL_W} / ${CELL_H}`, margin: "0 auto" }}
+      role="img"
+      aria-label={`${character.presentation} nurse ${action}`}
+    >
+      <img
+        src={spriteAtlas.url}
+        alt=""
+        draggable={false}
+        style={{
+          position: "absolute",
+          width: `${COLS * 100}%`,
+          height: `${ROWS * 100}%`,
+          left: `-${col * 100}%`,
+          top: `-${frame * 100}%`,
+          transform: flip ? "scaleX(-1)" : undefined,
+          imageRendering: "pixelated",
+        }}
+      />
     </div>
   );
+}
+
+function useFrameToggle(animate: boolean, frames: readonly number[], ms: number) {
+  const [i, setI] = useState(0);
+  const framesKey = frames.join(",");
+  const len = frames.length;
+  useEffect(() => {
+    if (!animate || len < 2) {
+      setI(0);
+      return;
+    }
+    const t = window.setInterval(() => setI((v) => (v + 1) % len), ms);
+    return () => window.clearInterval(t);
+  }, [animate, framesKey, len, ms]);
+  return i % len;
 }
