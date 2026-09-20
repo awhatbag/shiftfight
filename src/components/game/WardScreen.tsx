@@ -1491,7 +1491,7 @@ export function WardScreen({
           style={{
             left: `${nurse.x * 100}%`,
             top: `${nurse.y * 100}%`,
-            transform: "translate(-50%,-60%)",
+            transform: "translate(-50%,-80%)",
             transitionDuration: "80ms",
             zIndex: Math.round(nurse.y * 100) + 1,
           }}
