@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
+import previewHairMask from "@/assets/nurse-preview-hair-mask.png.asset.json";
 import previewAtlas from "@/assets/nurse-preview-sheet.png.asset.json";
+import previewSkinMask from "@/assets/nurse-preview-skin-mask.png.asset.json";
+import spriteHairMask from "@/assets/nurse-sprite-hair-mask.png.asset.json";
 import spriteAtlas from "@/assets/nurse-sprite-atlas.png.asset.json";
-import type { PlayerCharacter } from "@/game/character";
+import spriteSkinMask from "@/assets/nurse-sprite-skin-mask.png.asset.json";
+import { cosmeticColor, type PlayerCharacter } from "@/game/character";
 
 export type NurseDirection = "north" | "south" | "east" | "west";
 export type NurseAction = "idle" | "walk" | "run" | "sit" | "interact" | "check";
@@ -29,6 +33,45 @@ const PREVIEW_W = 170;
 const PREVIEW_H = 436;
 const PRESENTATIONS = ["female", "male", "nonbinary"] as const;
 
+function ColourLayer({
+  src,
+  color,
+  cols,
+  rows,
+  col,
+  row = 0,
+}: {
+  src: string;
+  color: string;
+  cols: number;
+  rows: number;
+  col: number;
+  row?: number;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute"
+      style={{
+        width: `${cols * 100}%`,
+        height: `${rows * 100}%`,
+        left: `-${col * 100}%`,
+        top: `-${row * 100}%`,
+        backgroundColor: color,
+        maskImage: `url(${src})`,
+        WebkitMaskImage: `url(${src})`,
+        maskPosition: "center",
+        WebkitMaskPosition: "center",
+        maskRepeat: "no-repeat",
+        WebkitMaskRepeat: "no-repeat",
+        maskSize: "100% 100%",
+        WebkitMaskSize: "100% 100%",
+        mixBlendMode: "color",
+      }}
+    />
+  );
+}
+
 export function Nurse({
   character = { presentation: "female" } as PlayerCharacter,
   moving = false,
@@ -38,6 +81,8 @@ export function Nurse({
   className = "",
 }: NurseProps) {
   const col = Math.max(0, PRESENTATIONS.indexOf(character.presentation));
+  const skinColor = cosmeticColor("skin", character.cosmetics?.skin);
+  const hairColor = cosmeticColor("hair", character.cosmetics?.hair);
 
   if (variant === "preview") {
     return (
@@ -59,6 +104,8 @@ export function Nurse({
             imageRendering: "pixelated",
           }}
         />
+        <ColourLayer src={previewSkinMask.url} color={skinColor} cols={COLS} rows={1} col={col} />
+        <ColourLayer src={previewHairMask.url} color={hairColor} cols={COLS} rows={1} col={col} />
       </div>
     );
   }
@@ -104,6 +151,8 @@ export function Nurse({
           imageRendering: "pixelated",
         }}
       />
+      <ColourLayer src={spriteSkinMask.url} color={skinColor} cols={COLS} rows={ROWS} col={col} row={frame} />
+      <ColourLayer src={spriteHairMask.url} color={hairColor} cols={COLS} rows={ROWS} col={col} row={frame} />
     </div>
   );
 }
