@@ -80,7 +80,14 @@ export function Nurse({
   return (
     <div
       className={`nurse-sprite ${action === "run" ? "nurse-run" : ""} ${className}`}
-      style={{ height: "100%", aspectRatio: `${CELL_W} / ${CELL_H}`, margin: "0 auto" }}
+      style={{
+        height: "100%",
+        aspectRatio: `${CELL_W} / ${CELL_H}`,
+        margin: "0 auto",
+        // Flip the single-cell clipping box, not the 3-column sheet, so the
+        // selected presentation stays in view when facing west.
+        transform: flip ? "scaleX(-1)" : undefined,
+      }}
       role="img"
       aria-label={`${character.presentation} nurse ${action}`}
     >
@@ -94,7 +101,6 @@ export function Nurse({
           height: `${ROWS * 100}%`,
           left: `-${col * 100}%`,
           top: `-${frame * 100}%`,
-          transform: flip ? "scaleX(-1)" : undefined,
           imageRendering: "pixelated",
         }}
       />
