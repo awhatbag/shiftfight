@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import previewAtlas from "@/assets/nurse-preview-sheet.png.asset.json";
 import spriteAtlas from "@/assets/nurse-sprite-atlas.png.asset.json";
 import type { PlayerCharacter } from "@/game/character";
@@ -101,8 +102,6 @@ export function Nurse({
   );
 }
 
-import { useEffect, useRef, useState } from "react";
-
 function useFrameToggle(animate: boolean, frames: readonly number[], ms: number) {
   const [i, setI] = useState(0);
   const framesKey = frames.join(",");
@@ -115,7 +114,5 @@ function useFrameToggle(animate: boolean, frames: readonly number[], ms: number)
     const t = window.setInterval(() => setI((v) => (v + 1) % len), ms);
     return () => window.clearInterval(t);
   }, [animate, framesKey, len, ms]);
-  const idx = useRef(i);
-  idx.current = i;
-  return animate && len > 1 ? frames[i % len] : frames[0];
+  return i % len;
 }
