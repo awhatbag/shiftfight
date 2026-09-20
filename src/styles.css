@@ -129,22 +129,27 @@
   transform-origin: 50% 100%;
 }
 
-.pixel-nurse--idle { animation: nurse-idle 1.8s steps(2, end) infinite; }
-.pixel-nurse--sit { animation: nurse-sit 2.4s steps(2, end) infinite; }
-.pixel-nurse--walk .pixel-nurse__stride { animation: nurse-walk .42s steps(2, end) infinite; }
-.pixel-nurse--run .pixel-nurse__stride { animation: nurse-walk .24s steps(2, end) infinite; }
-.pixel-nurse--interact .pixel-nurse__hands,
-.pixel-nurse--check .pixel-nurse__hands { animation: nurse-use .3s steps(2, end) 2; transform-origin: 50% 55%; }
+/* Sprite-sheet nurse cut from the supplied artwork */
+.nurse-sprite {
+  position: relative;
+  overflow: visible;
+  image-rendering: pixelated;
+  transform-origin: 50% 100%;
+}
+.nurse-sprite img {
+  position: absolute;
+  max-width: none;
+  max-height: none;
+}
+.nurse-run { animation: nurse-bob .22s steps(2, end) infinite; }
 
-@keyframes nurse-idle { 50% { transform: translateY(-1px); } }
-@keyframes nurse-sit { 50% { transform: translateY(1px); } }
-@keyframes nurse-walk { 50% { transform: translateY(-2px) rotate(.8deg); } }
-@keyframes nurse-use { 50% { transform: rotate(-4deg); } }
+@keyframes nurse-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3%); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .pixel-nurse,
-  .pixel-nurse__stride,
-  .pixel-nurse__hands { animation: none !important; }
+  .nurse-run { animation: none !important; }
 }
 
 .dark {
