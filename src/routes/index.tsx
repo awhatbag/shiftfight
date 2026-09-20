@@ -26,6 +26,7 @@ import {
 import { combineEffects, gearEffects } from "@/game/gear";
 import { bedUpgradeEffects } from "@/game/bedUpgrades";
 import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
+import { shiftTitle } from "@/game/shifts";
 import {
   JOB_SECURITY_REHIRE,
   JOB_SECURITY_START,
