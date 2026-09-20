@@ -1314,7 +1314,7 @@ export function WardScreen({
                   >
                     <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-full">
                       {playerSeated ? (
-                        <span className="block h-10 w-8 overflow-hidden"><Nurse character={character} action="sit" direction="north" /></span>
+                        <span className="block h-[52px] w-[41px] overflow-hidden"><Nurse character={character} action="sit" direction="north" /></span>
                       ) : seated && info ? info.icon : ""}
                     </span>
                   </button>
@@ -1485,7 +1485,7 @@ export function WardScreen({
         {/* nurse */}
         <div
           className={cn(
-            "pointer-events-none absolute h-16 w-12 transition-all ease-linear",
+            "pointer-events-none absolute h-[84px] w-[62px] transition-all ease-linear",
             !walking && atBed === null && "invisible",
           )}
           style={{
