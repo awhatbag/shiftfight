@@ -66,7 +66,7 @@ function ColourLayer({
         WebkitMaskRepeat: "no-repeat",
         maskSize: "100% 100%",
         WebkitMaskSize: "100% 100%",
-        mixBlendMode: "color",
+        opacity: 0.72,
       }}
     />
   );
