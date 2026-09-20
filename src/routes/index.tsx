@@ -618,7 +618,7 @@ function Game() {
     <main className="flex min-h-dvh justify-center bg-ward-deep">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
         {phase !== "dev" && phase !== "shift" && (
-          <TopBar phase={phase} onBack={handleBack} onMenu={() => setMenuOpen(true)} onContinue={play} />
+          <TopBar phase={phase} level={level} onBack={handleBack} onMenu={() => setMenuOpen(true)} onContinue={play} />
         )}
         <div className="relative flex-1 overflow-hidden">
 
