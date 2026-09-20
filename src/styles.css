@@ -115,6 +115,36 @@
   --training-slot: oklch(0.31 0.025 70);
   --training-key: oklch(0.74 0.045 82);
   --training-key-shadow: oklch(0.48 0.04 70);
+  --character-outline: oklch(0.23 0.055 45);
+  --character-ink: oklch(0.2 0.035 255);
+  --character-mouth: oklch(0.42 0.11 25);
+  --character-badge: oklch(0.96 0.02 230);
+  --character-device: oklch(0.55 0.08 240);
+  --character-visor: oklch(0.84 0.08 210 / 72%);
+  --character-shadow: oklch(0.22 0.03 250);
+}
+
+.pixel-nurse {
+  image-rendering: pixelated;
+  transform-origin: 50% 100%;
+}
+
+.pixel-nurse--idle { animation: nurse-idle 1.8s steps(2, end) infinite; }
+.pixel-nurse--sit { animation: nurse-sit 2.4s steps(2, end) infinite; }
+.pixel-nurse--walk .pixel-nurse__stride { animation: nurse-walk .42s steps(2, end) infinite; }
+.pixel-nurse--run .pixel-nurse__stride { animation: nurse-walk .24s steps(2, end) infinite; }
+.pixel-nurse--interact .pixel-nurse__hands,
+.pixel-nurse--check .pixel-nurse__hands { animation: nurse-use .3s steps(2, end) 2; transform-origin: 50% 55%; }
+
+@keyframes nurse-idle { 50% { transform: translateY(-1px); } }
+@keyframes nurse-sit { 50% { transform: translateY(1px); } }
+@keyframes nurse-walk { 50% { transform: translateY(-2px) rotate(.8deg); } }
+@keyframes nurse-use { 50% { transform: rotate(-4deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-nurse,
+  .pixel-nurse__stride,
+  .pixel-nurse__hands { animation: none !important; }
 }
 
 .dark {
