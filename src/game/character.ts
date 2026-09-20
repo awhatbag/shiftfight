@@ -17,6 +17,8 @@ export type CosmeticOption = {
   color?: string;
   /** reserved for future paid / unlockable cosmetics — not purchasable yet */
   locked?: boolean;
+  /** locked cosmetics will be sold for real money when payments launch */
+  futurePurchase?: boolean;
 };
 
 export type CosmeticSlot = {
@@ -52,14 +54,44 @@ export const HAIR_COLORS: CosmeticOption[] = [
   { key: "teal", name: "Scrub teal", color: "oklch(0.66 0.12 195)" },
 ];
 
+export const HAIRSTYLES: CosmeticOption[] = [
+  { key: "signature", name: "Signature", color: "oklch(0.42 0.06 50)" },
+  { key: "high-bun", name: "High bun", locked: true, futurePurchase: true },
+  { key: "long-wave", name: "Long wave", locked: true, futurePurchase: true },
+  { key: "side-braid", name: "Side braid", locked: true, futurePurchase: true },
+  { key: "soft-crop", name: "Soft crop", locked: true, futurePurchase: true },
+  { key: "ponytail", name: "Ponytail", locked: true, futurePurchase: true },
+  { key: "side-sweep", name: "Side sweep", locked: true, futurePurchase: true },
+];
+
+export const SCRUB_STYLES: CosmeticOption[] = [
+  { key: "standard-blue", name: "Ward blue", color: "oklch(0.58 0.16 250)" },
+  { key: "rose", name: "Rose rounds", color: "oklch(0.72 0.16 350)", locked: true, futurePurchase: true },
+  { key: "teal", name: "Theatre teal", color: "oklch(0.66 0.13 190)", locked: true, futurePurchase: true },
+  { key: "violet", name: "Violet shift", color: "oklch(0.61 0.16 300)", locked: true, futurePurchase: true },
+  { key: "sky", name: "Sky rounds", color: "oklch(0.7 0.13 230)", locked: true, futurePurchase: true },
+  { key: "night", name: "Night response", color: "oklch(0.35 0.08 250)", locked: true, futurePurchase: true },
+  { key: "pattern", name: "Pattern ward", color: "oklch(0.68 0.12 195)", locked: true, futurePurchase: true },
+];
+
+export const SHOE_STYLES: CosmeticOption[] = [
+  { key: "white", name: "White trainers", color: "oklch(0.96 0.01 230)" },
+  { key: "clogs", name: "Ward clogs", color: "oklch(0.78 0.04 230)", locked: true, futurePurchase: true },
+];
+
+export const PPE_STYLES: CosmeticOption[] = [
+  { key: "none", name: "No PPE" },
+  { key: "visor", name: "Splash visor", color: "oklch(0.86 0.08 210)", locked: true, futurePurchase: true },
+];
+
 /** every cosmetic slot the character system knows about — future slots included */
 export const COSMETIC_SLOTS: CosmeticSlot[] = [
   { key: "skin", name: "Skin colour", available: true, options: SKIN_TONES },
   { key: "hair", name: "Hair colour", available: true, options: HAIR_COLORS },
-  { key: "hairstyle", name: "Hairstyle", available: false, options: [] },
-  { key: "scrubs", name: "Scrubs", available: false, options: [] },
-  { key: "shoes", name: "Shoes", available: false, options: [] },
-  { key: "ppe", name: "PPE", available: false, options: [] },
+  { key: "hairstyle", name: "Hairstyle", available: true, options: HAIRSTYLES },
+  { key: "scrubs", name: "Scrubs", available: true, options: SCRUB_STYLES },
+  { key: "shoes", name: "Shoes", available: true, options: SHOE_STYLES },
+  { key: "ppe", name: "PPE", available: true, options: PPE_STYLES },
 ];
 
 export type PlayerCharacter = {
@@ -72,7 +104,14 @@ export type PlayerCharacter = {
 export const DEFAULT_CHARACTER: PlayerCharacter = {
   name: "",
   presentation: "female",
-  cosmetics: { skin: "light", hair: "brown" },
+  cosmetics: {
+    skin: "light",
+    hair: "brown",
+    hairstyle: "signature",
+    scrubs: "standard-blue",
+    shoes: "white",
+    ppe: "none",
+  },
 };
 
 const NAME_POOL = [
@@ -104,6 +143,10 @@ export function randomCharacter(keepName?: string): PlayerCharacter {
     cosmetics: {
       skin: pick(unlocked(SKIN_TONES)).key,
       hair: pick(unlocked(HAIR_COLORS)).key,
+      hairstyle: pick(unlocked(HAIRSTYLES)).key,
+      scrubs: pick(unlocked(SCRUB_STYLES)).key,
+      shoes: pick(unlocked(SHOE_STYLES)).key,
+      ppe: pick(unlocked(PPE_STYLES)).key,
     },
   };
 }
@@ -126,6 +169,13 @@ export function normalizeCharacter(c: Partial<PlayerCharacter> | null | undefine
         SKIN_TONES.find((o) => o.key === c.cosmetics?.skin)?.key ?? SKIN_TONES[0]!.key,
       hair:
         HAIR_COLORS.find((o) => o.key === c.cosmetics?.hair)?.key ?? HAIR_COLORS[1]!.key,
+      hairstyle:
+        HAIRSTYLES.find((o) => o.key === c.cosmetics?.hairstyle)?.key ?? "signature",
+      scrubs:
+        SCRUB_STYLES.find((o) => o.key === c.cosmetics?.scrubs)?.key ?? "standard-blue",
+      shoes:
+        SHOE_STYLES.find((o) => o.key === c.cosmetics?.shoes)?.key ?? "white",
+      ppe: PPE_STYLES.find((o) => o.key === c.cosmetics?.ppe)?.key ?? "none",
     },
   };
 }
