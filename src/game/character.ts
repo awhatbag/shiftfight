@@ -3,9 +3,8 @@
  *
  * Deliberately kept separate from gameplay equipment (src/game/gear.ts) and from
  * progression: nothing in here affects stats. Cosmetic options are data-driven so
- * new hairstyles, scrubs, shoes and PPE can be added later, and each option carries
- * an optional `locked` flag so paid/unlockable cosmetics can slot in without a
- * rewrite (no purchase logic exists yet).
+ * new hairstyles, scrubs, shoes and PPE can be added later. Locked cosmetics are
+ * reserved for the future real-money shop; payment logic is intentionally absent.
  */
 
 export type Presentation = "female" | "male" | "nonbinary";
@@ -15,7 +14,7 @@ export type CosmeticOption = {
   name: string;
   /** swatch colour for pickers (CSS colour) */
   color?: string;
-  /** reserved for future paid / unlockable cosmetics — not purchasable yet */
+  /** reserved for future paid cosmetics — not purchasable yet */
   locked?: boolean;
   /** locked cosmetics will be sold for real money when payments launch */
   futurePurchase?: boolean;

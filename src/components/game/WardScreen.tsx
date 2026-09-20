@@ -990,7 +990,7 @@ export function WardScreen({
   function doAction(action: ActionKind) {
     const ev = selectedEvent;
     if (!ev || rate === 0 || nurseHereBed !== ev.bed) return;
-    setNurseAction(action === "assess" ? "check" : "interact");
+    setNurseAction(action === "ASSESS" ? "check" : "interact");
     window.setTimeout(() => setNurseAction("idle"), 620);
     if (tutStep >= 0) {
       setTutStep(-1);
