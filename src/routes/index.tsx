@@ -26,6 +26,7 @@ import {
 import { combineEffects, gearEffects } from "@/game/gear";
 import { bedUpgradeEffects } from "@/game/bedUpgrades";
 import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
+import { shiftTitle } from "@/game/shifts";
 import {
   JOB_SECURITY_REHIRE,
   JOB_SECURITY_START,
@@ -192,15 +193,19 @@ type Phase =
 
 function TopBar({
   phase,
+  level,
   onBack,
   onMenu,
   onContinue,
 }: {
   phase: Phase;
+  level: number;
   onBack: () => void;
   onMenu: () => void;
   onContinue?: () => void;
 }) {
+  const nextLevel = Math.min(level + 1, MAX_LEVEL);
+  const nextTitle = shiftTitle(nextLevel);
   return (
     <div className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-background px-2 py-2">
       {phase === "intro" ? (
@@ -215,19 +220,22 @@ function TopBar({
           ← Back
         </button>
       )}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-1 items-center justify-end gap-3">
         {phase === "shop" && onContinue && (
           <button
             onClick={onContinue}
-            className="chunky chunky-press rounded-xl bg-primary px-6 py-4 font-display text-lg font-black uppercase text-primary-foreground shadow-[0_6px_0_rgb(0,0,0,0.2)] ring-2 ring-primary-foreground/40"
+            className="chunky chunky-press flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 font-display text-lg font-black uppercase text-primary-foreground shadow-[0_6px_0_rgb(0,0,0,0.2)] ring-2 ring-primary-foreground/40"
           >
-            NEXT SHIFT ▶
+            <span className="truncate">
+              LV{nextLevel} · {nextTitle.title}
+            </span>
+            <span className="shrink-0">▶</span>
           </button>
         )}
         <button
           onClick={onMenu}
           aria-label="Open menu"
-          className="chunky chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+          className="chunky chunky-press shrink-0 rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
         >
           ☰ Menu
         </button>
@@ -610,7 +618,7 @@ function Game() {
     <main className="flex min-h-dvh justify-center bg-ward-deep">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
         {phase !== "dev" && phase !== "shift" && (
-          <TopBar phase={phase} onBack={handleBack} onMenu={() => setMenuOpen(true)} onContinue={play} />
+          <TopBar phase={phase} level={level} onBack={handleBack} onMenu={() => setMenuOpen(true)} onContinue={play} />
         )}
         <div className="relative flex-1 overflow-hidden">
 
