@@ -132,7 +132,7 @@
 /* Sprite-sheet nurse cut from the supplied artwork */
 .nurse-sprite {
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   image-rendering: pixelated;
   transform-origin: 50% 100%;
 }
