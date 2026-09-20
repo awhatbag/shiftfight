@@ -6,3 +6,5 @@
 - [x] Connect selected appearance, facing, seating, and interactions to the ward.
 - [x] Preserve save compatibility and existing gameplay/pathfinding/layering.
 - [x] Verify character selection and ward animations at mobile size (Playwright, 420x900).
+- [ ] Apply saved skin and hair colours to the supplied nurse artwork in preview and ward.
+- [ ] Verify immediate preview updates, ward consistency, and saved persistence.
