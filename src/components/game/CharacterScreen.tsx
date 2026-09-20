@@ -1,42 +1,35 @@
 import { useState } from "react";
 import {
   COSMETIC_SLOTS,
-  cosmeticColor,
   HAIR_COLORS,
+  HAIRSTYLES,
+  PPE_STYLES,
   PRESENTATIONS,
   randomCharacter,
+  SCRUB_STYLES,
+  SHOE_STYLES,
   SKIN_TONES,
   type CosmeticOption,
+  type CosmeticSlot,
   type PlayerCharacter,
 } from "@/game/character";
+import { Nurse, type NurseExpression } from "./Nurse";
 
-/** large placeholder preview — real nurse sprites land in a later stage */
 function CharacterPreview({ character }: { character: PlayerCharacter }) {
-  const skin = cosmeticColor("skin", character.cosmetics.skin);
-  const hair = cosmeticColor("hair", character.cosmetics.hair);
+  const expressions: NurseExpression[] = ["neutral", "happy", "concerned", "angry", "tired", "surprised"];
+  const [expression, setExpression] = useState<NurseExpression>("neutral");
   return (
-    <div className="relative grid h-44 w-full place-items-center rounded-2xl border-2 border-dashed border-border bg-card/70">
-      <svg viewBox="0 0 48 60" className="h-40 w-auto drop-shadow-md" role="img" aria-label="Character preview">
-        <rect x="17" y="42" width="6" height="13" rx="3" fill="oklch(0.45 0.1 200)" />
-        <rect x="25" y="42" width="6" height="13" rx="3" fill="oklch(0.45 0.1 200)" />
-        <rect x="11" y="24" width="26" height="22" rx="9" fill="var(--color-scrub)" />
-        <rect x="5" y="27" width="7" height="15" rx="3.5" fill="var(--color-scrub)" />
-        <rect x="36" y="27" width="7" height="15" rx="3.5" fill="var(--color-scrub)" />
-        <circle cx="24" cy="15" r="11" fill={skin} />
-        <path d="M12 12a12 12 0 0 1 24 0z" fill={hair} />
-        {character.presentation === "female" && (
-          <path d="M12 12v12a4 4 0 0 0 3-4V12zM36 12v12a4 4 0 0 1-3-4V12z" fill={hair} />
-        )}
-        {character.presentation === "nonbinary" && (
-          <path d="M34 8l5-3-1 6z" fill={hair} />
-        )}
-        <circle cx="20" cy="16" r="1.6" fill="oklch(0.25 0.05 250)" />
-        <circle cx="28" cy="16" r="1.6" fill="oklch(0.25 0.05 250)" />
-        <path d="M21 20q3 2.5 6 0" stroke="oklch(0.35 0.06 30)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-      </svg>
-      <span className="absolute bottom-1 right-2 font-display text-[10px] font-black uppercase text-muted-foreground">
-        Placeholder
-      </span>
+    <div className="rounded-xl border-2 border-border bg-card/70 p-2">
+      <div className="grid h-44 place-items-center rounded-lg bg-secondary/60">
+        <Nurse character={character} expression={expression} className="h-40 w-32" />
+      </div>
+      <div className="mt-2 grid grid-cols-6 gap-1" aria-label="Expressions">
+        {expressions.map((item) => (
+          <button key={item} type="button" onClick={() => setExpression(item)} className={`rounded-md px-1 py-1 font-display text-[9px] font-black uppercase ${expression === item ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
+            {item}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -46,11 +39,13 @@ function Swatches({
   options,
   value,
   onPick,
+  compact = false,
 }: {
   label: string;
   options: CosmeticOption[];
   value: string | undefined;
   onPick: (key: string) => void;
+  compact?: boolean;
 }) {
   return (
     <div>
@@ -64,12 +59,12 @@ function Swatches({
             aria-label={o.name}
             disabled={o.locked}
             onClick={() => onPick(o.key)}
-            style={{ background: o.color }}
-            className={`h-9 w-9 rounded-full border-2 disabled:opacity-40 ${
+            style={o.color ? { background: o.color } : undefined}
+            className={`${compact ? "h-8 min-w-8 px-1" : "h-9 w-9"} rounded-lg border-2 text-[10px] disabled:opacity-55 ${
               value === o.key ? "border-primary ring-2 ring-primary" : "border-border"
             }`}
           >
-            {o.locked ? "🔒" : ""}
+            {o.locked ? "🔒" : !o.color ? o.name.slice(0, 3) : ""}
           </button>
         ))}
       </div>
@@ -88,7 +83,7 @@ export function CharacterScreen({
 }) {
   const [customising, setCustomising] = useState(false);
 
-  function setCosmetic(slot: "skin" | "hair", key: string) {
+  function setCosmetic(slot: CosmeticSlot["key"], key: string) {
     onChange({ ...character, cosmetics: { ...character.cosmetics, [slot]: key } });
   }
 
@@ -141,6 +136,13 @@ export function CharacterScreen({
         value={character.cosmetics.skin}
         onPick={(k) => setCosmetic("skin", k)}
       />
+
+      <div className="grid grid-cols-2 gap-3">
+        <Swatches label="Hairstyle" options={HAIRSTYLES} value={character.cosmetics.hairstyle} onPick={(k) => setCosmetic("hairstyle", k)} compact />
+        <Swatches label="Scrubs" options={SCRUB_STYLES} value={character.cosmetics.scrubs} onPick={(k) => setCosmetic("scrubs", k)} compact />
+        <Swatches label="Shoes" options={SHOE_STYLES} value={character.cosmetics.shoes} onPick={(k) => setCosmetic("shoes", k)} compact />
+        <Swatches label="PPE" options={PPE_STYLES} value={character.cosmetics.ppe} onPick={(k) => setCosmetic("ppe", k)} compact />
+      </div>
       <Swatches
         label="Hair colour"
         options={HAIR_COLORS}
@@ -168,13 +170,13 @@ export function CharacterScreen({
           <p className="font-display text-xs font-black uppercase tracking-widest text-muted-foreground">
             More cosmetics
           </p>
-          {COSMETIC_SLOTS.filter((s) => !s.available).map((s) => (
+          {COSMETIC_SLOTS.flatMap((s) => s.options.filter((o) => o.locked).map((o) => ({ slot: s.name, option: o }))).map(({ slot, option }) => (
             <p
-              key={s.key}
+              key={`${slot}-${option.key}`}
               className="flex items-center justify-between font-display text-xs font-black uppercase"
             >
-              {s.name}
-              <span className="text-muted-foreground">Coming soon 🔒</span>
+              <span>{option.name} <span className="text-muted-foreground">· {slot}</span></span>
+              <span className="text-muted-foreground">Future purchase 🔒</span>
             </p>
           ))}
         </div>

@@ -679,6 +679,7 @@ function Game() {
             bedCount={bedCount}
             staffBonus={staffBonus}
             staff={staff}
+            character={character}
             mods={mods}
             soundOn={soundOn}
             hapticsOn={hapticsOn}

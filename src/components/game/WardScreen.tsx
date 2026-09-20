@@ -7,6 +7,8 @@ import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
+import type { NurseAction, NurseDirection } from "./Nurse";
+import type { PlayerCharacter } from "@/game/character";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import { NO_EFFECTS, type Effects } from "@/game/gear";
@@ -282,6 +284,7 @@ export function WardScreen({
   bedCount,
   staffBonus,
   staff,
+  character,
   soundOn,
   hapticsOn,
   onToggleSound,
@@ -301,6 +304,7 @@ export function WardScreen({
   bedCount: number;
   staffBonus: number;
   staff: string[];
+  character: PlayerCharacter;
   soundOn: boolean;
   hapticsOn: boolean;
   onToggleSound: () => void;
@@ -371,6 +375,8 @@ export function WardScreen({
   const wardRef = useRef<HTMLDivElement | null>(null);
   const [nurse, setNurse] = useState<Point>({ ...STATION });
   const [walking, setWalking] = useState(false);
+  const [nurseDirection, setNurseDirection] = useState<NurseDirection>("north");
+  const [nurseAction, setNurseAction] = useState<NurseAction>("idle");
   const nurseRef = useRef<Point>({ ...STATION });
   const returning = useRef(false);
   const journey = useRef<Point[]>([]);
@@ -807,6 +813,9 @@ export function WardScreen({
       if (!target) break;
       const dx = target.x - current.x;
       const dy = target.y - current.y;
+      if (Math.abs(dx) > Math.abs(dy)) setNurseDirection(dx < 0 ? "west" : "east");
+      else if (Math.abs(dy) > 0.001) setNurseDirection(dy < 0 ? "north" : "south");
+      setNurseAction(returning.current ? "walk" : upgrades.speed >= 3 ? "run" : "walk");
       const distance = Math.hypot(dx * 0.8, dy);
       if (distance <= remaining) {
         current = target;
@@ -823,6 +832,7 @@ export function WardScreen({
     stats.current.steps++;
     if (!journey.current.length) {
       setWalking(false);
+      setNurseAction(journeyBed.current === null ? "sit" : "idle");
       setAtBed(journeyBed.current);
     }
   }, [tick, rate, upgrades]);
@@ -980,6 +990,8 @@ export function WardScreen({
   function doAction(action: ActionKind) {
     const ev = selectedEvent;
     if (!ev || rate === 0 || nurseHereBed !== ev.bed) return;
+    setNurseAction(action === "ASSESS" ? "check" : "interact");
+    window.setTimeout(() => setNurseAction("idle"), 620);
     if (tutStep >= 0) {
       setTutStep(-1);
       onTutorialDone?.();
@@ -1302,7 +1314,7 @@ export function WardScreen({
                   >
                     <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-full">
                       {playerSeated ? (
-                        <span className="block h-10 w-8 overflow-hidden"><Nurse moving={false} /></span>
+                        <span className="block h-10 w-8 overflow-hidden"><Nurse character={character} action="sit" direction="north" /></span>
                       ) : seated && info ? info.icon : ""}
                     </span>
                   </button>
@@ -1484,7 +1496,7 @@ export function WardScreen({
             zIndex: Math.round(nurse.y * 100) + 1,
           }}
         >
-          <Nurse moving={walking} />
+          <Nurse character={character} moving={walking} action={nurseAction} direction={nurseDirection} expression={selectedEvent && atBed !== null ? "concerned" : "neutral"} />
         </div>
         </div>
 
