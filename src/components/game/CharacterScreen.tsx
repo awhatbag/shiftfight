@@ -13,22 +13,13 @@ import {
   type CosmeticSlot,
   type PlayerCharacter,
 } from "@/game/character";
-import { Nurse, type NurseExpression } from "./Nurse";
+import { Nurse } from "./Nurse";
 
 function CharacterPreview({ character }: { character: PlayerCharacter }) {
-  const expressions: NurseExpression[] = ["neutral", "happy", "concerned", "angry", "tired", "surprised"];
-  const [expression, setExpression] = useState<NurseExpression>("neutral");
   return (
     <div className="rounded-xl border-2 border-border bg-card/70 p-2">
       <div className="grid h-44 place-items-center rounded-lg bg-secondary/60">
-        <Nurse character={character} expression={expression} className="h-40 w-32" />
-      </div>
-      <div className="mt-2 grid grid-cols-6 gap-1" aria-label="Expressions">
-        {expressions.map((item) => (
-          <button key={item} type="button" onClick={() => setExpression(item)} className={`rounded-md px-1 py-1 font-display text-[9px] font-black uppercase ${expression === item ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-            {item}
-          </button>
-        ))}
+        <Nurse character={character} variant="preview" className="h-40" />
       </div>
     </div>
   );

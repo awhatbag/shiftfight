@@ -72,7 +72,8 @@ export function Nurse({
   else frames = [ROW.walkE1, ROW.walkE2];
 
   const animate = frames.length > 1 && (action === "walk" || action === "run");
-  const frame = useFrameToggle(animate, frames, action === "run" ? 110 : 170);
+  const idx = useFrameToggle(animate, frames, action === "run" ? 110 : 170);
+  const frame = frames[idx] ?? frames[0];
   const flip = direction === "west" && action !== "sit";
 
   return (
