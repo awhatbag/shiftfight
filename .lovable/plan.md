@@ -20,7 +20,7 @@ Replace the placeholder nurse drawing with a cohesive 32-bit pixel-art character
 - Replace the placeholder character preview with the selected animated sprite.
 - Expand the customisation screen to show presentation, skin tone, hair colour, hairstyle, scrub set, shoes, and PPE where applicable.
 - Show locked hairstyles and special scrubs clearly, without making unavailable items selectable.
-- Connect locked cosmetics to the existing points shop, level progression, events, or achievements; no real-money payment flow.
+- Keep every locked cosmetic designated as a future real-money purchase; display it as locked for now and leave payment unavailable until the later payment release.
 - Preserve existing names, randomisation, save files, and old saves by supplying safe defaults for newly added cosmetic fields.
 
 ## Ward animation and behaviour
