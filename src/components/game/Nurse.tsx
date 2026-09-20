@@ -74,7 +74,7 @@ export function Nurse({
 
   const animate = frames.length > 1 && (action === "walk" || action === "run");
   const idx = useFrameToggle(animate, frames, action === "run" ? 110 : 170);
-  const frame = frames[idx] ?? frames[0];
+  const frame: number = frames[idx % frames.length] ?? frames[0];
   const flip = direction === "west" && action !== "sit";
 
   return (
