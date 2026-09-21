@@ -10,14 +10,23 @@
  * volume. Everything else (mute, fades, no-overlap) works automatically.
  */
 import titleTrack from "@/assets/shift-fight-title.mp3.asset.json";
+import savePointTrack from "@/assets/save-point.mp3.asset.json";
+import wardTrack from "@/assets/pixel-triage.mp3.asset.json";
+import shopTrack from "@/assets/level-select-shop.mp3.asset.json";
 
-export type MusicKey = "title";
+export type MusicKey = "title" | "savePoint" | "ward" | "shop";
 
 type TrackDef = { url: string; volume: number };
 
 export const MUSIC_TRACKS: Record<MusicKey, TrackDef> = {
   /** replace src/assets/shift-fight-title.mp3.asset.json to swap this music */
   title: { url: titleTrack.url, volume: 0.55 },
+  /** character customisation screen */
+  savePoint: { url: savePointTrack.url, volume: 0.55 },
+  /** ward gameplay */
+  ward: { url: wardTrack.url, volume: 0.55 },
+  /** shop screen */
+  shop: { url: shopTrack.url, volume: 0.55 },
 };
 
 const FADE_MS = 450;
