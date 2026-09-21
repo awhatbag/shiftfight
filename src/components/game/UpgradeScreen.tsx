@@ -91,6 +91,7 @@ export function UpgradeScreen({
             <button
               key={u.key}
               disabled={!can}
+              data-sfx="equip"
               onClick={() => onBuy(u.key, cost)}
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition-transform",
@@ -172,6 +173,7 @@ export function UpgradeScreen({
                   <button
                     key={g.key}
                     disabled={!can}
+                    data-sfx="equip"
                     onClick={() => onBuyGear(g.key, g.cost)}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
@@ -213,6 +215,7 @@ export function UpgradeScreen({
             <button
               key={b.key}
               disabled={!can}
+              data-sfx="equip"
               onClick={() => onBuyBedUpgrade(b.key, b.cost)}
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
@@ -249,6 +252,7 @@ export function UpgradeScreen({
             <button
               key={s.key}
               disabled={!can}
+              data-sfx="equip"
               onClick={() => onHire(s.key, s.cost)}
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
