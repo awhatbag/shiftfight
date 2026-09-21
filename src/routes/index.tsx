@@ -47,6 +47,8 @@ import {
   subscribeMusic,
   toggleMusic,
 } from "@/lib/music";
+import receptionAsset from "@/assets/title-reception.png.asset.json";
+import logoAsset from "@/assets/shift-fight-logo.png.asset.json";
 
 const TITLE = "Shift Fight! — Hospital Ward Arcade";
 const DESC =
@@ -978,16 +980,16 @@ function IntroScreen({
         ))}
       </div>
 
-      <div className="grid w-full grid-cols-2 gap-2">
+      <div className="relative z-10 grid w-[82%] max-w-[300px] grid-cols-2 gap-2">
         <button
           onClick={onToggleAllAudio}
-          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-xs font-black uppercase text-secondary-foreground"
         >
           🔊 Sound {soundOn && musicOn ? "ON" : "OFF"}
         </button>
         <button
           onClick={onToggleHaptics}
-          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+          className="chunky chunky-press rounded-2xl bg-secondary py-2 font-display text-xs font-black uppercase text-secondary-foreground"
         >
           📳 Haptics {hapticsOn ? "ON" : "OFF"}
         </button>
@@ -996,29 +998,29 @@ function IntroScreen({
       <button
         onClick={onLoad}
         disabled={!hasSave}
-        className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground disabled:opacity-50"
+        className="chunky chunky-press relative z-10 w-[82%] max-w-[300px] rounded-2xl bg-secondary py-2.5 font-display text-sm font-black uppercase text-secondary-foreground disabled:opacity-50"
       >
         ↩ Continue save
       </button>
       {saveNote && (
-        <p className="font-display text-xs font-black uppercase text-calm-foreground">
+        <p className="relative z-10 font-display text-xs font-black uppercase text-calm-foreground">
           {saveNote}
         </p>
       )}
 
       <button
         onClick={onPlay}
-        className="chunky chunky-press w-full rounded-2xl bg-primary py-5 font-display text-2xl font-black uppercase tracking-wide text-primary-foreground"
+        className="chunky chunky-press relative z-10 w-[82%] max-w-[300px] rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase tracking-wide text-primary-foreground"
       >
         Clock in ▶
       </button>
       <button
         onClick={onLadder}
-        className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-base font-black uppercase text-secondary-foreground"
+        className="chunky chunky-press relative z-10 w-[82%] max-w-[300px] rounded-2xl bg-secondary py-2.5 font-display text-sm font-black uppercase text-secondary-foreground"
       >
         🪜 Shift Ladder
       </button>
-      <p className="text-[10px] leading-tight text-muted-foreground">
+      <p className="relative z-10 w-[82%] max-w-[300px] text-[9px] leading-tight text-muted-foreground drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
         A silly, fast-paced work of fiction. Fictional patients, fictional meds. Definitely not medical or nursing advice... maybe 👀
       </p>
     </div>
