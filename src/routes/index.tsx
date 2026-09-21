@@ -544,6 +544,12 @@ function Game() {
     setBedOverride,
     jobSecurity,
     setJobSecurity: (n) => setJobSecurity(Math.max(0, Math.min(100, n))),
+    character,
+    setCharacter: (c) => {
+      const next = normalizeCharacter(c);
+      setCharacter(next);
+      writeCharacter(next);
+    },
     openLadder: () => setPhase("ladder"),
     resetSave: () => {
       try {
