@@ -947,29 +947,32 @@ function IntroScreen({
   }, []);
 
   return (
-    <div className="relative flex h-full flex-col items-center justify-center gap-5 bg-[image:var(--gradient-sky)] p-6 text-center">
-      <div className="animate-bob text-6xl">🏥</div>
+    <div className="relative flex h-full flex-col items-center justify-center gap-3 overflow-hidden p-6 text-center">
+      <img
+        src={receptionAsset.url}
+        alt=""
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-background/10" />
 
-      <div>
-        <h1 className="font-display text-5xl font-black leading-none tracking-tight">
-          SHIFT
-          <br />
-          <span className="text-primary">FIGHT!</span>
-        </h1>
-        <p className="mt-2 text-sm font-semibold text-muted-foreground">
-          One thumb. Four beds. Total chaos.
-        </p>
-      </div>
+      <img
+        src={logoAsset.url}
+        alt="Shift Fight!"
+        className="title-logo-fly relative z-10 w-[88%] max-w-[340px] -rotate-2 drop-shadow-[0_6px_10px_rgba(0,0,0,0.55)]"
+      />
+      <p className="relative z-10 -mt-1 text-sm font-semibold text-primary drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
+        One thumb. Four beds. Total chaos.
+      </p>
 
-      <div className="w-full space-y-2 rounded-2xl border-2 border-border bg-card/80 p-3 text-left">
+      <div className="relative z-10 w-[82%] max-w-[300px] space-y-1.5 rounded-2xl border-2 border-border bg-card/90 p-2.5 text-left">
         {[
           ["👆", "Tap the bed that needs you most"],
           ["⚡", "ASSESS · INTERVENE · ESCALATE"],
           ["🎯", "Nail mini-games, bank the combo"],
           ["👵", "Don't get fired by the DON"],
         ].map(([i, t]) => (
-          <p key={t} className="flex items-center gap-2 text-sm font-semibold">
-            <span className="text-lg">{i}</span>
+          <p key={t} className="flex items-center gap-2 text-xs font-semibold">
+            <span className="text-base">{i}</span>
             {t}
           </p>
         ))}
