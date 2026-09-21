@@ -36,6 +36,8 @@ import {
 import { DevMode, DevPinPrompt, type DevApi } from "@/components/dev/DevMode";
 import { DEV_PIN, subscribeDevInfo } from "@/game/dev";
 import {
+  playBackClick,
+  playForwardClick,
   setHapticsEnabled,
   setSoundEnabled,
 } from "@/lib/sfx";
