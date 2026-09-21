@@ -266,7 +266,14 @@ function Game() {
     for (const key of ["savePoint", "ward", "shop"] as const) {
       if (key !== wanted) stopMusic(key);
     }
-    if (wanted) playMusic(wanted);
+    if (!wanted) return undefined;
+    /* on the summary, wait for the end-of-shift whistle to finish first */
+    if (phase === "summary") {
+      const t = window.setTimeout(() => playMusic("shop"), 2200);
+      return () => window.clearTimeout(t);
+    }
+    playMusic(wanted);
+    return undefined;
   }, [phase]);
   const [points, setPoints] = useState(0);
   const [xp, setXp] = useState(0);
