@@ -254,14 +254,12 @@ function Game() {
   // Screen music: character customisation, ward gameplay, and shop each get
   // their own track; the intro screen manages the title track itself.
   useEffect(() => {
+    stopMusic("savePoint");
+    stopMusic("ward");
+    stopMusic("shop");
     if (phase === "character") playMusic("savePoint");
     else if (phase === "shift") playMusic("ward");
     else if (phase === "shop") playMusic("shop");
-    else {
-      stopMusic("savePoint");
-      stopMusic("ward");
-      stopMusic("shop");
-    }
   }, [phase]);
   const [points, setPoints] = useState(0);
   const [xp, setXp] = useState(0);
