@@ -312,13 +312,20 @@ function Game() {
   useEffect(() => subscribeDevInfo((i) => setDevEvents(i.activeEvents)), []);
 
   /** supplied UI click sounds: back / shop-item vs every other button */
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const el = (e.target as HTMLElement | null)?.closest?.("button");
       if (!el) return;
-      const kind = el.getAttribute("data-sfx");
-      if (kind === "back") playBackClick();
-      else if (kind !== "none") playForwardClick();
+      const attr = el.getAttribute("data-sfx");
+      // during live gameplay the mini-games own the sound effects
+      if (phaseRef.current === "shift" && attr === null) return;
+      if (attr === "none") return;
+      const isBack =
+        attr === "back" || /←|\bback\b/i.test(el.textContent ?? "");
+      if (isBack) playBackClick();
+      else playForwardClick();
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
