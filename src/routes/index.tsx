@@ -268,10 +268,15 @@ function Game() {
       if (key !== wanted) stopMusic(key);
     }
     if (!wanted) return undefined;
-    /* on the summary, wait for the end-of-shift whistle to finish first */
+    /* on the summary, wait for the end-of-shift whistle to actually finish */
     if (phase === "summary") {
-      const t = window.setTimeout(() => playMusic("shop"), 2200);
-      return () => window.clearTimeout(t);
+      let cancelled = false;
+      void whistleEnded().then(() => {
+        if (!cancelled) playMusic("shop");
+      });
+      return () => {
+        cancelled = true;
+      };
     }
     playMusic(wanted);
     return undefined;
