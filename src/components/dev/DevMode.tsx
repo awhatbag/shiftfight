@@ -10,6 +10,15 @@ import { BED_UPGRADES } from "@/game/bedUpgrades";
 import { SHIFT_TITLES, shiftTitle } from "@/game/shifts";
 import { WARDS, wardLadder } from "@/game/wards";
 import { useEffect } from "react";
+import { Nurse, type NurseAction, type NurseDirection } from "@/components/game/Nurse";
+import {
+  COSMETIC_SLOTS,
+  PRESENTATIONS,
+  DEFAULT_CHARACTER,
+  randomCharacter,
+  type CosmeticSlot,
+  type PlayerCharacter,
+} from "@/game/character";
 
 export type DevApi = {
   level: number;
