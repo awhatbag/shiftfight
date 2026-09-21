@@ -212,26 +212,26 @@ function TopBar({
   const nextLevel = Math.min(level + 1, MAX_LEVEL);
   const nextTitle = shiftTitle(nextLevel);
   return (
-    <div className="flex shrink-0 items-center justify-between gap-2 border-b-2 border-border bg-background px-2 py-2">
+    <div className="flex w-full shrink-0 items-center gap-1.5 overflow-hidden border-b-2 border-border bg-background px-2 py-2">
       {phase === "intro" ? (
-        <span className="px-3 py-2 font-display text-sm font-black uppercase text-muted-foreground">
+        <span className="flex h-11 shrink-0 items-center px-2 font-display text-sm font-black uppercase text-muted-foreground">
           Shift Fight!
         </span>
       ) : (
         <button
           onClick={onBack}
-          className="chunky chunky-press rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+          className="chunky chunky-press flex h-11 shrink-0 items-center rounded-xl bg-secondary px-2.5 font-display text-xs font-black uppercase text-secondary-foreground"
         >
           ← Back
         </button>
       )}
-      <div className="flex flex-1 items-center justify-end gap-3">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
         {phase === "shop" && onContinue && (
           <button
             onClick={onContinue}
-            className="chunky chunky-press flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 font-display text-lg font-black uppercase text-primary-foreground shadow-[0_6px_0_rgb(0,0,0,0.2)] ring-2 ring-primary-foreground/40"
+            className="chunky chunky-press flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-2.5 font-display text-xs font-black uppercase text-primary-foreground shadow-[0_4px_0_rgb(0,0,0,0.2)] ring-2 ring-primary-foreground/40"
           >
-            <span className="truncate">
+            <span className="min-w-0 truncate">
               LV{nextLevel} · {nextTitle.title}
             </span>
             <span className="shrink-0">▶</span>
@@ -240,7 +240,7 @@ function TopBar({
         <button
           onClick={onMenu}
           aria-label="Open menu"
-          className="chunky chunky-press shrink-0 rounded-xl bg-secondary px-3 py-2 font-display text-sm font-black uppercase text-secondary-foreground"
+          className="chunky chunky-press flex h-11 shrink-0 items-center rounded-xl bg-secondary px-2.5 font-display text-xs font-black uppercase text-secondary-foreground"
         >
           ☰ Menu
         </button>
