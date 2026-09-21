@@ -10,6 +10,15 @@ import { BED_UPGRADES } from "@/game/bedUpgrades";
 import { SHIFT_TITLES, shiftTitle } from "@/game/shifts";
 import { WARDS, wardLadder } from "@/game/wards";
 import { useEffect } from "react";
+import { Nurse, type NurseAction, type NurseDirection } from "@/components/game/Nurse";
+import {
+  COSMETIC_SLOTS,
+  PRESENTATIONS,
+  DEFAULT_CHARACTER,
+  randomCharacter,
+  type CosmeticSlot,
+  type PlayerCharacter,
+} from "@/game/character";
 
 export type DevApi = {
   level: number;
@@ -37,6 +46,8 @@ export type DevApi = {
   setJobSecurity: (n: number) => void;
   openLadder: () => void;
   resetSave: () => void;
+  character: PlayerCharacter;
+  setCharacter: (c: PlayerCharacter) => void;
   debugOverlay: boolean;
   setDebugOverlay: (v: boolean) => void;
 };
@@ -94,6 +105,117 @@ function Placeholder({ text }: { text: string }) {
     <p className="rounded-2xl border-2 border-dashed border-border bg-card/60 p-3 text-sm text-muted-foreground">
       {text}
     </p>
+  );
+}
+
+/* ---------------- nurse sprite inspector ---------------- */
+
+/** every on-screen sprite state the ward can show */
+const NURSE_POSES: { label: string; action: NurseAction; direction: NurseDirection }[] = [
+  { label: "Idle", action: "idle", direction: "south" },
+  { label: "Walk down", action: "walk", direction: "south" },
+  { label: "Walk right", action: "walk", direction: "east" },
+  { label: "Walk left", action: "walk", direction: "west" },
+  { label: "Run", action: "run", direction: "south" },
+  { label: "Interact", action: "interact", direction: "south" },
+  { label: "Check", action: "check", direction: "south" },
+  { label: "Walk up", action: "walk", direction: "north" },
+  { label: "Sitting", action: "sit", direction: "north" },
+];
+
+function NurseSection({ api }: { api: DevApi }) {
+  const c = api.character;
+  const setCosmetic = (slot: CosmeticSlot["key"], key: string) =>
+    api.setCharacter({ ...c, cosmetics: { ...c.cosmetics, [slot]: key } });
+
+  return (
+    <div className="space-y-3">
+      <Row label="Gold standard sprite">
+        <div className="grid h-44 place-items-center rounded-2xl border-2 border-border bg-secondary/60">
+          <Nurse character={c} variant="preview" className="h-40" />
+        </div>
+      </Row>
+
+      <Row label="Presentation">
+        <div className="grid grid-cols-3 gap-2">
+          {PRESENTATIONS.map((p) => (
+            <Chip
+              key={p.key}
+              active={c.presentation === p.key}
+              onClick={() => api.setCharacter({ ...c, presentation: p.key })}
+            >
+              {p.icon} {p.name}
+            </Chip>
+          ))}
+        </div>
+      </Row>
+
+      {COSMETIC_SLOTS.map((slot) => (
+        <Row key={slot.key} label={slot.name}>
+          <div className="flex flex-wrap gap-2">
+            {slot.options.map((o) => (
+              <button
+                key={o.key}
+                aria-label={o.name}
+                disabled={o.locked}
+                onClick={() => setCosmetic(slot.key, o.key)}
+                style={o.color ? { background: o.color } : undefined}
+                className={cn(
+                  "h-9 min-w-9 rounded-lg border-2 px-1 text-[10px] font-bold disabled:opacity-50",
+                  c.cosmetics?.[slot.key] === o.key
+                    ? "border-primary ring-2 ring-primary"
+                    : "border-border",
+                )}
+              >
+                {o.locked ? "🔒" : !o.color ? o.name.slice(0, 3) : ""}
+              </button>
+            ))}
+          </div>
+        </Row>
+      ))}
+
+      <Row label="Quick set">
+        <div className="grid grid-cols-2 gap-2">
+          <Chip onClick={() => api.setCharacter(randomCharacter(c.name))}>Randomise</Chip>
+          <Chip
+            onClick={() =>
+              api.setCharacter({
+                ...DEFAULT_CHARACTER,
+                name: c.name,
+                cosmetics: { ...DEFAULT_CHARACTER.cosmetics },
+              })
+            }
+          >
+            Reset
+          </Chip>
+        </div>
+      </Row>
+
+      <Row label="On-screen sprite poses (live)">
+        <div className="grid grid-cols-3 gap-2">
+          {NURSE_POSES.map((p) => (
+            <div
+              key={p.label}
+              className="rounded-xl border-2 border-border bg-secondary/50 p-1 text-center"
+            >
+              <div className="grid h-20 place-items-center">
+                <Nurse
+                  character={c}
+                  action={p.action}
+                  direction={p.direction}
+                  moving={p.action === "walk" || p.action === "run"}
+                  className="h-20"
+                />
+              </div>
+              <p className="font-display truncate text-[9px] font-black uppercase text-muted-foreground">
+                {p.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </Row>
+      <Placeholder text="Choices here save straight to the player profile and the ward nurse." />
+    </div>
   );
 }
 
@@ -377,6 +499,12 @@ export const DEV_CATEGORIES: Category[] = [
         </Row>
       </div>
     ),
+  },
+  {
+    key: "nurse",
+    name: "Nurse & Sprites",
+    icon: "👩‍⚕️",
+    render: (api) => <NurseSection api={api} />,
   },
   {
     key: "gear",
