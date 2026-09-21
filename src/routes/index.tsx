@@ -311,6 +311,19 @@ function Game() {
 
   useEffect(() => subscribeDevInfo((i) => setDevEvents(i.activeEvents)), []);
 
+  /** supplied UI click sounds: back / shop-item vs every other button */
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.("button");
+      if (!el) return;
+      const kind = el.getAttribute("data-sfx");
+      if (kind === "back") playBackClick();
+      else if (kind !== "none") playForwardClick();
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+
   useEffect(() => {
     const unsub = subscribeMusic(setMusicOnState);
     return () => {
