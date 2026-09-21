@@ -46,6 +46,8 @@ export type DevApi = {
   setJobSecurity: (n: number) => void;
   openLadder: () => void;
   resetSave: () => void;
+  character: PlayerCharacter;
+  setCharacter: (c: PlayerCharacter) => void;
   debugOverlay: boolean;
   setDebugOverlay: (v: boolean) => void;
 };
