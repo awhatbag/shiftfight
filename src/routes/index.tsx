@@ -38,6 +38,7 @@ import { DEV_PIN, subscribeDevInfo } from "@/game/dev";
 import {
   playBackClick,
   playForwardClick,
+  playLevelComplete,
   setHapticsEnabled,
   setSoundEnabled,
 } from "@/lib/sfx";
