@@ -501,6 +501,12 @@ export const DEV_CATEGORIES: Category[] = [
     ),
   },
   {
+    key: "nurse",
+    name: "Nurse & Sprites",
+    icon: "👩‍⚕️",
+    render: (api) => <NurseSection api={api} />,
+  },
+  {
     key: "gear",
     name: "Equipment & Cosmetics",
     icon: "👟",
