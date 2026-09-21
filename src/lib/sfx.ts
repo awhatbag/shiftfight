@@ -1,3 +1,10 @@
+import backClickAsset from "@/assets/back_click.wav.asset.json";
+import forwardClickAsset from "@/assets/forward_click.wav.asset.json";
+import equipAsset from "@/assets/equip.wav.asset.json";
+import levelCompleteAsset from "@/assets/level_complete.wav.asset.json";
+import bellsAsset from "@/assets/boxing_bell_x3.m4a.asset.json";
+import whistleAsset from "@/assets/shift_end_steam_whistle.m4a.asset.json";
+
 let ctx: AudioContext | null = null;
 let soundOn = true;
 let hapticsOn = true;
