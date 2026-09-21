@@ -22,7 +22,7 @@ import {
   playWhistle,
   primeAudio,
 } from "@/lib/sfx";
-import { isMusicOn, setMusicEnabled, subscribeMusic, toggleMusic } from "@/lib/music";
+import { isMusicOn, playMusic, setMusicEnabled, stopMusic, subscribeMusic, toggleMusic } from "@/lib/music";
 import {
   ACTION_META,
   EVENTS,
@@ -513,6 +513,8 @@ export function WardScreen({
     const t3 = window.setTimeout(() => {
       setPhase("play");
       setCue("");
+      /* the shift song only starts once the opening bells have rung out */
+      playMusic("ward");
     }, 2500);
     return () => [t1, t2, t3].forEach(window.clearTimeout);
   }, [briefing]);
@@ -559,6 +561,8 @@ export function WardScreen({
           Math.round(stats.current.quirks.reduce((a, q) => a + q.pts, 0) * 0.3),
       );
       stats.current.objectives = objectivesRef.current;
+      /* clear the shift song so the end-of-shift whistle plays on its own */
+      stopMusic("ward");
       playWhistle();
       onEnd({ ...stats.current });
     },

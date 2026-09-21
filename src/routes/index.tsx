@@ -251,15 +251,29 @@ function TopBar({
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
-  // Screen music: character customisation, ward gameplay, and shop each get
-  // their own track; the intro screen manages the title track itself.
+  // Screen music: character customisation gets its own track; the shop track
+  // starts on the summary (right after the end-of-shift whistle) and keeps
+  // playing into the shop without restarting. The ward track is started by the
+  // ward itself, once the opening bells have finished. The intro screen manages
+  // the title track itself.
   useEffect(() => {
-    stopMusic("savePoint");
-    stopMusic("ward");
-    stopMusic("shop");
-    if (phase === "character") playMusic("savePoint");
-    else if (phase === "shift") playMusic("ward");
-    else if (phase === "shop") playMusic("shop");
+    const wanted =
+      phase === "character"
+        ? "savePoint"
+        : phase === "summary" || phase === "shop"
+          ? "shop"
+          : null;
+    for (const key of ["savePoint", "ward", "shop"] as const) {
+      if (key !== wanted) stopMusic(key);
+    }
+    if (!wanted) return undefined;
+    /* on the summary, wait for the end-of-shift whistle to finish first */
+    if (phase === "summary") {
+      const t = window.setTimeout(() => playMusic("shop"), 2200);
+      return () => window.clearTimeout(t);
+    }
+    playMusic(wanted);
+    return undefined;
   }, [phase]);
   const [points, setPoints] = useState(0);
   const [xp, setXp] = useState(0);
