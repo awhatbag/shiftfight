@@ -1796,13 +1796,13 @@ export function WardScreen({
         )}
       >
         {selectedEvent ? (
-          <div className="animate-slide-up space-y-2">
+          <div className="animate-slide-up space-y-1.5">
             {(() => {
               const here = nurseHereBed === selectedEvent.bed;
               return (
                 <>
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl">{here ? selectedEvent.def.icon : "🚶‍♀️"}</span>
+                  <div className="flex items-start gap-2">
+                    <span className="text-3xl leading-none">{here ? selectedEvent.def.icon : "🚶‍♀️"}</span>
                     <div className="min-w-0">
                       <p className="font-display truncate text-base font-black uppercase">
                         {beds[selectedEvent.bed]?.name}
@@ -1810,8 +1810,8 @@ export function WardScreen({
                       </p>
                       <p
                         className={cn(
-                          "text-base font-bold leading-snug",
-                          here ? "text-foreground" : "text-muted-foreground",
+                          "font-bold leading-snug",
+                          here ? "text-2xl text-foreground" : "text-base text-muted-foreground",
                         )}
                       >
                         {here ? selectedEvent.def.brief : "Walking over… you'll see what they want on arrival."}
@@ -1819,30 +1819,30 @@ export function WardScreen({
                     </div>
                   </div>
                   {here ? (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5">
                       {(Object.keys(selectedEvent.def.options) as ActionKind[]).map((a) => (
                         <button
                           key={a}
                           onClick={() => doAction(a)}
                           className={cn(
-                            "chunky chunky-press flex flex-col items-center gap-1 rounded-2xl px-1.5 py-2.5",
+                            "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5",
                             ACTION_META[a].color,
                           )}
                         >
-                          <span className="text-3xl leading-none">{ACTION_META[a].icon}</span>
-                          <span className="font-display text-base font-black">{a}</span>
-                          <span className="text-[15px] font-bold leading-snug opacity-95">
+                          <span className="text-2xl leading-none">{ACTION_META[a].icon}</span>
+                          <span className="font-display text-xs font-black">{a}</span>
+                          <span className="text-xs font-semibold leading-tight opacity-95">
                             {selectedEvent.def.options[a]}
                           </span>
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5">
                       {[0, 1, 2].map((i) => (
                         <div
                           key={i}
-                          className="flex flex-col items-center gap-0.5 rounded-2xl bg-muted px-1 py-2 opacity-70"
+                          className="flex flex-col items-center gap-0.5 rounded-2xl bg-muted px-1 py-1.5 opacity-70"
                         >
                           <span className="text-xl leading-none">❓</span>
                           <span className="font-display text-[11px] font-black text-muted-foreground">
