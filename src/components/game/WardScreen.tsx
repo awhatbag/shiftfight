@@ -561,6 +561,8 @@ export function WardScreen({
           Math.round(stats.current.quirks.reduce((a, q) => a + q.pts, 0) * 0.3),
       );
       stats.current.objectives = objectivesRef.current;
+      /* clear the shift song so the end-of-shift whistle plays on its own */
+      stopMusic("ward");
       playWhistle();
       onEnd({ ...stats.current });
     },
