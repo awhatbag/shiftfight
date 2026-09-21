@@ -514,6 +514,7 @@ function Game() {
       wardProgress: nextWardProgress,
       character,
     });
+    playLevelComplete();
     setPhase("summary");
   }
 
