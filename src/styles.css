@@ -240,6 +240,35 @@
   }
 }
 
+@keyframes title-logo-fly {
+  0% {
+    transform: translate3d(0, -140%, 0) scale(0.55) rotate(-14deg);
+    opacity: 0;
+  }
+  55% {
+    transform: translate3d(0, 8%, 0) scale(1.12) rotate(3deg);
+    opacity: 1;
+  }
+  75% {
+    transform: translate3d(0, -3%, 0) scale(0.96) rotate(-2deg);
+  }
+  90% {
+    transform: translate3d(0, 1%, 0) scale(1.02) rotate(1deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+.title-logo-fly {
+  animation: title-logo-fly 0.85s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-logo-fly {
+    animation: none;
+  }
+}
+
 @keyframes training-flicker {
   0%,
   100% {
