@@ -40,6 +40,7 @@ import {
   playForwardClick,
   setHapticsEnabled,
   setSoundEnabled,
+  whistleEnded,
 } from "@/lib/sfx";
 import {
   isMusicOn,
