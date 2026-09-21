@@ -141,12 +141,13 @@ export function playVomit() {
 
 
 /** Play a supplied audio file. Respects the same sound-effects mute flag. */
-function sample(url: string, volume = 0.9) {
-  if (!soundOn) return;
-  if (typeof Audio === "undefined") return;
+function sample(url: string, volume = 0.9): HTMLAudioElement | null {
+  if (!soundOn) return null;
+  if (typeof Audio === "undefined") return null;
   const el = new Audio(url);
   el.volume = volume;
   void el.play().catch(() => {});
+  return el;
 }
 
 /** Three bells to start the round (supplied boxing-bell recording). */
@@ -155,10 +156,39 @@ export function playRoundBells() {
   buzz([30, 80, 30, 80, 30]);
 }
 
+let whistleEl: HTMLAudioElement | null = null;
+
 /** Shift-end steam whistle (supplied recording). */
 export function playWhistle() {
-  sample(whistleAsset.url, 0.85);
+  whistleEl = sample(whistleAsset.url, 0.85);
   buzz([60, 40, 160]);
+}
+
+/**
+ * Resolves when the shift-end whistle has finished (or straight away if it
+ * never started / failed to decode). Used to time the shop music so it starts
+ * exactly when the whistle ends instead of on a guessed delay.
+ */
+export function whistleEnded(): Promise<void> {
+  const el = whistleEl;
+  if (!el || el.ended) return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      el.removeEventListener("ended", finish);
+      el.removeEventListener("error", finish);
+      window.clearTimeout(guard);
+      resolve();
+    };
+    /* safety net: never leave the music waiting forever */
+    const guard = window.setTimeout(finish, 8000);
+    el.addEventListener("ended", finish);
+    el.addEventListener("error", finish);
+    /* if it can't play at all (codec/autoplay), don't stall the music */
+    void el.play().catch(finish);
+  });
 }
 
 /** UI: back navigation. */
