@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
@@ -36,6 +36,9 @@ import {
 import { DevMode, DevPinPrompt, type DevApi } from "@/components/dev/DevMode";
 import { DEV_PIN, subscribeDevInfo } from "@/game/dev";
 import {
+  playBackClick,
+  playForwardClick,
+  playLevelComplete,
   setHapticsEnabled,
   setSoundEnabled,
 } from "@/lib/sfx";
@@ -309,6 +312,26 @@ function Game() {
 
   useEffect(() => subscribeDevInfo((i) => setDevEvents(i.activeEvents)), []);
 
+  /** supplied UI click sounds: back / shop-item vs every other button */
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.("button");
+      if (!el) return;
+      const attr = el.getAttribute("data-sfx");
+      // during live gameplay the mini-games own the sound effects
+      if (phaseRef.current === "shift" && attr === null) return;
+      if (attr === "none") return;
+      const isBack =
+        attr === "back" || /←|\bback\b/i.test(el.textContent ?? "");
+      if (isBack) playBackClick();
+      else playForwardClick();
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+
   useEffect(() => {
     const unsub = subscribeMusic(setMusicOnState);
     return () => {
@@ -492,6 +515,7 @@ function Game() {
       wardProgress: nextWardProgress,
       character,
     });
+    playLevelComplete();
     setPhase("summary");
   }
 
