@@ -58,7 +58,9 @@ export const AVOCADO_EVENTS: EventDef[] = PROBLEMS.map((problem, index) => {
   const correct = problem.correct;
   const alternatives = distractors.filter((action) => action !== correct);
   const first = alternatives[index % alternatives.length] ?? "RESPOND";
-  const second = alternatives[(index * 3 + 2) % alternatives.length] ?? "REASSURE";
+  const second = alternatives.find((action, i) => i >= (index * 3 + 2) % alternatives.length && action !== first)
+    ?? alternatives.find((action) => action !== first)
+    ?? "REASSURE";
   return {
     key: `${AVOCADO_KEY_PREFIX}${index + 1}`,
     label: problem.label,

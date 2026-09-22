@@ -626,7 +626,7 @@ export function WardScreen({
         const hitX = hit?.x ?? null;
         return {
           id: avocadoUid.current++,
-          art: Math.floor(Math.random() * 3),
+          art: avocadoUid.current % 3,
           born: now,
           y,
           endY: Math.max(0.3, Math.min(0.96, y + diagonal)),
@@ -2012,7 +2012,11 @@ export function WardScreen({
                     <div className="min-w-0">
                       <p className="font-display truncate text-base font-black uppercase">
                         {beds[selectedEvent.bed]?.name}
-                        {here ? ` — ${selectedEvent.def.label}` : " — on my way"}
+                        {here
+                          ? isAvocadoEvent(selectedEvent.def) && !avocadoAssessed.has(selectedEvent.id)
+                            ? " — avocado call"
+                            : ` — ${selectedEvent.def.label}`
+                          : " — on my way"}
                       </p>
                       <p
                         className={cn(
@@ -2020,12 +2024,23 @@ export function WardScreen({
                           here ? "text-2xl text-foreground" : "text-base text-muted-foreground",
                         )}
                       >
-                        {here ? selectedEvent.def.brief : "Walking over… you'll see what they want on arrival."}
+                        {here
+                          ? isAvocadoEvent(selectedEvent.def) && !avocadoAssessed.has(selectedEvent.id)
+                            ? selectedEvent.def.callLine
+                            : selectedEvent.def.brief
+                          : "Walking over… you'll see what they want on arrival."}
                       </p>
                     </div>
                   </div>
                    {here ? (
-                    <div className="grid grid-cols-3 gap-1.5">
+                     <div
+                       className={cn(
+                         "grid gap-1.5",
+                         isAvocadoEvent(selectedEvent.def) && !avocadoAssessed.has(selectedEvent.id)
+                           ? "grid-cols-1"
+                           : "grid-cols-3",
+                       )}
+                     >
                        {(isAvocadoEvent(selectedEvent.def) && !avocadoAssessed.has(selectedEvent.id)
                          ? (["ASSESS"] as ActionKind[])
                          : (Object.keys(selectedEvent.def.options) as ActionKind[]).filter(
