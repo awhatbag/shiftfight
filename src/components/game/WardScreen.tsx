@@ -597,12 +597,12 @@ export function WardScreen({
       level === 3 &&
       phase === "play" &&
       !avocadoStarted.current &&
-      secondsLeft >= 40 &&
+      SHIFT_MS - gameT.current >= 40_000 &&
       gameT.current >= avocadoTriggerT.current
     ) {
       beginAvocadoAvalanche();
     }
-  }, [tick, level, phase, secondsLeft, beginAvocadoAvalanche]);
+  }, [tick, level, phase, beginAvocadoAvalanche]);
 
   useEffect(() => onDevCommand("avocadoAvalanche", beginAvocadoAvalanche), [beginAvocadoAvalanche]);
 
@@ -1579,10 +1579,48 @@ export function WardScreen({
                 flash={flash[b.id] ?? null}
                 active={selected === b.id}
                 nurseHere={nurseHereBed === b.id}
-                revealed={nurseHereBed === b.id}
+                revealed={
+                  nurseHereBed === b.id &&
+                  (!ev || !isAvocadoEvent(ev.def) || avocadoAssessed.has(ev.id))
+                }
                 onTap={() => tapBed(b.id)}
               />
             </div>
+          );
+        })}
+
+        {/* supplied avocado sprites travel only east to west; bed hits settle
+            at floor level, wait five seconds, then flicker away */}
+        {avocados.map((avocado) => {
+          const age = gameT.current - avocado.born;
+          const collided = avocado.hitX !== null && age >= avocado.hitAt;
+          const stoppedFor = collided ? age - avocado.hitAt : 0;
+          const gone = collided ? stoppedFor > 5_850 : age > avocado.speed + 500;
+          if (gone) return null;
+          const travel = Math.min(1, age / avocado.speed);
+          const x = collided && avocado.hitX !== null ? avocado.hitX : 1.1 - travel * 1.22;
+          const y = collided
+            ? avocado.y + 0.045
+            : avocado.y + (avocado.endY - avocado.y) * travel + Math.sin(age / 115) * 0.007;
+          const flicker = collided && stoppedFor > 5_000 && Math.floor(stoppedFor / 90) % 2 === 0;
+          const art = [avocado1Asset, avocado2Asset, avocado3Asset][avocado.art] ?? avocado1Asset;
+          return (
+            <img
+              key={avocado.id}
+              src={art.url}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="pointer-events-none absolute z-[88] object-contain"
+              style={{
+                left: `${x * 100}%`,
+                top: `${y * 100}%`,
+                height: `${avocado.size}%`,
+                width: `${avocado.size * 1.15}%`,
+                opacity: flicker ? 0.15 : 1,
+                transform: `translate(-50%,-50%) rotate(${collided ? avocado.spin * 70 : avocado.spin * age * 0.24}deg)`,
+              }}
+            />
           );
         })}
 
@@ -1721,6 +1759,37 @@ export function WardScreen({
               >
                 Start shift ▶
               </button>
+            </div>
+          </div>
+        )}
+
+        {avocadoPhase === "intro" && (
+          <div className="absolute inset-0 z-[90] grid place-items-center bg-background/90 p-4 backdrop-blur-sm">
+            <div className="animate-pop w-full max-w-sm rounded-3xl border-4 border-alarm bg-card p-4 text-center shadow-2xl">
+              <img
+                src={donWorriedAsset.url}
+                alt="Worried Director of Nursing"
+                className="mx-auto h-40 w-auto object-contain [image-rendering:pixelated]"
+              />
+              <p className="font-display mt-1 text-sm font-black uppercase text-alarm">🚨 Catastrophic Event 🚨</p>
+              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">The Avocado Avalanche</h3>
+              <p className="mt-3 text-sm font-bold">“A supermarket promotional display has collapsed.”</p>
+              <p className="mt-2 text-sm font-bold">“Approximately 8,000 avocados are currently rolling towards the hospital.”</p>
+              <p className="mt-2 text-sm font-black">“Please remain calm.”</p>
+            </div>
+          </div>
+        )}
+
+        {avocadoPhase === "conclusion" && (
+          <div className="absolute inset-0 z-[90] grid place-items-center bg-background/90 p-4 backdrop-blur-sm">
+            <div className="animate-pop w-full max-w-sm rounded-3xl border-4 border-calm bg-card p-4 text-center shadow-2xl">
+              <img
+                src={donHappyAsset.url}
+                alt="Happy Director of Nursing"
+                className="mx-auto h-44 w-auto object-contain [image-rendering:pixelated]"
+              />
+              <h3 className="font-display text-2xl font-black uppercase leading-none text-calm-foreground">✅ Avocado Avalanche Contained</h3>
+              <p className="mt-3 text-base font-bold">DON: “Good work. Facilities has requested that nobody mention the guacamole.”</p>
             </div>
           </div>
         )}
@@ -1955,9 +2024,14 @@ export function WardScreen({
                       </p>
                     </div>
                   </div>
-                  {here ? (
+                   {here ? (
                     <div className="grid grid-cols-3 gap-1.5">
-                      {(Object.keys(selectedEvent.def.options) as ActionKind[]).map((a) => (
+                       {(isAvocadoEvent(selectedEvent.def) && !avocadoAssessed.has(selectedEvent.id)
+                         ? (["ASSESS"] as ActionKind[])
+                         : (Object.keys(selectedEvent.def.options) as ActionKind[]).filter(
+                             (action) => action !== "ASSESS",
+                           )
+                       ).map((a) => (
                         <button
                           key={a}
                           onClick={() => doAction(a)}
