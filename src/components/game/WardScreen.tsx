@@ -391,7 +391,6 @@ export function WardScreen({
   const [avocadoPhase, setAvocadoPhase] = useState<AvocadoPhase>(null);
   const [avocadoDevRequested, setAvocadoDevRequested] = useState(false);
   const [avocados, setAvocados] = useState<RollingAvocado[]>([]);
-  const [avocadoAssessed, setAvocadoAssessed] = useState<Set<number>>(new Set());
   const avocadoStarted = useRef(false);
   const avocadoStartT = useRef(0);
   const avocadoTriggerT = useRef(12_000 + Math.random() * 34_000);
@@ -596,7 +595,6 @@ export function WardScreen({
         };
       });
       setEvents(nextEvents);
-      setAvocadoAssessed(new Set());
       avocadoStartT.current = gameT.current;
       avocadoNextSpawnT.current = gameT.current;
       setAvocadoPhase("active");
@@ -664,7 +662,6 @@ export function WardScreen({
     setEvents(suspendedEvents.current.map((event) => ({ ...event, born: event.born + AVOCADO_DURATION_MS })));
     suspendedEvents.current = [];
     setSelected(null);
-    setAvocadoAssessed(new Set());
     setAvocadoPhase("conclusion");
     /* the closing card always clears itself and hands the ward back */
     scheduleAvocado(() => {
@@ -1145,12 +1142,6 @@ export function WardScreen({
     if (!ev || rate === 0 || nurseHereBed !== ev.bed) return;
     setNurseAction(action === "ASSESS" ? "check" : "interact");
     window.setTimeout(() => setNurseAction("idle"), 620);
-    if (isAvocadoEvent(ev.def) && action === "ASSESS" && !avocadoAssessed.has(ev.id)) {
-      setAvocadoAssessed((current) => new Set(current).add(ev.id));
-      say("ASSESSMENT COMPLETE", ev.def.brief, true);
-      playGood();
-      return;
-    }
     if (tutStep >= 0) {
       setTutStep(-1);
       onTutorialDone?.();
@@ -1597,10 +1588,7 @@ export function WardScreen({
                 flash={flash[b.id] ?? null}
                 active={selected === b.id}
                 nurseHere={nurseHereBed === b.id}
-                revealed={
-                  nurseHereBed === b.id &&
-                  (!ev || !isAvocadoEvent(ev.def) || avocadoAssessed.has(ev.id))
-                }
+                revealed={nurseHereBed === b.id}
                 onTap={() => tapBed(b.id)}
               />
             </div>
@@ -2030,11 +2018,7 @@ export function WardScreen({
                     <div className="min-w-0">
                       <p className="font-display truncate text-base font-black uppercase">
                         {beds[selectedEvent.bed]?.name}
-                        {here
-                          ? isAvocadoEvent(selectedEvent.def) && !avocadoAssessed.has(selectedEvent.id)
-                            ? " — avocado call"
-                            : ` — ${selectedEvent.def.label}`
-                          : " — on my way"}
+                        {here ? ` — ${selectedEvent.def.label}` : " — on my way"}
                       </p>
                       <p
                         className={cn(
@@ -2042,28 +2026,23 @@ export function WardScreen({
                           here ? "text-2xl text-foreground" : "text-base text-muted-foreground",
                         )}
                       >
-                        {here
-                          ? isAvocadoEvent(selectedEvent.def) && !avocadoAssessed.has(selectedEvent.id)
-                            ? selectedEvent.def.callLine
-                            : selectedEvent.def.brief
-                          : "Walking over… you'll see what they want on arrival."}
+                        {here ? (
+                          isAvocadoEvent(selectedEvent.def) ? (
+                            <>
+                              {selectedEvent.def.callLine && (
+                                <span className="block">“{selectedEvent.def.callLine}”</span>
+                              )}
+                              <span className="mt-1 block">{selectedEvent.def.brief}</span>
+                            </>
+                          ) : selectedEvent.def.brief
+                        ) : "Walking over… you'll see what they want on arrival."}
                       </p>
                     </div>
                   </div>
                    {here ? (
-                     <div
-                       className={cn(
-                         "grid gap-1.5",
-                         isAvocadoEvent(selectedEvent.def) && !avocadoAssessed.has(selectedEvent.id)
-                           ? "grid-cols-1"
-                           : "grid-cols-3",
-                       )}
-                     >
-                       {(isAvocadoEvent(selectedEvent.def) && !avocadoAssessed.has(selectedEvent.id)
-                         ? (["ASSESS"] as ActionKind[])
-                         : (Object.keys(selectedEvent.def.options) as ActionKind[]).filter(
-                             (action) => action !== "ASSESS",
-                           )
+                     <div className="grid grid-cols-3 gap-1.5">
+                       {(Object.keys(selectedEvent.def.options) as ActionKind[]).filter(
+                         (action) => action !== "ASSESS",
                        ).map((a) => (
                         <button
                           key={a}
