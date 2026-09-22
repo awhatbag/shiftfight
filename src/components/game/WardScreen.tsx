@@ -561,12 +561,27 @@ export function WardScreen({
     window.setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 1500);
   }, []);
 
+  /* Catastrophe timers live outside React effect cleanup so that a phase
+     change can never cancel the timer that ends the phase. */
+  const avocadoTimers = useRef<number[]>([]);
+  const scheduleAvocado = useCallback((fn: () => void, ms: number) => {
+    const id = window.setTimeout(fn, ms);
+    avocadoTimers.current.push(id);
+  }, []);
+  useEffect(
+    () => () => {
+      avocadoTimers.current.forEach(window.clearTimeout);
+      avocadoTimers.current = [];
+    },
+    [],
+  );
+
   const beginAvocadoAvalanche = useCallback(() => {
     if (avocadoStarted.current || phase !== "play" || mini || miniOffer) return;
     avocadoStarted.current = true;
     setSelected(null);
     setAvocadoPhase("intro");
-    const intro = window.setTimeout(() => {
+    scheduleAvocado(() => {
       suspendedEvents.current = eventsRef.current;
       const shuffled = [...AVOCADO_EVENTS].sort(() => Math.random() - 0.5);
       const nextEvents = Array.from({ length: activeBeds }, (_, bed): ActiveEvent => {
@@ -588,8 +603,7 @@ export function WardScreen({
       playCallBell();
       buzz(35);
     }, 4_200);
-    return () => window.clearTimeout(intro);
-  }, [activeBeds, mini, miniOffer, phase]);
+  }, [activeBeds, mini, miniOffer, phase, scheduleAvocado]);
 
   /* Automatic availability is Level 3 only and always begins with at least
      forty seconds left. Dev Mode can invoke the same contained event directly. */
@@ -652,9 +666,13 @@ export function WardScreen({
     setSelected(null);
     setAvocadoAssessed(new Set());
     setAvocadoPhase("conclusion");
-    const done = window.setTimeout(() => setAvocadoPhase(null), 3_500);
-    return () => window.clearTimeout(done);
-  }, [tick, avocadoPhase]);
+    /* the closing card always clears itself and hands the ward back */
+    scheduleAvocado(() => {
+      setAvocadoPhase(null);
+      setAvocados([]);
+      setAvocadoDevRequested(false);
+    }, 3_500);
+  }, [tick, avocadoPhase, scheduleAvocado]);
 
   /** re-check the shift objectives and pay out any that just completed */
   const checkObjectives = useCallback(() => {
