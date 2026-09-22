@@ -389,6 +389,7 @@ export function WardScreen({
   /* Level 3's self-contained catastrophic event. Normal ward events are
      suspended, never converted into admissions or moved between beds. */
   const [avocadoPhase, setAvocadoPhase] = useState<AvocadoPhase>(null);
+  const [avocadoDevRequested, setAvocadoDevRequested] = useState(false);
   const [avocados, setAvocados] = useState<RollingAvocado[]>([]);
   const [avocadoAssessed, setAvocadoAssessed] = useState<Set<number>>(new Set());
   const avocadoStarted = useRef(false);
@@ -593,18 +594,17 @@ export function WardScreen({
   /* Automatic availability is Level 3 only and always begins with at least
      forty seconds left. Dev Mode can invoke the same contained event directly. */
   useEffect(() => {
+    if (phase !== "play" || avocadoStarted.current) return;
     if (
-      level === 3 &&
-      phase === "play" &&
-      !avocadoStarted.current &&
-      SHIFT_MS - gameT.current >= 40_000 &&
-      gameT.current >= avocadoTriggerT.current
+      avocadoDevRequested ||
+      (level === 3 && SHIFT_MS - gameT.current >= 40_000 && gameT.current >= avocadoTriggerT.current)
     ) {
       beginAvocadoAvalanche();
+      setAvocadoDevRequested(false);
     }
-  }, [tick, level, phase, beginAvocadoAvalanche]);
+  }, [tick, level, phase, avocadoDevRequested, beginAvocadoAvalanche]);
 
-  useEffect(() => onDevCommand("avocadoAvalanche", beginAvocadoAvalanche), [beginAvocadoAvalanche]);
+  useEffect(() => onDevCommand("avocadoAvalanche", () => setAvocadoDevRequested(true)), []);
 
   /* Dense opening wave, easing to a lighter stream. Movement remains a small
      positional effect rather than a physics system. */
