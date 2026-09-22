@@ -283,6 +283,13 @@ export const DEV_CATEGORIES: Category[] = [
           >
             Trigger random patient event
           </button>
+          <button
+            disabled={!ui.info.inShift}
+            onClick={() => emitDevCommand("avocadoAvalanche")}
+            className="chunky-press w-full rounded-2xl bg-alarm py-3 font-display text-sm font-black uppercase text-alarm-foreground disabled:opacity-50"
+          >
+            🥑 Trigger Avocado Avalanche
+          </button>
           {!ui.info.inShift && (
             <p className="text-[11px] text-muted-foreground">
               Start a shift first — events spawn into the live ward.

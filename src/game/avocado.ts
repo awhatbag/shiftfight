@@ -32,7 +32,7 @@ const PROBLEMS: AvocadoProblem[] = [
   { label: "GUAC IN THE NOTES", call: "The paperwork has gone green!", brief: "An avocado has opened across the bedside notes.", correct: "RESPOND", response: "Protect the notes and report the spill" },
   { label: "WALKING AID BLOCKED", call: "My frame has captured an avocado!", brief: "Fruit is wedged at the base of the walking aid.", correct: "INTERVENE", response: "Clear it before the patient mobilises" },
   { label: "AVOCADO TOWER", call: "They are stacking themselves!", brief: "An improbable avocado tower is leaning over the bed.", correct: "ASSIST", response: "Assist with a controlled dismantling" },
-  { label: "MYSTERY THUD", call: "Something keeps thudding under the bed!", brief: "Several avocados are ricocheting beneath the frame.", correct: "ASSESS" as never, response: "Check beneath the bed and assess the hazard" },
+  { label: "MYSTERY THUD", call: "Something keeps thudding under the bed!", brief: "Several avocados are ricocheting beneath the frame.", correct: "INTERVENE", response: "Clear the fruit from beneath the bed" },
   { label: "FRUIT IN FOOTWELL", call: "I cannot put my feet down safely!", brief: "The floor beside the bed is covered in avocados.", correct: "ESCALATE", response: "Escalate and isolate the unsafe floor" },
   { label: "AVOCADO ON OBS MACHINE", call: "The machine has acquired a snack!", brief: "An avocado is resting against the observation equipment.", correct: "ADJUST", response: "Remove it and check the equipment" },
   { label: "GUACAMOLE SPLASH", call: "There has been a green incident!", brief: "A burst avocado has splashed the patient and linen.", correct: "ASSIST", response: "Assist with cleaning and fresh linen" },
@@ -55,7 +55,7 @@ const distractors: Exclude<ActionKind, "ASSESS">[] = [
 ];
 
 export const AVOCADO_EVENTS: EventDef[] = PROBLEMS.map((problem, index) => {
-  const correct = problem.correct === ("ASSESS" as ActionKind) ? "INTERVENE" : problem.correct;
+  const correct = problem.correct;
   const alternatives = distractors.filter((action) => action !== correct);
   const first = alternatives[index % alternatives.length] ?? "RESPOND";
   const second = alternatives[(index * 3 + 2) % alternatives.length] ?? "REASSURE";
@@ -67,6 +67,7 @@ export const AVOCADO_EVENTS: EventDef[] = PROBLEMS.map((problem, index) => {
     correct,
     ttl: AVOCADO_DURATION_MS,
     callBell: true,
+    callLine: problem.call,
     brief: problem.brief,
     options: {
       ASSESS: "Assess what the avocado has actually done",
