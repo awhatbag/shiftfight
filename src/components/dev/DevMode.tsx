@@ -668,14 +668,6 @@ export const DEV_CATEGORIES: Category[] = [
     ),
   },
   {
-    key: "events",
-    name: "Events",
-    icon: "🎉",
-    render: () => (
-      <Placeholder text="Reserved for future special, holiday and catastrophic events. Nothing to test yet." />
-    ),
-  },
-  {
     key: "debug",
     name: "Debug",
     icon: "🐞",
