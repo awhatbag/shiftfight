@@ -271,7 +271,7 @@ export const DEV_CATEGORIES: Category[] = [
   },
   {
     key: "patients",
-    name: "Patients & Events",
+    name: "Patients",
     icon: "🛏️",
     render: (_api, ui) => (
       <div className="space-y-2">
@@ -283,6 +283,23 @@ export const DEV_CATEGORIES: Category[] = [
           >
             Trigger random patient event
           </button>
+          {!ui.info.inShift && (
+            <p className="text-[11px] text-muted-foreground">
+              Start a shift first — events spawn into the live ward.
+            </p>
+          )}
+        </Row>
+        <Placeholder text="Space for future patient testing controls." />
+      </div>
+    ),
+  },
+  {
+    key: "events",
+    name: "Events",
+    icon: "🚨",
+    render: (_api, ui) => (
+      <div className="space-y-2">
+        <Row label="Catastrophic events">
           <button
             onClick={() => emitDevCommand("avocadoAvalanche")}
             className="chunky-press w-full rounded-2xl bg-alarm py-3 font-display text-sm font-black uppercase text-alarm-foreground"
@@ -294,13 +311,8 @@ export const DEV_CATEGORIES: Category[] = [
               Queued for the next live ward.
             </p>
           )}
-          {!ui.info.inShift && (
-            <p className="text-[11px] text-muted-foreground">
-              Start a shift first — events spawn into the live ward.
-            </p>
-          )}
         </Row>
-        <Placeholder text="Space for future patient/event testing controls." />
+        <Placeholder text="Space for future catastrophic events." />
       </div>
     ),
   },
