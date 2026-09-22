@@ -19,6 +19,8 @@ export type EventDef = {
   correct: ActionKind;
   ttl: number; // ms before it goes bad
   callBell?: boolean;
+  /** optional words heard over the bell before the nurse assesses */
+  callLine?: string;
   /** one-line situation read-out shown when the bed is selected */
   brief: string;
   /** the 3 buttons offered for this event + "what this does here" copy */
