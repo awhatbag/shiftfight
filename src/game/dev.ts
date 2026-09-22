@@ -7,16 +7,23 @@
 type Handler = () => void;
 
 const handlers: Record<string, Set<Handler>> = {};
+const pending = new Set<string>();
 
 export function onDevCommand(name: string, fn: Handler): () => void {
   (handlers[name] ??= new Set()).add(fn);
+  if (pending.delete(name)) window.setTimeout(fn, 0);
   return () => {
     handlers[name]?.delete(fn);
   };
 }
 
 export function emitDevCommand(name: string) {
-  handlers[name]?.forEach((fn) => fn());
+  const listeners = handlers[name];
+  if (!listeners?.size) {
+    pending.add(name);
+    return;
+  }
+  listeners.forEach((fn) => fn());
 }
 
 /* ---- live debug info reported by the ward ---- */
