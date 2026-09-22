@@ -8,3 +8,5 @@
 - [x] Verify character selection and ward animations at mobile size (Playwright, 420x900).
 - [x] Apply saved skin and hair colours to the supplied nurse artwork in preview and ward.
 - [x] Verify immediate preview updates, ward consistency, and saved persistence.
+- [ ] Add the Level 3 Avocado Avalanche catastrophe using the supplied artwork.
+- [ ] Add a Dev Mode trigger for the Avocado Avalanche.
