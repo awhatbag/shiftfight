@@ -4,6 +4,11 @@ import curtainAsset from "@/assets/curtain-partition.png.asset.json";
 import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
 import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
 import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
+import avocado1Asset from "@/assets/avocado1.png.asset.json";
+import avocado2Asset from "@/assets/avocado2.png.asset.json";
+import avocado3Asset from "@/assets/avocado3.png.asset.json";
+import donWorriedAsset from "@/assets/DON_worried.png.asset.json";
+import donHappyAsset from "@/assets/DON_happy.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
@@ -61,6 +66,11 @@ import {
   FINAL_WARNING_AT,
   donVisitChance,
 } from "@/game/don";
+import {
+  AVOCADO_DURATION_MS,
+  AVOCADO_EVENTS,
+  isAvocadoEvent,
+} from "@/game/avocado";
 
 export type ShiftStats = {
   level: number;
@@ -98,6 +108,19 @@ type ActiveEvent = {
 
 type Banner = { id: number; title: string; sub: string; good: boolean };
 type Point = { x: number; y: number };
+type AvocadoPhase = null | "intro" | "active" | "conclusion";
+type RollingAvocado = {
+  id: number;
+  art: number;
+  born: number;
+  y: number;
+  endY: number;
+  size: number;
+  speed: number;
+  hitX: number | null;
+  hitAt: number;
+  spin: number;
+};
 
 /** Fixed 890 × 1123 ward-world coordinates, matching the supplied layout mock-up. */
 const BED_SLOTS: Point[] = [
@@ -363,6 +386,18 @@ export function WardScreen({
   const [tutStep, setTutStep] = useState(tutorial ? 0 : -1);
   const tutPause = tutorial && (tutStep === 0 || tutStep === 2);
 
+  /* Level 3's self-contained catastrophic event. Normal ward events are
+     suspended, never converted into admissions or moved between beds. */
+  const [avocadoPhase, setAvocadoPhase] = useState<AvocadoPhase>(null);
+  const [avocados, setAvocados] = useState<RollingAvocado[]>([]);
+  const [avocadoAssessed, setAvocadoAssessed] = useState<Set<number>>(new Set());
+  const avocadoStarted = useRef(false);
+  const avocadoStartT = useRef(0);
+  const avocadoTriggerT = useRef(12_000 + Math.random() * 34_000);
+  const avocadoNextSpawnT = useRef(0);
+  const avocadoUid = useRef(1);
+  const suspendedEvents = useRef<ActiveEvent[]>([]);
+
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
     kind: string;
@@ -477,7 +512,7 @@ export function WardScreen({
   eventsRef.current = events;
 
   const rate =
-    manualPause || settingsOpen || phase !== "play" || miniOffer || tutPause
+    manualPause || settingsOpen || phase !== "play" || miniOffer || tutPause || avocadoPhase === "intro" || avocadoPhase === "conclusion"
       ? 0
       : mini
         ? 1 / 3
@@ -524,6 +559,102 @@ export function WardScreen({
     setBanner({ id, title, sub, good });
     window.setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 1500);
   }, []);
+
+  const beginAvocadoAvalanche = useCallback(() => {
+    if (avocadoStarted.current || phase !== "play" || mini || miniOffer) return;
+    avocadoStarted.current = true;
+    setSelected(null);
+    setAvocadoPhase("intro");
+    const intro = window.setTimeout(() => {
+      suspendedEvents.current = eventsRef.current;
+      const shuffled = [...AVOCADO_EVENTS].sort(() => Math.random() - 0.5);
+      const nextEvents = Array.from({ length: activeBeds }, (_, bed): ActiveEvent => {
+        const def = shuffled[bed % shuffled.length] ?? AVOCADO_EVENTS[0]!;
+        return {
+          id: uid.current++,
+          bed,
+          def,
+          born: gameT.current,
+          ttl: AVOCADO_DURATION_MS + 5_000,
+          scores: rollOutcomes(def),
+        };
+      });
+      setEvents(nextEvents);
+      setAvocadoAssessed(new Set());
+      avocadoStartT.current = gameT.current;
+      avocadoNextSpawnT.current = gameT.current;
+      setAvocadoPhase("active");
+      playCallBell();
+      buzz(35);
+    }, 4_200);
+    return () => window.clearTimeout(intro);
+  }, [activeBeds, mini, miniOffer, phase]);
+
+  /* Automatic availability is Level 3 only and always begins with at least
+     forty seconds left. Dev Mode can invoke the same contained event directly. */
+  useEffect(() => {
+    if (
+      level === 3 &&
+      phase === "play" &&
+      !avocadoStarted.current &&
+      secondsLeft >= 40 &&
+      gameT.current >= avocadoTriggerT.current
+    ) {
+      beginAvocadoAvalanche();
+    }
+  }, [tick, level, phase, secondsLeft, beginAvocadoAvalanche]);
+
+  useEffect(() => onDevCommand("avocadoAvalanche", beginAvocadoAvalanche), [beginAvocadoAvalanche]);
+
+  /* Dense opening wave, easing to a lighter stream. Movement remains a small
+     positional effect rather than a physics system. */
+  useEffect(() => {
+    if (avocadoPhase !== "active") return undefined;
+    const spawn = () => {
+      if (rateRef.current === 0) return;
+      const now = gameT.current;
+      if (now < avocadoNextSpawnT.current) return;
+      const progress = Math.min(1, (now - avocadoStartT.current) / AVOCADO_DURATION_MS);
+      const burst = progress < 0.08 ? 4 : progress < 0.3 ? 2 : 1;
+      const created = Array.from({ length: burst }, () => {
+        const y = 0.33 + Math.random() * 0.59;
+        const diagonal = (Math.random() - 0.5) * 0.1;
+        const rightBed = BED_SLOTS.filter((bed) => bed.x > 0.5).find((bed) => Math.abs(bed.y - y) < 0.045);
+        const leftBed = BED_SLOTS.filter((bed) => bed.x < 0.5).find((bed) => Math.abs(bed.y - y) < 0.04);
+        const hit = rightBed ?? leftBed;
+        const speed = 7_000 + Math.random() * 5_000;
+        const hitX = hit?.x ?? null;
+        return {
+          id: avocadoUid.current++,
+          art: Math.floor(Math.random() * 3),
+          born: now,
+          y,
+          endY: Math.max(0.3, Math.min(0.96, y + diagonal)),
+          size: 5.5 + Math.random() * 1.8,
+          speed,
+          hitX,
+          hitAt: hitX === null ? speed : speed * ((1.08 - hitX) / 1.2),
+          spin: Math.random() > 0.5 ? 1 : -1,
+        } satisfies RollingAvocado;
+      });
+      setAvocados((current) => [...current, ...created]);
+      avocadoNextSpawnT.current = now + 170 + progress * 720 + Math.random() * (180 + progress * 420);
+    };
+    const id = window.setInterval(spawn, 90);
+    return () => window.clearInterval(id);
+  }, [avocadoPhase]);
+
+  useEffect(() => {
+    if (avocadoPhase !== "active") return;
+    if (gameT.current - avocadoStartT.current < AVOCADO_DURATION_MS) return;
+    setEvents(suspendedEvents.current.map((event) => ({ ...event, born: event.born + AVOCADO_DURATION_MS })));
+    suspendedEvents.current = [];
+    setSelected(null);
+    setAvocadoAssessed(new Set());
+    setAvocadoPhase("conclusion");
+    const done = window.setTimeout(() => setAvocadoPhase(null), 3_500);
+    return () => window.clearTimeout(done);
+  }, [tick, avocadoPhase]);
 
   /** re-check the shift objectives and pay out any that just completed */
   const checkObjectives = useCallback(() => {
@@ -601,7 +732,7 @@ export function WardScreen({
 
   /* ---------------- spawner ---------------- */
   useEffect(() => {
-    if (rate === 0) return;
+    if (rate === 0 || avocadoPhase === "active") return;
     const spawnOne = (force: boolean) => {
       const heat = Math.min(1, gameT.current / SHIFT_MS);
       const cur = eventsRef.current;
@@ -650,7 +781,7 @@ export function WardScreen({
       window.clearInterval(id);
       offDev();
     };
-  }, [rate, activeBeds, cfg, upgrades, mods]);
+  }, [rate, activeBeds, cfg, upgrades, mods, avocadoPhase]);
 
   /* ---------------- dev info ---------------- */
   useEffect(() => {
@@ -956,7 +1087,7 @@ export function WardScreen({
       return;
     }
     const b = STAFF_BEHAVIOUR[key];
-    const pick = [...events].filter((e) => !b || e.def.severity <= b.maxSeverity).sort(
+    const pick = [...events].filter((e) => !isAvocadoEvent(e.def) && (!b || e.def.severity <= b.maxSeverity)).sort(
       (a, z) =>
         z.def.severity - a.def.severity ||
         (gameT.current - z.born) / z.ttl - (gameT.current - a.born) / a.ttl,
@@ -996,6 +1127,12 @@ export function WardScreen({
     if (!ev || rate === 0 || nurseHereBed !== ev.bed) return;
     setNurseAction(action === "ASSESS" ? "check" : "interact");
     window.setTimeout(() => setNurseAction("idle"), 620);
+    if (isAvocadoEvent(ev.def) && action === "ASSESS" && !avocadoAssessed.has(ev.id)) {
+      setAvocadoAssessed((current) => new Set(current).add(ev.id));
+      say("ASSESSMENT COMPLETE", ev.def.brief, true);
+      playGood();
+      return;
+    }
     if (tutStep >= 0) {
       setTutStep(-1);
       onTutorialDone?.();
