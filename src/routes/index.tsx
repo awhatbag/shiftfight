@@ -525,6 +525,7 @@ function Game() {
         objectivesDone: s.objectives.filter((o) => o.done).length,
         donVisited: s.donVisited,
         donAnnoyed: s.donAnnoyed,
+        catastrophe: s.catastrophe ?? null,
       },
       jobSecurity,
     );
