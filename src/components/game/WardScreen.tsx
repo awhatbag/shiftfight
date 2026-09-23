@@ -841,6 +841,19 @@ export function WardScreen({
         (5 + e.def.severity * 5) * damageMult(upgrades) * mods.damageMult * cfg.damage;
       stats.current.mistakes++;
       stats.current.overdue++;
+      /* timeouts behave exactly as before; they are only also tallied */
+      if (isAvocadoEvent(e.def)) {
+        avocadoTally.current.missed++;
+        if (avocadoPhaseRef.current === "active") {
+          const bed = e.bed;
+          scheduleAvocado(() => {
+            if (avocadoPhaseRef.current !== "active") return;
+            setEvents((cur) =>
+              cur.some((x) => x.bed === bed) ? cur : [...cur, makeAvocadoEvent(bed)],
+            );
+          }, AVOCADO_RESPAWN_MS);
+        }
+      }
       say("TOO SLOW", e.def.fail, false);
     }
     if (dmg) {
