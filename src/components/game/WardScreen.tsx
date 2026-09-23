@@ -1841,16 +1841,35 @@ export function WardScreen({
           </div>
         )}
 
-        {avocadoPhase === "conclusion" && (
+        {avocadoPhase === "conclusion" && avocadoResult && (
           <div className="absolute inset-0 z-[90] grid place-items-center bg-background/90 p-4 backdrop-blur-sm">
-            <div className="animate-pop w-full max-w-sm rounded-3xl border-4 border-calm bg-card p-4 text-center shadow-2xl">
+            <div
+              className={`animate-pop w-full max-w-sm rounded-3xl border-4 bg-card p-4 text-center shadow-2xl ${
+                avocadoResult.outcome === "positive"
+                  ? "border-calm"
+                  : avocadoResult.outcome === "neutral"
+                    ? "border-gold"
+                    : "border-alarm"
+              }`}
+            >
               <img
-                src={donHappyAsset.url}
-                alt="Happy Director of Nursing"
+                src={
+                  avocadoResult.outcome === "positive"
+                    ? donHappyAsset.url
+                    : avocadoResult.outcome === "neutral"
+                      ? donDisappointedAsset.url
+                      : donAngryAsset.url
+                }
+                alt="Director of Nursing"
                 className="mx-auto h-44 w-auto object-contain [image-rendering:pixelated]"
               />
-              <h3 className="font-display text-2xl font-black uppercase leading-none text-calm-foreground">✅ Avocado Avalanche Contained</h3>
-              <p className="mt-3 text-base font-bold">DON: “Good work. Facilities has requested that nobody mention the guacamole.”</p>
+              <h3 className="font-display text-2xl font-black uppercase leading-none">{avocadoResult.title}</h3>
+              <p className="mt-3 text-base font-bold">DON: “{avocadoResult.line}”</p>
+              <p className="mt-3 text-xs font-bold uppercase opacity-70">
+                {avocadoTally.current.generated} problems · {avocadoTally.current.best} best ·{" "}
+                {avocadoTally.current.sortOf} sort of · {avocadoTally.current.worst} worst ·{" "}
+                {avocadoTally.current.missed} missed
+              </p>
             </div>
           </div>
         )}
