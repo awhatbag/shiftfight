@@ -625,18 +625,22 @@ export function WardScreen({
     if (avocadoStarted.current || phase !== "play" || mini || miniOffer) return;
     avocadoStarted.current = true;
     setSelected(null);
+    setAvocadoIntroLabel(nextAvalancheButtonLabel());
     setAvocadoPhase("intro");
-    scheduleAvocado(() => {
-      suspendedEvents.current = eventsRef.current;
-      avocadoTally.current = emptyTally();
-      setEvents(Array.from({ length: activeBeds }, (_, bed) => makeAvocadoEvent(bed)));
-      avocadoStartT.current = gameT.current;
-      avocadoNextSpawnT.current = gameT.current;
-      setAvocadoPhase("active");
-      playCallBell();
-      buzz(35);
-    }, 4_200);
-  }, [activeBeds, makeAvocadoEvent, mini, miniOffer, phase, scheduleAvocado]);
+  }, [mini, miniOffer, phase]);
+
+  /* the announcement stays up until the player dismisses it */
+  const startAvocadoAvalanche = useCallback(() => {
+    if (avocadoPhaseRef.current !== "intro") return;
+    setAvocadoPhase("active");
+    suspendedEvents.current = eventsRef.current;
+    avocadoTally.current = emptyTally();
+    setEvents(Array.from({ length: activeBeds }, (_, bed) => makeAvocadoEvent(bed)));
+    avocadoStartT.current = gameT.current;
+    avocadoNextSpawnT.current = gameT.current;
+    playCallBell();
+    buzz(35);
+  }, [activeBeds, makeAvocadoEvent]);
 
   /* Automatic availability is Level 3 only and always begins with at least
      forty seconds left. Dev Mode can invoke the same contained event directly. */
