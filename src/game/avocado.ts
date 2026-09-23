@@ -67,7 +67,9 @@ export const AVOCADO_EVENTS: EventDef[] = PROBLEMS.map((problem, index) => {
     icon: index % 3 === 0 ? "🥑" : index % 3 === 1 ? "🟢" : "💥",
     severity: index % 7 === 0 ? 3 : index % 3 === 0 ? 2 : 1,
     correct,
-    ttl: AVOCADO_DURATION_MS,
+    // same base countdown band as ordinary problems of this severity
+    ttl: index % 7 === 0 ? 11_500 : index % 3 === 0 ? 14_000 : 17_000,
+
     callBell: true,
     callLine: problem.call,
     brief: problem.brief,
