@@ -591,6 +591,20 @@ export function WardScreen({
     [],
   );
 
+  /** one temporary avocado problem, using the normal patient problem shape */
+  const makeAvocadoEvent = useCallback((bed: number): ActiveEvent => {
+    const def = AVOCADO_EVENTS[Math.floor(Math.random() * AVOCADO_EVENTS.length)] ?? AVOCADO_EVENTS[0]!;
+    avocadoTally.current.generated += 1;
+    return {
+      id: uid.current++,
+      bed,
+      def,
+      born: gameT.current,
+      ttl: AVOCADO_PROBLEM_TTL_MS,
+      scores: rollOutcomes(def),
+    };
+  }, []);
+
   const beginAvocadoAvalanche = useCallback(() => {
     if (avocadoStarted.current || phase !== "play" || mini || miniOffer) return;
     avocadoStarted.current = true;
@@ -598,26 +612,15 @@ export function WardScreen({
     setAvocadoPhase("intro");
     scheduleAvocado(() => {
       suspendedEvents.current = eventsRef.current;
-      const shuffled = [...AVOCADO_EVENTS].sort(() => Math.random() - 0.5);
-      const nextEvents = Array.from({ length: activeBeds }, (_, bed): ActiveEvent => {
-        const def = shuffled[bed % shuffled.length] ?? AVOCADO_EVENTS[0]!;
-        return {
-          id: uid.current++,
-          bed,
-          def,
-          born: gameT.current,
-          ttl: AVOCADO_DURATION_MS + 5_000,
-          scores: rollOutcomes(def),
-        };
-      });
-      setEvents(nextEvents);
+      avocadoTally.current = emptyTally();
+      setEvents(Array.from({ length: activeBeds }, (_, bed) => makeAvocadoEvent(bed)));
       avocadoStartT.current = gameT.current;
       avocadoNextSpawnT.current = gameT.current;
       setAvocadoPhase("active");
       playCallBell();
       buzz(35);
     }, 4_200);
-  }, [activeBeds, mini, miniOffer, phase, scheduleAvocado]);
+  }, [activeBeds, makeAvocadoEvent, mini, miniOffer, phase, scheduleAvocado]);
 
   /* Automatic availability is Level 3 only and always begins with at least
      forty seconds left. Dev Mode can invoke the same contained event directly. */
