@@ -67,7 +67,9 @@ export const AVOCADO_EVENTS: EventDef[] = PROBLEMS.map((problem, index) => {
     icon: index % 3 === 0 ? "🥑" : index % 3 === 1 ? "🟢" : "💥",
     severity: index % 7 === 0 ? 3 : index % 3 === 0 ? 2 : 1,
     correct,
-    ttl: AVOCADO_DURATION_MS,
+    // same base countdown band as ordinary problems of this severity
+    ttl: index % 7 === 0 ? 11_500 : index % 3 === 0 ? 14_000 : 17_000,
+
     callBell: true,
     callLine: problem.call,
     brief: problem.brief,
@@ -83,9 +85,6 @@ export const AVOCADO_EVENTS: EventDef[] = PROBLEMS.map((problem, index) => {
 });
 
 export const isAvocadoEvent = (event: EventDef) => event.key.startsWith(AVOCADO_KEY_PREFIX);
-
-/** each avocado problem runs on a normal, short patient countdown */
-export const AVOCADO_PROBLEM_TTL_MS = 9_500;
 /** breathing space before the same patient gets another silly problem */
 export const AVOCADO_RESPAWN_MS = 500;
 

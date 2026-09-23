@@ -71,7 +71,6 @@ import {
 import {
   AVOCADO_DURATION_MS,
   AVOCADO_EVENTS,
-  AVOCADO_PROBLEM_TTL_MS,
   AVOCADO_RESPAWN_MS,
   avalancheConclusion,
   emptyTally,
@@ -593,19 +592,30 @@ export function WardScreen({
     [],
   );
 
-  /** one temporary avocado problem, using the normal patient problem shape */
+  /** one temporary avocado problem, using the normal patient problem shape.
+      Catastrophe problems use the SAME countdown as ordinary problems on this
+      level, including bed upgrades, gear and shift heat. */
   const makeAvocadoEvent = useCallback((bed: number): ActiveEvent => {
     const def = AVOCADO_EVENTS[Math.floor(Math.random() * AVOCADO_EVENTS.length)] ?? AVOCADO_EVENTS[0]!;
     avocadoTally.current.generated += 1;
+    const heat = Math.min(1, gameT.current / SHIFT_MS);
+    const u = URGENCY_META[urgencyOf(def)];
     return {
       id: uid.current++,
       bed,
       def,
       born: gameT.current,
-      ttl: AVOCADO_PROBLEM_TTL_MS,
+      ttl:
+        def.ttl *
+        ttlMult(upgrades) *
+        mods.ttlMult *
+        u.mult *
+        cfg.timeMult *
+        (1 - heat * 0.18),
       scores: rollOutcomes(def),
     };
-  }, []);
+  }, [upgrades, mods, cfg]);
+
 
   const beginAvocadoAvalanche = useCallback(() => {
     if (avocadoStarted.current || phase !== "play" || mini || miniOffer) return;
