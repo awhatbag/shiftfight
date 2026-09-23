@@ -408,6 +408,8 @@ export function WardScreen({
   const avocadoNextSpawnT = useRef(0);
   const avocadoUid = useRef(1);
   const suspendedEvents = useRef<ActiveEvent[]>([]);
+  const avocadoPhaseRef = useRef<AvocadoPhase>(null);
+  avocadoPhaseRef.current = avocadoPhase;
   /** temporary tally used only to grade the catastrophe */
   const avocadoTally = useRef<AvocadoTally>(emptyTally());
   const [avocadoResult, setAvocadoResult] = useState<
