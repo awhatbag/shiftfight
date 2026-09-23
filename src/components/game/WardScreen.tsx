@@ -9,6 +9,8 @@ import avocado2Asset from "@/assets/avocado2.png.asset.json";
 import avocado3Asset from "@/assets/avocado3.png.asset.json";
 import donWorriedAsset from "@/assets/DON_worried.png.asset.json";
 import donHappyAsset from "@/assets/DON_happy.png.asset.json";
+import donDisappointedAsset from "@/assets/DON_disappointed.png.asset.json";
+import donAngryAsset from "@/assets/DON_angry.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
@@ -69,7 +71,14 @@ import {
 import {
   AVOCADO_DURATION_MS,
   AVOCADO_EVENTS,
+  AVOCADO_PROBLEM_TTL_MS,
+  AVOCADO_RESPAWN_MS,
+  avalancheConclusion,
+  emptyTally,
+  gradeAvalanche,
   isAvocadoEvent,
+  type AvocadoTally,
+  type CatastropheOutcome,
 } from "@/game/avocado";
 
 export type ShiftStats = {
@@ -93,6 +102,8 @@ export type ShiftStats = {
   overdue: number;
   donVisited: boolean;
   donAnnoyed: number;
+  /** outcome of a catastrophic event, when one ran this shift */
+  catastrophe?: CatastropheOutcome | null;
 };
 
 
@@ -397,6 +408,13 @@ export function WardScreen({
   const avocadoNextSpawnT = useRef(0);
   const avocadoUid = useRef(1);
   const suspendedEvents = useRef<ActiveEvent[]>([]);
+  const avocadoPhaseRef = useRef<AvocadoPhase>(null);
+  avocadoPhaseRef.current = avocadoPhase;
+  /** temporary tally used only to grade the catastrophe */
+  const avocadoTally = useRef<AvocadoTally>(emptyTally());
+  const [avocadoResult, setAvocadoResult] = useState<
+    { outcome: CatastropheOutcome; title: string; line: string } | null
+  >(null);
 
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
@@ -575,6 +593,20 @@ export function WardScreen({
     [],
   );
 
+  /** one temporary avocado problem, using the normal patient problem shape */
+  const makeAvocadoEvent = useCallback((bed: number): ActiveEvent => {
+    const def = AVOCADO_EVENTS[Math.floor(Math.random() * AVOCADO_EVENTS.length)] ?? AVOCADO_EVENTS[0]!;
+    avocadoTally.current.generated += 1;
+    return {
+      id: uid.current++,
+      bed,
+      def,
+      born: gameT.current,
+      ttl: AVOCADO_PROBLEM_TTL_MS,
+      scores: rollOutcomes(def),
+    };
+  }, []);
+
   const beginAvocadoAvalanche = useCallback(() => {
     if (avocadoStarted.current || phase !== "play" || mini || miniOffer) return;
     avocadoStarted.current = true;
@@ -582,26 +614,15 @@ export function WardScreen({
     setAvocadoPhase("intro");
     scheduleAvocado(() => {
       suspendedEvents.current = eventsRef.current;
-      const shuffled = [...AVOCADO_EVENTS].sort(() => Math.random() - 0.5);
-      const nextEvents = Array.from({ length: activeBeds }, (_, bed): ActiveEvent => {
-        const def = shuffled[bed % shuffled.length] ?? AVOCADO_EVENTS[0]!;
-        return {
-          id: uid.current++,
-          bed,
-          def,
-          born: gameT.current,
-          ttl: AVOCADO_DURATION_MS + 5_000,
-          scores: rollOutcomes(def),
-        };
-      });
-      setEvents(nextEvents);
+      avocadoTally.current = emptyTally();
+      setEvents(Array.from({ length: activeBeds }, (_, bed) => makeAvocadoEvent(bed)));
       avocadoStartT.current = gameT.current;
       avocadoNextSpawnT.current = gameT.current;
       setAvocadoPhase("active");
       playCallBell();
       buzz(35);
     }, 4_200);
-  }, [activeBeds, mini, miniOffer, phase, scheduleAvocado]);
+  }, [activeBeds, makeAvocadoEvent, mini, miniOffer, phase, scheduleAvocado]);
 
   /* Automatic availability is Level 3 only and always begins with at least
      forty seconds left. Dev Mode can invoke the same contained event directly. */
@@ -662,13 +683,19 @@ export function WardScreen({
     setEvents(suspendedEvents.current.map((event) => ({ ...event, born: event.born + AVOCADO_DURATION_MS })));
     suspendedEvents.current = [];
     setSelected(null);
+    /* grade the catastrophe from the outcomes normal gameplay produced */
+    const outcome = gradeAvalanche(avocadoTally.current);
+    stats.current.catastrophe = outcome;
+    setAvocadoResult({ outcome, ...avalancheConclusion(outcome) });
     setAvocadoPhase("conclusion");
     /* the closing card always clears itself and hands the ward back */
     scheduleAvocado(() => {
       setAvocadoPhase(null);
       setAvocados([]);
+      setAvocadoResult(null);
       setAvocadoDevRequested(false);
-    }, 3_500);
+      avocadoTally.current = emptyTally();
+    }, 4_000);
   }, [tick, avocadoPhase, scheduleAvocado]);
 
   /** re-check the shift objectives and pay out any that just completed */
@@ -816,6 +843,19 @@ export function WardScreen({
         (5 + e.def.severity * 5) * damageMult(upgrades) * mods.damageMult * cfg.damage;
       stats.current.mistakes++;
       stats.current.overdue++;
+      /* timeouts behave exactly as before; they are only also tallied */
+      if (isAvocadoEvent(e.def)) {
+        avocadoTally.current.missed++;
+        if (avocadoPhaseRef.current === "active") {
+          const bed = e.bed;
+          scheduleAvocado(() => {
+            if (avocadoPhaseRef.current !== "active") return;
+            setEvents((cur) =>
+              cur.some((x) => x.bed === bed) ? cur : [...cur, makeAvocadoEvent(bed)],
+            );
+          }, AVOCADO_RESPAWN_MS);
+        }
+      }
       say("TOO SLOW", e.def.fail, false);
     }
     if (dmg) {
@@ -1150,6 +1190,21 @@ export function WardScreen({
     const correct = mult === 1;
     setEvents((cur) => cur.filter((e) => e.id !== ev.id));
     setSelected(null);
+    /* catastrophe tally only — normal scoring below is untouched */
+    if (isAvocadoEvent(ev.def)) {
+      if (correct) avocadoTally.current.best++;
+      else if (mult > 0) avocadoTally.current.sortOf++;
+      else avocadoTally.current.worst++;
+      if (avocadoPhaseRef.current === "active") {
+        const bed = ev.bed;
+        scheduleAvocado(() => {
+          if (avocadoPhaseRef.current !== "active") return;
+          setEvents((cur) =>
+            cur.some((x) => x.bed === bed) ? cur : [...cur, makeAvocadoEvent(bed)],
+          );
+        }, AVOCADO_RESPAWN_MS);
+      }
+    }
     setFlash((f) => ({ ...f, [ev.bed]: correct ? "good" : "bad" }));
     window.setTimeout(() => setFlash((f) => ({ ...f, [ev.bed]: null })), 500);
 
@@ -1786,16 +1841,35 @@ export function WardScreen({
           </div>
         )}
 
-        {avocadoPhase === "conclusion" && (
+        {avocadoPhase === "conclusion" && avocadoResult && (
           <div className="absolute inset-0 z-[90] grid place-items-center bg-background/90 p-4 backdrop-blur-sm">
-            <div className="animate-pop w-full max-w-sm rounded-3xl border-4 border-calm bg-card p-4 text-center shadow-2xl">
+            <div
+              className={`animate-pop w-full max-w-sm rounded-3xl border-4 bg-card p-4 text-center shadow-2xl ${
+                avocadoResult.outcome === "positive"
+                  ? "border-calm"
+                  : avocadoResult.outcome === "neutral"
+                    ? "border-gold"
+                    : "border-alarm"
+              }`}
+            >
               <img
-                src={donHappyAsset.url}
-                alt="Happy Director of Nursing"
+                src={
+                  avocadoResult.outcome === "positive"
+                    ? donHappyAsset.url
+                    : avocadoResult.outcome === "neutral"
+                      ? donDisappointedAsset.url
+                      : donAngryAsset.url
+                }
+                alt="Director of Nursing"
                 className="mx-auto h-44 w-auto object-contain [image-rendering:pixelated]"
               />
-              <h3 className="font-display text-2xl font-black uppercase leading-none text-calm-foreground">✅ Avocado Avalanche Contained</h3>
-              <p className="mt-3 text-base font-bold">DON: “Good work. Facilities has requested that nobody mention the guacamole.”</p>
+              <h3 className="font-display text-2xl font-black uppercase leading-none">{avocadoResult.title}</h3>
+              <p className="mt-3 text-base font-bold">DON: “{avocadoResult.line}”</p>
+              <p className="mt-3 text-xs font-bold uppercase opacity-70">
+                {avocadoTally.current.generated} problems · {avocadoTally.current.best} best ·{" "}
+                {avocadoTally.current.sortOf} sort of · {avocadoTally.current.worst} worst ·{" "}
+                {avocadoTally.current.missed} missed
+              </p>
             </div>
           </div>
         )}
