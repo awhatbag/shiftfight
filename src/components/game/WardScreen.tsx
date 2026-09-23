@@ -71,7 +71,6 @@ import {
 import {
   AVOCADO_DURATION_MS,
   AVOCADO_EVENTS,
-  AVOCADO_PROBLEM_TTL_MS,
   AVOCADO_RESPAWN_MS,
   avalancheConclusion,
   emptyTally,

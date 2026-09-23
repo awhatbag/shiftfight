@@ -85,9 +85,6 @@ export const AVOCADO_EVENTS: EventDef[] = PROBLEMS.map((problem, index) => {
 });
 
 export const isAvocadoEvent = (event: EventDef) => event.key.startsWith(AVOCADO_KEY_PREFIX);
-
-/** each avocado problem runs on a normal, short patient countdown */
-export const AVOCADO_PROBLEM_TTL_MS = 9_500;
 /** breathing space before the same patient gets another silly problem */
 export const AVOCADO_RESPAWN_MS = 500;
 
