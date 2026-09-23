@@ -2125,9 +2125,7 @@ export function WardScreen({
                   </div>
                    {here ? (
                      <div className="grid grid-cols-3 gap-1.5">
-                       {(Object.keys(selectedEvent.def.options) as ActionKind[]).filter(
-                         (action) => action !== "ASSESS",
-                       ).map((a) => (
+                       {(Object.keys(selectedEvent.def.options) as ActionKind[]).map((a) => (
                         <button
                           key={a}
                           onClick={() => doAction(a)}

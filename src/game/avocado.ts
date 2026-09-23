@@ -74,7 +74,6 @@ export const AVOCADO_EVENTS: EventDef[] = PROBLEMS.map((problem, index) => {
     callLine: problem.call,
     brief: problem.brief,
     options: {
-      ASSESS: "Assess what the avocado has actually done",
       [correct]: problem.response,
       [first]: `Try ${first.toLowerCase()} instead`,
       [second]: `Try ${second.toLowerCase()} instead`,
