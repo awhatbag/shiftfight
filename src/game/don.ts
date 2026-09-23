@@ -82,6 +82,8 @@ export type ReviewInput = {
   objectivesDone: number;
   donVisited: boolean;
   donAnnoyed: number;
+  /** result of a catastrophic event, when one ran this shift */
+  catastrophe?: "positive" | "neutral" | "negative" | null;
 };
 
 export type ShiftReview = {
