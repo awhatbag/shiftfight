@@ -102,6 +102,8 @@ export type ShiftStats = {
   overdue: number;
   donVisited: boolean;
   donAnnoyed: number;
+  /** outcome of a catastrophic event, when one ran this shift */
+  catastrophe?: CatastropheOutcome | null;
 };
 
 
@@ -406,6 +408,11 @@ export function WardScreen({
   const avocadoNextSpawnT = useRef(0);
   const avocadoUid = useRef(1);
   const suspendedEvents = useRef<ActiveEvent[]>([]);
+  /** temporary tally used only to grade the catastrophe */
+  const avocadoTally = useRef<AvocadoTally>(emptyTally());
+  const [avocadoResult, setAvocadoResult] = useState<
+    { outcome: CatastropheOutcome; title: string; line: string } | null
+  >(null);
 
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
