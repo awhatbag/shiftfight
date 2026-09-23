@@ -416,6 +416,8 @@ export function WardScreen({
   const [avocadoResult, setAvocadoResult] = useState<
     { outcome: CatastropheOutcome; title: string; line: string } | null
   >(null);
+  /** rotating label for the intro announcement's continue button */
+  const [avocadoIntroLabel, setAvocadoIntroLabel] = useState("Brace for guac ▶");
 
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
