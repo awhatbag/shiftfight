@@ -681,13 +681,19 @@ export function WardScreen({
     setEvents(suspendedEvents.current.map((event) => ({ ...event, born: event.born + AVOCADO_DURATION_MS })));
     suspendedEvents.current = [];
     setSelected(null);
+    /* grade the catastrophe from the outcomes normal gameplay produced */
+    const outcome = gradeAvalanche(avocadoTally.current);
+    stats.current.catastrophe = outcome;
+    setAvocadoResult({ outcome, ...avalancheConclusion(outcome) });
     setAvocadoPhase("conclusion");
     /* the closing card always clears itself and hands the ward back */
     scheduleAvocado(() => {
       setAvocadoPhase(null);
       setAvocados([]);
+      setAvocadoResult(null);
       setAvocadoDevRequested(false);
-    }, 3_500);
+      avocadoTally.current = emptyTally();
+    }, 4_000);
   }, [tick, avocadoPhase, scheduleAvocado]);
 
   /** re-check the shift objectives and pay out any that just completed */
