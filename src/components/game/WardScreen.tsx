@@ -25,6 +25,7 @@ import {
   playBad,
   playCallBell,
   playGood,
+  playForwardClick,
   playRoundBells,
   playWhistle,
   primeAudio,
@@ -76,6 +77,7 @@ import {
   emptyTally,
   gradeAvalanche,
   isAvocadoEvent,
+  nextAvalancheButtonLabel,
   type AvocadoTally,
   type CatastropheOutcome,
 } from "@/game/avocado";
