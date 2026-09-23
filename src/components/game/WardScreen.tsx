@@ -9,6 +9,8 @@ import avocado2Asset from "@/assets/avocado2.png.asset.json";
 import avocado3Asset from "@/assets/avocado3.png.asset.json";
 import donWorriedAsset from "@/assets/DON_worried.png.asset.json";
 import donHappyAsset from "@/assets/DON_happy.png.asset.json";
+import donDisappointedAsset from "@/assets/DON_disappointed.png.asset.json";
+import donAngryAsset from "@/assets/DON_angry.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
@@ -69,7 +71,14 @@ import {
 import {
   AVOCADO_DURATION_MS,
   AVOCADO_EVENTS,
+  AVOCADO_PROBLEM_TTL_MS,
+  AVOCADO_RESPAWN_MS,
+  avalancheConclusion,
+  emptyTally,
+  gradeAvalanche,
   isAvocadoEvent,
+  type AvocadoTally,
+  type CatastropheOutcome,
 } from "@/game/avocado";
 
 export type ShiftStats = {
