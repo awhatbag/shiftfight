@@ -1855,6 +1855,15 @@ export function WardScreen({
               <p className="mt-3 text-sm font-bold">“A supermarket promotional display has collapsed.”</p>
               <p className="mt-2 text-sm font-bold">“Approximately 8,000 avocados are currently rolling towards the hospital.”</p>
               <p className="mt-2 text-sm font-black">“Please remain calm.”</p>
+              <button
+                onClick={() => {
+                  playForwardClick();
+                  startAvocadoAvalanche();
+                }}
+                className="chunky chunky-press mt-4 w-full rounded-2xl bg-alarm py-4 font-display text-xl font-black uppercase text-alarm-foreground"
+              >
+                {avocadoIntroLabel}
+              </button>
             </div>
           </div>
         )}
