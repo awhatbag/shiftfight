@@ -1190,6 +1190,21 @@ export function WardScreen({
     const correct = mult === 1;
     setEvents((cur) => cur.filter((e) => e.id !== ev.id));
     setSelected(null);
+    /* catastrophe tally only — normal scoring below is untouched */
+    if (isAvocadoEvent(ev.def)) {
+      if (correct) avocadoTally.current.best++;
+      else if (mult > 0) avocadoTally.current.sortOf++;
+      else avocadoTally.current.worst++;
+      if (avocadoPhaseRef.current === "active") {
+        const bed = ev.bed;
+        scheduleAvocado(() => {
+          if (avocadoPhaseRef.current !== "active") return;
+          setEvents((cur) =>
+            cur.some((x) => x.bed === bed) ? cur : [...cur, makeAvocadoEvent(bed)],
+          );
+        }, AVOCADO_RESPAWN_MS);
+      }
+    }
     setFlash((f) => ({ ...f, [ev.bed]: correct ? "good" : "bad" }));
     window.setTimeout(() => setFlash((f) => ({ ...f, [ev.bed]: null })), 500);
 
