@@ -170,3 +170,14 @@ export function avalancheConclusion(outcome: CatastropheOutcome): Conclusion {
   const pool = Math.random() < 0.12 && rare.length ? rare : common;
   return pool[Math.floor(Math.random() * pool.length)] ?? common[0]!;
 }
+
+/* The intro announcement waits for the player. Its button name rotates
+   through the three labels so repeat catastrophes stay fresh. */
+const INTRO_BUTTONS = ["Brace for guac ▶", "Let's guac & roll ▶", "To the pits! ▶"] as const;
+let introButtonIndex = 0;
+
+export function nextAvalancheButtonLabel(): string {
+  const label = INTRO_BUTTONS[introButtonIndex % INTRO_BUTTONS.length]!;
+  introButtonIndex++;
+  return label;
+}

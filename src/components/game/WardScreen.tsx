@@ -25,6 +25,7 @@ import {
   playBad,
   playCallBell,
   playGood,
+  playForwardClick,
   playRoundBells,
   playWhistle,
   primeAudio,
@@ -76,6 +77,7 @@ import {
   emptyTally,
   gradeAvalanche,
   isAvocadoEvent,
+  nextAvalancheButtonLabel,
   type AvocadoTally,
   type CatastropheOutcome,
 } from "@/game/avocado";
@@ -414,6 +416,8 @@ export function WardScreen({
   const [avocadoResult, setAvocadoResult] = useState<
     { outcome: CatastropheOutcome; title: string; line: string } | null
   >(null);
+  /** rotating label for the intro announcement's continue button */
+  const [avocadoIntroLabel, setAvocadoIntroLabel] = useState("Brace for guac ▶");
 
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
@@ -621,18 +625,22 @@ export function WardScreen({
     if (avocadoStarted.current || phase !== "play" || mini || miniOffer) return;
     avocadoStarted.current = true;
     setSelected(null);
+    setAvocadoIntroLabel(nextAvalancheButtonLabel());
     setAvocadoPhase("intro");
-    scheduleAvocado(() => {
-      suspendedEvents.current = eventsRef.current;
-      avocadoTally.current = emptyTally();
-      setEvents(Array.from({ length: activeBeds }, (_, bed) => makeAvocadoEvent(bed)));
-      avocadoStartT.current = gameT.current;
-      avocadoNextSpawnT.current = gameT.current;
-      setAvocadoPhase("active");
-      playCallBell();
-      buzz(35);
-    }, 4_200);
-  }, [activeBeds, makeAvocadoEvent, mini, miniOffer, phase, scheduleAvocado]);
+  }, [mini, miniOffer, phase]);
+
+  /* the announcement stays up until the player dismisses it */
+  const startAvocadoAvalanche = useCallback(() => {
+    if (avocadoPhaseRef.current !== "intro") return;
+    setAvocadoPhase("active");
+    suspendedEvents.current = eventsRef.current;
+    avocadoTally.current = emptyTally();
+    setEvents(Array.from({ length: activeBeds }, (_, bed) => makeAvocadoEvent(bed)));
+    avocadoStartT.current = gameT.current;
+    avocadoNextSpawnT.current = gameT.current;
+    playCallBell();
+    buzz(35);
+  }, [activeBeds, makeAvocadoEvent]);
 
   /* Automatic availability is Level 3 only and always begins with at least
      forty seconds left. Dev Mode can invoke the same contained event directly. */
@@ -1847,6 +1855,15 @@ export function WardScreen({
               <p className="mt-3 text-sm font-bold">“A supermarket promotional display has collapsed.”</p>
               <p className="mt-2 text-sm font-bold">“Approximately 8,000 avocados are currently rolling towards the hospital.”</p>
               <p className="mt-2 text-sm font-black">“Please remain calm.”</p>
+              <button
+                onClick={() => {
+                  playForwardClick();
+                  startAvocadoAvalanche();
+                }}
+                className="chunky chunky-press mt-4 w-full rounded-2xl bg-alarm py-4 font-display text-xl font-black uppercase text-alarm-foreground"
+              >
+                {avocadoIntroLabel}
+              </button>
             </div>
           </div>
         )}
