@@ -1,0 +1,6 @@
+---
+name: Catastrophe timer rule
+description: Catastrophe event patient problems must use the same countdown as normal problems in the player's level, including upgrades/gear/heat
+type: feature
+---
+Patient problems generated during any catastrophe (e.g. Avocado Avalanche) must run on the SAME countdown formula as ordinary patient problems in the player's current level: def.ttl × ttlMult(upgrades) × mods.ttlMult × URGENCY_META.mult × cfg.timeMult × (1 − heat × 0.18). Never use a fixed catastrophe-specific timer. Equipped gear and bed upgrades must affect catastrophe timers. Applies to all future catastrophes.
