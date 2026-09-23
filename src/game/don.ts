@@ -165,6 +165,10 @@ export function reviewShift(s: ReviewInput, jobSecurity: number): ShiftReview {
   /** one bad moment shouldn't sink you; sustained chaos should */
   if (stars <= 2 && s.mistakes <= 1 && !s.collapsed) delta = Math.round(delta / 2);
   if (s.donVisited && stars >= 4) delta += 2;
+  /** a catastrophic event matters, without deciding the whole game */
+  const catastropheDelta =
+    s.catastrophe === "positive" ? 8 : s.catastrophe === "negative" ? -9 : s.catastrophe === "neutral" ? 1 : 0;
+  delta += catastropheDelta;
 
   const before = clampSecurity(jobSecurity);
   const after = clampSecurity(before + delta);
