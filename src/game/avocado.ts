@@ -83,3 +83,92 @@ export const AVOCADO_EVENTS: EventDef[] = PROBLEMS.map((problem, index) => {
 });
 
 export const isAvocadoEvent = (event: EventDef) => event.key.startsWith(AVOCADO_KEY_PREFIX);
+
+/** each avocado problem runs on a normal, short patient countdown */
+export const AVOCADO_PROBLEM_TTL_MS = 9_500;
+/** breathing space before the same patient gets another silly problem */
+export const AVOCADO_RESPAWN_MS = 500;
+
+export type AvocadoTally = {
+  generated: number;
+  best: number;
+  sortOf: number;
+  worst: number;
+  missed: number;
+};
+
+export type CatastropheOutcome = "positive" | "neutral" | "negative";
+
+export const emptyTally = (): AvocadoTally => ({
+  generated: 0, best: 0, sortOf: 0, worst: 0, missed: 0,
+});
+
+/** grade the catastrophe from the outcomes the existing gameplay produced */
+export function gradeAvalanche(t: AvocadoTally): CatastropheOutcome {
+  const resolved = t.best + t.sortOf + t.worst + t.missed;
+  if (!resolved) return "negative";
+  const score = (t.best * 1 + t.sortOf * 0.4 - t.worst * 0.6 - t.missed * 1) / resolved;
+  if (score >= 0.55) return "positive";
+  if (score >= 0.1) return "neutral";
+  return "negative";
+}
+
+type Conclusion = { title: string; line: string };
+
+const POSITIVE: Conclusion[] = [
+  { title: "🥑 The avocados have been contained", line: "Excellent work. I haven't seen avocado-related competence like that in years." },
+  { title: "🥑 Avocados: defeated", line: "Excellent work. The avocados have been dealt with." },
+  { title: "🥑 Guacamole disaster averted", line: "Outstanding. Nobody mention this to Facilities." },
+  { title: "🥑 The Guacening has been prevented", line: "Outstanding. The hospital remains substantially less guacamole-based than it could have been." },
+  { title: "🥑 Avocado situation: under control", line: "Excellent work. Please don't ask where the remaining 400 went." },
+  { title: "🥑 Zero avocados, zero problems", line: "Well done. Technically there are still avocados everywhere, but we're calling that a win." },
+];
+
+const POSITIVE_RARE: Conclusion[] = [
+  { title: "🥑 Holy guacamole", line: "I genuinely have no idea how we're going to explain this." },
+];
+
+const NEUTRAL: Conclusion[] = [
+  { title: "🥑 We have survived the avocados", line: "I'm not sure that's the same thing as success, but we'll take it." },
+  { title: "🥑 Avocado incident: mostly fine", line: "That could have gone considerably worse." },
+  { title: "🥑 Guacamole levels: acceptable", line: "I'm choosing to call that a success." },
+  { title: "🥑 Avocados have been… mostly managed", line: "I've seen worse. I've also seen significantly fewer avocados." },
+  { title: "🥑 Avocado situation: containedish", line: "I'll accept that." },
+  { title: "🥑 Avocado damage: moderate", line: "Nobody died. Nobody ask me about the beds." },
+];
+
+const NEUTRAL_RARE: Conclusion[] = [
+  { title: "🥑 Guacward bound", line: "Everyone did their best. Unfortunately, their best was not enough." },
+];
+
+const NEGATIVE: Conclusion[] = [
+  { title: "🥑 The avocados have won", line: "I have several questions." },
+  { title: "🥑 Guacamole event: catastrophic", line: "Who authorised the avocados?" },
+  { title: "🥑 Avocado domination achieved", line: "The hospital belongs to them now." },
+  { title: "🥑 We have lost the war on avocados", line: "I specifically asked everyone to remain calm." },
+  { title: "🥑 Avocado situation: deeply concerning", line: "Why is there an avocado in my office?" },
+  { title: "🥑 Guacamole everywhere", line: "I'm going home." },
+  { title: "🥑 The great avocado disaster", line: "Facilities has stopped answering my calls." },
+  { title: "🥑 Avocados: 47 — us: 0", line: "I'm not discussing the scoreboard." },
+  { title: "🥑 This is no longer a hospital", line: "It's an avocado storage facility now." },
+  { title: "🥑 Avocado apocalypse", line: "I don't want to talk about what happened in Ward 3." },
+];
+
+const NEGATIVE_RARE: Conclusion[] = [
+  { title: "🥑 Avocado: 1. Hospital: 0.", line: "I would like to formally blame the supermarket." },
+  { title: "🥑 The avocados have escaped", line: "If anyone sees one, do not approach it." },
+  { title: "🥑 Guacamole incident declared", line: "This is now someone else's problem." },
+];
+
+const POOLS: Record<CatastropheOutcome, { common: Conclusion[]; rare: Conclusion[] }> = {
+  positive: { common: POSITIVE, rare: POSITIVE_RARE },
+  neutral: { common: NEUTRAL, rare: NEUTRAL_RARE },
+  negative: { common: NEGATIVE, rare: NEGATIVE_RARE },
+};
+
+/** random headline + DON line for an outcome; the silly ones stay rare */
+export function avalancheConclusion(outcome: CatastropheOutcome): Conclusion {
+  const { common, rare } = POOLS[outcome];
+  const pool = Math.random() < 0.12 && rare.length ? rare : common;
+  return pool[Math.floor(Math.random() * pool.length)] ?? common[0]!;
+}
