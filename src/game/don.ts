@@ -185,6 +185,9 @@ export function reviewShift(s: ReviewInput, jobSecurity: number): ShiftReview {
   if (s.miniAbandoned) notes.push({ label: `${s.miniAbandoned} bonus rounds bailed on`, pts: -2 });
   if (s.collapsed) notes.push({ label: "The ward fell over", pts: -1 });
   if (s.donAnnoyed) notes.push({ label: "The DON saw things", pts: -1 });
+  if (s.catastrophe === "positive") notes.push({ label: "Catastrophe contained", pts: 2 });
+  else if (s.catastrophe === "neutral") notes.push({ label: "Catastrophe survived", pts: 1 });
+  else if (s.catastrophe === "negative") notes.push({ label: "Catastrophe went badly", pts: -2 });
 
   return {
     stars,
