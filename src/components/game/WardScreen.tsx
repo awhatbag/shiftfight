@@ -862,7 +862,7 @@ export function WardScreen({
       stats.current.mistakes++;
       stats.current.overdue++;
       /* timeouts behave exactly as before; they are only also tallied */
-      if (isAvocadoEvent(e.def)) {
+      if (isCatastropheEvent(e.def)) {
         avocadoTally.current.missed++;
         if (avocadoPhaseRef.current === "active") {
           const bed = e.bed;
@@ -871,7 +871,7 @@ export function WardScreen({
             setEvents((cur) =>
               cur.some((x) => x.bed === bed) ? cur : [...cur, makeAvocadoEvent(bed)],
             );
-          }, AVOCADO_RESPAWN_MS);
+          }, catastropheRef.current.respawnMs);
         }
       }
       say("TOO SLOW", e.def.fail, false);
@@ -1160,7 +1160,7 @@ export function WardScreen({
       return;
     }
     const b = STAFF_BEHAVIOUR[key];
-    const pick = [...events].filter((e) => !isAvocadoEvent(e.def) && (!b || e.def.severity <= b.maxSeverity)).sort(
+    const pick = [...events].filter((e) => !isCatastropheEvent(e.def) && (!b || e.def.severity <= b.maxSeverity)).sort(
       (a, z) =>
         z.def.severity - a.def.severity ||
         (gameT.current - z.born) / z.ttl - (gameT.current - a.born) / a.ttl,
@@ -1209,7 +1209,7 @@ export function WardScreen({
     setEvents((cur) => cur.filter((e) => e.id !== ev.id));
     setSelected(null);
     /* catastrophe tally only — normal scoring below is untouched */
-    if (isAvocadoEvent(ev.def)) {
+    if (isCatastropheEvent(ev.def)) {
       if (correct) avocadoTally.current.best++;
       else if (mult > 0) avocadoTally.current.sortOf++;
       else avocadoTally.current.worst++;
@@ -1220,7 +1220,7 @@ export function WardScreen({
           setEvents((cur) =>
             cur.some((x) => x.bed === bed) ? cur : [...cur, makeAvocadoEvent(bed)],
           );
-        }, AVOCADO_RESPAWN_MS);
+        }, catastropheRef.current.respawnMs);
       }
     }
     setFlash((f) => ({ ...f, [ev.bed]: correct ? "good" : "bad" }));
@@ -1682,11 +1682,12 @@ export function WardScreen({
             ? avocado.y + 0.045
             : avocado.y + (avocado.endY - avocado.y) * travel + Math.sin(age / 115) * 0.007;
           const flicker = collided && stoppedFor > 5_000 && Math.floor(stoppedFor / 90) % 2 === 0;
-          const art = [avocado1Asset, avocado2Asset, avocado3Asset][avocado.art] ?? avocado1Asset;
+          const sprites = catastrophe.hazardSprites;
+          const art = sprites[avocado.art % sprites.length] ?? sprites[0];
           return (
             <img
               key={avocado.id}
-              src={art.url}
+              src={art}
               alt=""
               aria-hidden="true"
               draggable={false}
@@ -1851,10 +1852,11 @@ export function WardScreen({
                 className="mx-auto h-40 w-auto object-contain [image-rendering:pixelated]"
               />
               <p className="font-display mt-1 text-sm font-black uppercase text-alarm">🚨 Catastrophic Event 🚨</p>
-              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">The Avocado Avalanche</h3>
-              <p className="mt-3 text-sm font-bold">“A supermarket promotional display has collapsed.”</p>
-              <p className="mt-2 text-sm font-bold">“Approximately 8,000 avocados are currently rolling towards the hospital.”</p>
-              <p className="mt-2 text-sm font-black">“Please remain calm.”</p>
+              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">{catastrophe.intro.title}</h3>
+              {catastrophe.intro.lines.map((line, i) => (
+                <p key={line} className={`${i === 0 ? "mt-3" : "mt-2"} text-sm font-bold`}>“{line}”</p>
+              ))}
+              <p className="mt-2 text-sm font-black">“{catastrophe.intro.closing}”</p>
               <button
                 onClick={() => {
                   playForwardClick();
@@ -2128,7 +2130,7 @@ export function WardScreen({
                         )}
                       >
                         {here ? (
-                          isAvocadoEvent(selectedEvent.def) ? (
+                          isCatastropheEvent(selectedEvent.def) ? (
                             <>
                               {selectedEvent.def.callLine && (
                                 <span className="block">“{selectedEvent.def.callLine}”</span>
