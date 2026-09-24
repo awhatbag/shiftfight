@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import CannulaGame from "@/components/game/CannulaGame";
+import { CannulaGame } from "@/components/game/CannulaGame";
 import { cn } from "@/lib/utils";
 
 function Page() {
