@@ -13,6 +13,8 @@ import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
+import { BED_ARRIVAL, BED_SLOTS, GATES, STATION, STATION_CHAIRS, STATION_FRAME, msPerUnit, routeTo, stationChair, stationChairInWard, type Point } from "@/game/wardNav";
+import type { ActiveEvent, Banner, CatastrophePhase, RollingHazard } from "./wardTypes";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import { NO_EFFECTS, type Effects } from "@/game/gear";
@@ -100,211 +102,6 @@ export type ShiftStats = {
   /** outcome of a catastrophic event, when one ran this shift */
   catastrophe?: CatastropheOutcome | null;
 };
-
-
-type ActiveEvent = {
-  id: number;
-  bed: number;
-  def: EventDef;
-  born: number; // game-time ms
-  ttl: number;
-  /** payout multiplier per offered action, randomised at spawn */
-  scores: Partial<Record<ActionKind, number>>;
-};
-
-type Banner = { id: number; title: string; sub: string; good: boolean };
-type Point = { x: number; y: number };
-type AvocadoPhase = null | "intro" | "active" | "conclusion";
-type RollingAvocado = {
-  id: number;
-  art: number;
-  born: number;
-  y: number;
-  endY: number;
-  size: number;
-  speed: number;
-  hitX: number | null;
-  hitAt: number;
-  spin: number;
-};
-
-/** Fixed 890 × 1123 ward-world coordinates, matching the supplied layout mock-up. */
-const BED_SLOTS: Point[] = [
-  { x: 0.245, y: 0.375 },
-  { x: 0.755, y: 0.375 },
-  { x: 0.245, y: 0.545 },
-  { x: 0.755, y: 0.545 },
-  { x: 0.245, y: 0.71 },
-  { x: 0.755, y: 0.71 },
-  { x: 0.245, y: 0.865 },
-  { x: 0.755, y: 0.865 },
-];
-
-const STATION_FRAME = { x: 0.21, y: 0.11, width: 0.58, height: 0.22 };
-
-/** chair centres in the nurses' station artwork, from left to right */
-const STATION_CHAIRS: readonly [Point, Point, Point, Point, Point] = [
-  { x: 0.195, y: 0.485 },
-  { x: 0.35, y: 0.49 },
-  { x: 0.5, y: 0.5 },
-  { x: 0.645, y: 0.49 },
-  { x: 0.795, y: 0.485 },
-];
-
-function stationChair(index: number): Point {
-  return STATION_CHAIRS[index] ?? STATION_CHAIRS[0];
-}
-
-function stationChairInWard(index: number): Point {
-  const chair = stationChair(index);
-  return {
-    x: STATION_FRAME.x + chair.x * STATION_FRAME.width,
-    y: STATION_FRAME.y + chair.y * STATION_FRAME.height,
-  };
-}
-
-/** ward-space destination matching the first visible chair */
-const STATION: Point = stationChairInWard(0);
-
-/** curtain sections in the corridor the nurse must walk around.
-    box = exact placement measured from the ward reference artwork
-    (890x1123 world space), expressed as fractions of the ward world. */
-const GATES = [
-  {
-    y: 0.405,
-    side: "left" as const,
-    lane: 0.61,
-    box: { left: 0.2921, top: 0.3401, width: 0.1663, height: 0.1470 },
-  },
-  {
-    y: 0.57,
-    side: "right" as const,
-    lane: 0.39,
-    box: { left: 0.5281, top: 0.4934, width: 0.1685, height: 0.1416 },
-  },
-  {
-    y: 0.735,
-    side: "left" as const,
-    lane: 0.61,
-    box: { left: 0.3146, top: 0.6608, width: 0.1629, height: 0.1630 },
-  },
-];
-
-/** bedside standing spots, one per bed, taken from the ward path map */
-const BED_ARRIVAL: Point[] = [
-  { x: 0.24, y: 0.33 },
-  { x: 0.79, y: 0.33 },
-  { x: 0.23, y: 0.6 },
-  { x: 0.79, y: 0.5 },
-  { x: 0.24, y: 0.77 },
-  { x: 0.76, y: 0.75 },
-  { x: 0.24, y: 0.92 },
-  { x: 0.76, y: 0.92 },
-];
-
-/* ---------- walkable network (fixed ward-world coordinates) ----------
-   Horizontal lanes run in the clear floor between bed rows; a single
-   central spine joins them, and the station is entered/left over the
-   open north top of the desk and down the outer side aisles. */
-const LANE_Y = [0.33, 0.46, 0.628, 0.7875, 0.94];
-const LANE_X = [0.24, 0.5, 0.79];
-const DESK_TOP_Y = 0.14;
-const SIDE_X = [0.16, 0.84];
-
-type NavNode = { p: Point; edges: number[] };
-
-const NAV: NavNode[] = [];
-function navAdd(p: Point) {
-  NAV.push({ p, edges: [] });
-  return NAV.length - 1;
-}
-function navLink(a: number, b: number) {
-  NAV[a]!.edges.push(b);
-  NAV[b]!.edges.push(a);
-}
-
-const laneNode: number[][] = LANE_Y.map((y) => LANE_X.map((x) => navAdd({ x, y })));
-LANE_Y.forEach((_, r) => {
-  navLink(laneNode[r]![0]!, laneNode[r]![1]!);
-  navLink(laneNode[r]![1]!, laneNode[r]![2]!);
-  if (r > 0) navLink(laneNode[r - 1]![1]!, laneNode[r]![1]!);
-});
-
-/* station approach: outer side aisles up over the desk arms */
-const deskTopL = navAdd({ x: SIDE_X[0]!, y: DESK_TOP_Y });
-const deskTopR = navAdd({ x: SIDE_X[1]!, y: DESK_TOP_Y });
-const deskTopC = navAdd({ x: 0.5, y: DESK_TOP_Y });
-const outL = navAdd({ x: SIDE_X[0]!, y: LANE_Y[0]! });
-const outR = navAdd({ x: SIDE_X[1]!, y: LANE_Y[0]! });
-navLink(deskTopL, deskTopC);
-navLink(deskTopC, deskTopR);
-navLink(deskTopL, outL);
-navLink(deskTopR, outR);
-navLink(outL, laneNode[0]![0]!);
-navLink(outR, laneNode[0]![2]!);
-
-/* bedside spots hang off their own lane */
-const bedNode = BED_ARRIVAL.map((p, i) => {
-  const id = navAdd(p);
-  const lane = [0, 0, 2, 1, 3, 3, 4, 4][i]!;
-  const col = i % 2 === 0 ? 0 : 2;
-  const anchor = laneNode[lane]![col]!;
-  if (anchor !== id) navLink(id, anchor);
-  return id;
-});
-
-function dist(a: Point, b: Point) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-function nearestNavNode(p: Point) {
-  let best = 0;
-  let bd = Infinity;
-  NAV.forEach((n, i) => {
-    const d = dist(n.p, p);
-    if (d < bd) {
-      bd = d;
-      best = i;
-    }
-  });
-  return best;
-}
-
-function navPath(a: number, b: number): Point[] {
-  const dists = NAV.map(() => Infinity);
-  const prev = NAV.map(() => -1);
-  const seen = NAV.map(() => false);
-  dists[a] = 0;
-  for (;;) {
-    let cur = -1;
-    let cd = Infinity;
-    dists.forEach((d, i) => {
-      if (!seen[i] && d < cd) {
-        cd = d;
-        cur = i;
-      }
-    });
-    if (cur === -1 || cur === b) break;
-    seen[cur] = true;
-    for (const e of NAV[cur]!.edges) {
-      const nd = cd + dist(NAV[cur]!.p, NAV[e]!.p);
-      if (nd < dists[e]!) {
-        dists[e] = nd;
-        prev[e] = cur;
-      }
-    }
-  }
-  const out: Point[] = [];
-  let cur = b;
-  while (cur !== -1) {
-    out.unshift(NAV[cur]!.p);
-    if (cur === a) break;
-    cur = prev[cur]!;
-  }
-  return out;
-}
-
-const MS_PER_UNIT = (u: Upgrades) => Math.max(620, 1500 - u.speed * 230);
 
 
 export function WardScreen({
@@ -396,16 +193,16 @@ export function WardScreen({
      suspended, never converted into admissions or moved between beds. */
   const [catastrophe, setCatastrophe] = useState<CatastropheDef>(CATASTROPHES[0]!);
   const catastropheRef = useRef<CatastropheDef>(CATASTROPHES[0]!);
-  const [avocadoPhase, setAvocadoPhase] = useState<AvocadoPhase>(null);
+  const [avocadoPhase, setAvocadoPhase] = useState<CatastrophePhase>(null);
   const [avocadoDevRequested, setAvocadoDevRequested] = useState<string | null>(null);
-  const [avocados, setAvocados] = useState<RollingAvocado[]>([]);
+  const [avocados, setAvocados] = useState<RollingHazard[]>([]);
   const avocadoStarted = useRef(false);
   const avocadoStartT = useRef(0);
   const avocadoTriggerT = useRef(12_000 + Math.random() * 34_000);
   const avocadoNextSpawnT = useRef(0);
   const avocadoUid = useRef(1);
   const suspendedEvents = useRef<ActiveEvent[]>([]);
-  const avocadoPhaseRef = useRef<AvocadoPhase>(null);
+  const avocadoPhaseRef = useRef<CatastrophePhase>(null);
   avocadoPhaseRef.current = avocadoPhase;
   /** temporary tally used only to grade the catastrophe */
   const avocadoTally = useRef<CatastropheTally>(emptyTally());
@@ -690,7 +487,7 @@ export function WardScreen({
           hitX,
           hitAt: hitX === null ? speed : speed * ((1.08 - hitX) / 1.2),
           spin: Math.random() > 0.5 ? 1 : -1,
-        } satisfies RollingAvocado;
+        } satisfies RollingHazard;
       });
       setAvocados((current) => [...current, ...created]);
       avocadoNextSpawnT.current = now + 170 + progress * 720 + Math.random() * (180 + progress * 420);
@@ -952,55 +749,6 @@ export function WardScreen({
   const nurseHereBed = atBed;
 
   /* ---------------- movement ---------------- */
-  const routeTo = useCallback(
-    (dest: Point, from: Point): Point[] => {
-      const atStation = (p: Point) => p.y < 0.3;
-      const pts: Point[] = [];
-
-      /* leaving a chair: step north over the open top of the desk first */
-      const startNode = atStation(from)
-        ? (pts.push({ x: from.x, y: DESK_TOP_Y }),
-          from.x < 0.5 ? deskTopL : deskTopR)
-        : nearestNavNode(from);
-      if (atStation(from)) pts.push(NAV[startNode]!.p);
-
-      const endNode = atStation(dest)
-        ? dest.x < 0.5
-          ? deskTopL
-          : deskTopR
-        : nearestNavNode(dest);
-
-      pts.push(...navPath(startNode, endNode));
-      if (atStation(dest)) pts.push({ x: dest.x, y: DESK_TOP_Y });
-      pts.push(dest);
-
-      /* prune duplicate / collinear waypoints for smooth motion */
-      const out: Point[] = [];
-      for (const p of pts) {
-        const prev = out[out.length - 1] ?? from;
-        if (Math.abs(prev.x - p.x) < 0.004 && Math.abs(prev.y - p.y) < 0.004)
-          continue;
-        const before = out[out.length - 2] ?? from;
-        if (
-          out.length &&
-          Math.abs(before.x - prev.x) < 0.004 &&
-          Math.abs(prev.x - p.x) < 0.004
-        )
-          out.pop();
-        else if (
-          out.length &&
-          Math.abs(before.y - prev.y) < 0.004 &&
-          Math.abs(prev.y - p.y) < 0.004
-        )
-          out.pop();
-        out.push(p);
-      }
-      return out;
-    },
-    [],
-  );
-
-
 
   const walkTo = useCallback(
     (dest: Point, bed: number | null, slow = false) => {
@@ -1011,14 +759,14 @@ export function WardScreen({
       lastMoveT.current = gameT.current;
       setWalking(true);
     },
-    [routeTo],
+    [],
   );
 
   useEffect(() => {
     if (rate === 0 || !journey.current.length) return;
     let remaining =
       (gameT.current - lastMoveT.current) /
-      (MS_PER_UNIT(upgrades) * mods.travelMult * (returning.current ? 1.9 : 1));
+      (msPerUnit(upgrades) * mods.travelMult * (returning.current ? 1.9 : 1));
     lastMoveT.current = gameT.current;
     let current = nurseRef.current;
     while (remaining > 0 && journey.current.length) {
@@ -1090,7 +838,7 @@ export function WardScreen({
       }
 
       if (!rt.path.length) continue;
-      let remaining = (now - rt.lastT) / (MS_PER_UNIT(upgrades) * 1.3);
+      let remaining = (now - rt.lastT) / (msPerUnit(upgrades) * 1.3);
       rt.lastT = now;
       let cur = staffPosRef.current[key] ?? staffHome(key);
       while (remaining > 0 && rt.path.length) {
