@@ -235,59 +235,64 @@ export function CannulaGame({ level, paused, onDone }: Props) {
         onClick={tap}
         className="relative flex flex-1 flex-col items-center justify-center rounded-3xl border-2 border-border bg-card p-3"
       >
-        <div className="relative w-full overflow-hidden rounded-3xl">
-          <svg viewBox="0 0 200 130" className="w-full">
-            {/* forearm */}
-            <defs>
-              <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="oklch(0.9 0.06 62)" />
-                <stop offset="100%" stopColor="oklch(0.79 0.08 55)" />
-              </linearGradient>
-            </defs>
+        <div
+          className={cn("relative flex w-full flex-1 justify-center overflow-hidden", skinTone)}
+          style={{ backgroundColor: "transparent", imageRendering: "pixelated" }}
+        >
+          <svg viewBox="0 0 120 220" className="h-full w-auto" shapeRendering="crispEdges">
+            {/* pixel-art arm: upper arm at top, wrist and hand at the bottom */}
             <path
-              d="M2 30 Q30 14 70 16 L150 20 Q186 24 196 44 Q198 66 190 96 Q170 116 132 114 L64 110 Q22 106 4 88 Z"
-              fill="url(#skin)"
-              stroke="oklch(0.62 0.09 50)"
-              strokeWidth="2.5"
-            />
-            {/* hand hint */}
-            <path
-              d="M188 40 q12 8 8 26 q-4 16 -14 20"
-              fill="none"
-              stroke="oklch(0.62 0.09 50)"
+              d="M26 0 L26 34 L29 34 L29 68 L32 68 L32 104 L35 104 L35 130 L38 130 L38 150 L28 150 L28 210 L92 210 L92 150 L82 150 L82 130 L85 130 L85 104 L88 104 L88 68 L91 68 L91 34 L94 34 L94 0 Z"
+              fill={SKIN}
+              stroke={SKIN_LINE}
               strokeWidth="2"
-              opacity="0.5"
             />
-            {/* bands / vessels */}
+            {/* thumb */}
+            <path
+              d="M28 158 L18 158 L18 162 L14 162 L14 180 L18 180 L18 184 L28 184 Z"
+              fill={SKIN}
+              stroke={SKIN_LINE}
+              strokeWidth="2"
+            />
+            {/* pixel shading columns */}
+            <rect x="33" y="6" width="7" height="140" fill={SKIN_LIGHT} opacity="0.7" />
+            <rect x="34" y="154" width="7" height="50" fill={SKIN_LIGHT} opacity="0.55" />
+            <rect x="80" y="6" width="8" height="140" fill={SKIN_SHADE} opacity="0.6" />
+            <rect x="82" y="154" width="8" height="52" fill={SKIN_SHADE} opacity="0.6" />
+            {/* knuckles + finger separations */}
+            <rect x="28" y="194" width="64" height="2" fill={SKIN_LINE} opacity="0.55" />
+            {[44, 60, 76].map((fx) => (
+              <rect key={fx} x={fx} y="196" width="2" height="14" fill={SKIN_LINE} opacity="0.7" />
+            ))}
+            {/* bands / vessels, now stacked vertically down the forearm */}
             {bands.map((b, i) => {
-              const cx = 6 + b.x * 188;
+              const cy = ARM_TOP + b.x * ARM_SPAN;
+              const h = b.w * ARM_SPAN;
               const isV = b.kind === "vein";
               return (
                 <g key={i}>
                   <rect
-                    x={cx - (b.w * 188) / 2}
-                    y={18}
-                    width={b.w * 188}
-                    height={94}
-                    rx={6}
+                    x={32}
+                    y={cy - h / 2}
+                    width={56}
+                    height={h}
                     fill={isV ? "oklch(0.65 0.18 240 / 0.25)" : "oklch(0.62 0.22 22 / 0.2)"}
                     stroke={isV ? "oklch(0.45 0.16 240)" : "oklch(0.6 0.22 22)"}
                     strokeWidth="1.5"
                     strokeDasharray="5 4"
                   />
                   <path
-                    d={`M${cx - 5} 20 C ${cx + 8} 48, ${cx - 10} 76, ${cx + 4} 110`}
+                    d={`M34 ${cy} h8 v-3 h10 v3 h10 v-3 h10 v3 h12`}
                     fill="none"
                     stroke={isV ? "oklch(0.4 0.16 240)" : "oklch(0.55 0.23 22)"}
-                    strokeWidth={isV ? 6 : 7}
-                    strokeLinecap="round"
-                    opacity="0.85"
+                    strokeWidth={isV ? 5 : 6}
+                    opacity="0.9"
                   />
                   <text
-                    x={cx}
-                    y={126}
-                    textAnchor="middle"
-                    fontSize="9"
+                    x={2}
+                    y={cy + 3}
+                    textAnchor="start"
+                    fontSize="7"
                     fontWeight="800"
                     fill={isV ? "oklch(0.35 0.15 240)" : "oklch(0.5 0.22 22)"}
                   >
@@ -296,25 +301,33 @@ export function CannulaGame({ level, paused, onDone }: Props) {
                 </g>
               );
             })}
-            {/* needle */}
-            <g transform={`translate(${6 + pos * 188} 0)`}>
-              <rect x="-1.5" y="6" width="3" height="104" rx="1.5" fill="oklch(0.3 0.02 250)" />
-              <rect x="-7" y="0" width="14" height="12" rx="3" fill="oklch(0.62 0.15 195)" />
+            {/* pixel-art cannula, sliding up and down the arm */}
+            <g transform={`translate(0 ${ARM_TOP + pos * ARM_SPAN})`}>
+              <rect x="22" y="-2" width="24" height="4" fill="oklch(0.3 0.02 250)" />
+              <rect x="46" y="-1" width="4" height="2" fill="oklch(0.45 0.02 250)" />
+              <rect x="6" y="-12" width="12" height="6" fill="oklch(0.52 0.13 195)" />
+              <rect x="6" y="6" width="12" height="6" fill="oklch(0.52 0.13 195)" />
+              <rect x="2" y="-6" width="20" height="12" fill="oklch(0.62 0.15 195)" />
+              <rect x="6" y="-3" width="9" height="6" fill="oklch(0.82 0.08 195)" />
+              <rect x="-8" y="-3" width="10" height="6" fill="oklch(0.42 0.02 250)" />
             </g>
           </svg>
 
           {hit && (
             <span
               className={cn(
-                "font-display absolute top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pop whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-black shadow-lg",
+                "font-display absolute left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pop whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-black shadow-lg",
                 hit.good ? "bg-calm text-calm-foreground" : "bg-alarm text-alarm-foreground",
               )}
-              style={{ left: `${Math.min(80, Math.max(20, hit.x * 100))}%` }}
+              style={{
+                top: `${Math.min(88, Math.max(12, ((ARM_TOP + hit.x * ARM_SPAN) / 220) * 100))}%`,
+              }}
             >
               {hit.label}
             </span>
           )}
         </div>
+
 
         <span className="font-display chunky mt-5 rounded-full bg-primary px-8 py-3.5 text-lg font-black uppercase text-primary-foreground">
           TAP TO STICK
