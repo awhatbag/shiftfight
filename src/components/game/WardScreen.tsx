@@ -4,10 +4,6 @@ import curtainAsset from "@/assets/curtain-partition.png.asset.json";
 import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
 import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
 import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
-import donWorriedAsset from "@/assets/DON_worried.png.asset.json";
-import donHappyAsset from "@/assets/DON_happy.png.asset.json";
-import donDisappointedAsset from "@/assets/DON_disappointed.png.asset.json";
-import donAngryAsset from "@/assets/DON_angry.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
@@ -18,6 +14,7 @@ import type { ActiveEvent, Banner, CatastrophePhase, RollingHazard } from "./war
 import { WardHud } from "./WardHud";
 import { PatientActionPanel } from "./PatientActionPanel";
 import { CatastropheHazardLayer } from "./CatastropheHazardLayer";
+import { CatastropheConclusion, CatastropheIntro, DonBubble, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import { NO_EFFECTS, type Effects } from "@/game/gear";
@@ -1404,325 +1401,45 @@ export function WardScreen({
           </div>
         )}
 
-        {/* the DON only appears on the live ward screen, never during mini-games or overlays */}
         {don && phase === "play" && !mini && !settingsOpen && !manualPause && (
-          <div
-            className="pointer-events-none absolute left-1/2 top-[2%] z-[45] flex -translate-x-1/2 flex-col items-center"
-            aria-label="The DON is on the ward"
-          >
-            <div className="animate-pop max-w-[220px] rounded-2xl border-2 border-border bg-card px-2.5 py-1 text-center shadow-lg">
-              <p className="font-display text-[11px] font-black uppercase leading-tight">
-                {don.line}
-              </p>
-            </div>
-            <span className="animate-bob mt-0.5 grid h-11 w-11 place-items-center rounded-full border-2 border-alarm bg-card text-2xl shadow-lg ring-4 ring-alarm/30">
-              🧑‍💼
-            </span>
-            <span className="font-display rounded-full bg-alarm px-1.5 text-[8px] font-black uppercase text-alarm-foreground">
-              DON
-            </span>
-          </div>
+          <DonBubble line={don.line} />
         )}
 
 
-
-        {/* shift objectives briefing */}
         {briefing && (
-          <div className="absolute inset-0 z-[70] grid place-items-center bg-background/85 p-4 backdrop-blur-sm">
-            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 shadow-2xl">
-              <p className="font-display text-center text-[11px] font-black uppercase tracking-widest text-primary">
-                Shift {cfg.level} · {cfg.name}
-              </p>
-              <h3 className="font-display mt-1 text-center text-2xl font-black uppercase leading-none">
-                “{story.title}”
-              </h3>
-              <p className="mt-1 text-center text-sm font-semibold text-muted-foreground">
-                {story.lead}
-              </p>
-              <p className="font-display mt-3 text-center text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-                This shift's challenges
-              </p>
-              <div className="mt-3 space-y-2">
-                {objectives.map((o) => (
-                  <div
-                    key={o.key}
-                    className="flex items-center gap-2 rounded-2xl border-2 border-border bg-background px-2.5 py-2"
-                  >
-                    <span className="text-2xl leading-none">{o.icon}</span>
-                    <span className="min-w-0 flex-1 text-sm font-bold leading-tight">
-                      {o.label}
-                    </span>
-                    <span className="font-display shrink-0 rounded-full bg-gold px-2 py-0.5 text-xs font-black text-gold-foreground">
-                      +{o.reward.amount} {o.reward.type === "points" ? "⭐" : "✨"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => setBriefing(false)}
-                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
-              >
-                Start shift ▶
-              </button>
-            </div>
-          </div>
+          <ShiftBriefing level={cfg.level} name={cfg.name} title={story.title} lead={story.lead} objectives={objectives} onStart={() => setBriefing(false)} />
         )}
-
         {avocadoPhase === "intro" && (
-          <div className="absolute inset-0 z-[90] grid place-items-center bg-background/90 p-4 backdrop-blur-sm">
-            <div className="animate-pop w-full max-w-sm rounded-3xl border-4 border-alarm bg-card p-4 text-center shadow-2xl">
-              <img
-                src={donWorriedAsset.url}
-                alt="Worried Director of Nursing"
-                className="mx-auto h-40 w-auto object-contain [image-rendering:pixelated]"
-              />
-              <p className="font-display mt-1 text-sm font-black uppercase text-alarm">🚨 Catastrophic Event 🚨</p>
-              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">{catastrophe.intro.title}</h3>
-              {catastrophe.intro.lines.map((line, i) => (
-                <p key={line} className={`${i === 0 ? "mt-3" : "mt-2"} text-sm font-bold`}>“{line}”</p>
-              ))}
-              <p className="mt-2 text-sm font-black">“{catastrophe.intro.closing}”</p>
-              <button
-                onClick={() => {
-                  playForwardClick();
-                  startAvocadoAvalanche();
-                }}
-                className="chunky chunky-press mt-4 w-full rounded-2xl bg-alarm py-4 font-display text-xl font-black uppercase text-alarm-foreground"
-              >
-                {avocadoIntroLabel}
-              </button>
-            </div>
-          </div>
+          <CatastropheIntro catastrophe={catastrophe} buttonLabel={avocadoIntroLabel} onStart={() => { playForwardClick(); startAvocadoAvalanche(); }} />
         )}
-
         {avocadoPhase === "conclusion" && avocadoResult && (
-          <div className="absolute inset-0 z-[90] grid place-items-center bg-background/90 p-4 backdrop-blur-sm">
-            <div
-              className={`animate-pop w-full max-w-sm rounded-3xl border-4 bg-card p-4 text-center shadow-2xl ${
-                avocadoResult.outcome === "positive"
-                  ? "border-calm"
-                  : avocadoResult.outcome === "neutral"
-                    ? "border-gold"
-                    : "border-alarm"
-              }`}
-            >
-              <img
-                src={
-                  avocadoResult.outcome === "positive"
-                    ? donHappyAsset.url
-                    : avocadoResult.outcome === "neutral"
-                      ? donDisappointedAsset.url
-                      : donAngryAsset.url
-                }
-                alt="Director of Nursing"
-                className="mx-auto h-44 w-auto object-contain [image-rendering:pixelated]"
-              />
-              <h3 className="font-display text-2xl font-black uppercase leading-none">{avocadoResult.title}</h3>
-              <p className="mt-3 text-base font-bold">DON: “{avocadoResult.line}”</p>
-              <p className="mt-3 text-xs font-bold uppercase opacity-70">
-                {avocadoTally.current.generated} problems · {avocadoTally.current.best} best ·{" "}
-                {avocadoTally.current.sortOf} sort of · {avocadoTally.current.worst} worst ·{" "}
-                {avocadoTally.current.missed} missed
-              </p>
-            </div>
-          </div>
+          <CatastropheConclusion result={avocadoResult} tally={avocadoTally.current} />
         )}
-
-        {/* start cue */}
-        {phase === "ready" && !briefing && (
-          <div className="absolute inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm">
-            <p
-              key={cue}
-              className="font-display animate-pop text-center text-5xl font-black uppercase leading-none text-primary"
-            >
-              {cue}
-            </p>
-          </div>
-        )}
-
-
-        {/* first-shift walkthrough */}
-        {tutorial && phase === "play" && tutStep === 0 && (
-          <div className="absolute inset-0 z-[65] grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
-            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
-              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
-                First shift? Ten-second tour
-              </p>
-              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">
-                Your job 🏥
-              </h3>
-              <p className="mt-3 text-base font-bold">
-                Keep every patient stable until the shift timer runs out.
-              </p>
-              <p className="mt-1 text-base font-semibold text-muted-foreground">
-                When a bay lights up or rings the bell, someone needs you.
-              </p>
-              <button
-                onClick={() => setTutStep(1)}
-                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
-              >
-                Got it ▶
-              </button>
-            </div>
-          </div>
-        )}
-        {tutorial && phase === "play" && tutStep === 2 && (
-          <div className="absolute inset-0 z-[65] grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
-            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
-              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
-                She's on her way
-              </p>
-              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">
-                Read, then respond 💬
-              </h3>
-              <p className="mt-3 text-base font-bold">
-                When she arrives you'll see what's wrong — pick the response that fits.
-              </p>
-              <p className="mt-1 text-base font-semibold text-muted-foreground">
-                The best answer pays full points. Others pay half, nothing, or even
-                cost you — revealed only after you choose. Judge, don't guess!
-              </p>
-              <button
-                onClick={() => setTutStep(3)}
-                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
-              >
-                Got it ▶
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* end countdown — floats over the ward, synced to the real timer */}
-        {endCountValue !== null && (
-          <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center">
-            <div className="text-center">
-              <p className="font-display text-xl font-black uppercase tracking-widest text-primary drop-shadow-[0_2px_0_var(--color-background)]">
-                Shift finishes in
-              </p>
-              <p
-                key={endCountValue}
-                className="font-display animate-pop text-[7rem] font-black leading-none text-primary drop-shadow-[0_4px_0_var(--color-background)]"
-              >
-                {endCountValue}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* mini-game offer */}
-        {miniOffer && (
-          <div className="absolute inset-0 z-50 grid place-items-center bg-background/85 p-5 backdrop-blur-sm">
-            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
-              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
-                Bonus round available
-              </p>
-              <h3 className="font-display text-2xl font-black uppercase leading-none">
-                {miniGameByKey(miniOffer.kind).name}
-              </h3>
-              <p className="mt-1 text-sm font-bold">{miniGameByKey(miniOffer.kind).blurb}</p>
-              <p className="font-display mt-2 rounded-2xl bg-[image:var(--gradient-gold)] py-2 text-xl font-black text-gold-foreground">
-                Reward: up to +{miniOffer.bonus} ⭐
-              </p>
-              <p className="font-display mt-1 text-sm font-black uppercase text-calm-foreground">
-                + 12 ✨ XP for finishing it
-              </p>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                A small bonus on top of your shift — finish it for the full reward. The ward
-                keeps ticking at 1/3 speed and you can abandon any time.
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setMiniOffer(null)}
-                  className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-lg font-black uppercase text-secondary-foreground"
-                >
-                  Skip
-                </button>
-                <button
-                  onClick={startMini}
-                  className="chunky chunky-press rounded-2xl bg-primary py-3 font-display text-lg font-black uppercase text-primary-foreground"
-                >
-                  Start ▶
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* pause veil */}
-        {manualPause && (
-          <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-background/85 px-6 text-center backdrop-blur-sm">
-            <p className="font-display text-4xl font-black uppercase">Paused</p>
-            <p className="text-sm font-semibold text-muted-foreground">{pauseLine}</p>
-            <button
-              onClick={() => setManualPause(false)}
-              className="chunky chunky-press rounded-2xl bg-primary px-8 py-4 font-display text-xl font-black uppercase text-primary-foreground"
-            >
-              Resume ▶
-            </button>
-          </div>
-        )}
-
-        {/* settings */}
+        {phase === "ready" && !briefing && <ReadyCue cue={cue} />}
+        {tutorial && phase === "play" && tutStep === 0 && <TutorialOverlay step={0} onNext={() => setTutStep(1)} />}
+        {tutorial && phase === "play" && tutStep === 2 && <TutorialOverlay step={2} onNext={() => setTutStep(3)} />}
+        {endCountValue !== null && <EndCountdown count={endCountValue} />}
+        {miniOffer && <MiniOfferOverlay offer={miniOffer} onSkip={() => setMiniOffer(null)} onStart={startMini} />}
+        {manualPause && <PauseOverlay line={pauseLine} onResume={() => setManualPause(false)} />}
         {settingsOpen && (
-          <div className="absolute inset-0 z-[70] grid place-items-center bg-background/90 p-5 backdrop-blur-sm">
-            <div className="w-full space-y-2 rounded-3xl border-4 border-border bg-card p-4">
-              <h3 className="font-display text-2xl font-black uppercase">Settings</h3>
-              <SettingRow
-                label="All sound"
-                icon="🔊"
-                on={soundOn && musicOn}
-                onToggle={() => {
-                  const next = !(soundOn && musicOn);
-                  if (soundOn !== next) onToggleSound();
-                  setMusicEnabled(next);
-                }}
-              />
-              <SettingRow
-                label="Game sounds"
-                icon="🎮"
-                on={soundOn}
-                onToggle={onToggleSound}
-              />
-              <SettingRow
-                label="Music"
-                icon="🎵"
-                on={musicOn}
-                onToggle={toggleMusic}
-              />
-              <SettingRow
-                label="Haptics"
-                icon="📳"
-                on={hapticsOn}
-                onToggle={onToggleHaptics}
-              />
-              <SettingRow
-                label="Auto-save"
-                icon="💾"
-                on={autoSaveOn}
-                onToggle={onToggleAutoSave}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => onSave?.()}
-                  className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-lg font-black uppercase text-secondary-foreground"
-                >
-                  💾 Save
-                </button>
-                <button
-                  onClick={() => onQuit?.()}
-                  className="chunky chunky-press rounded-2xl bg-alarm py-3 font-display text-lg font-black uppercase text-alarm-foreground"
-                >
-                  🚪 Quit
-                </button>
-              </div>
-              <button
-                onClick={() => setSettingsOpen(false)}
-                className="chunky chunky-press w-full rounded-2xl bg-primary py-3 font-display text-lg font-black uppercase text-primary-foreground"
-              >
-                Back to shift
-              </button>
-            </div>
-          </div>
+          <SettingsOverlay
+            soundOn={soundOn}
+            musicOn={musicOn}
+            hapticsOn={hapticsOn}
+            autoSaveOn={autoSaveOn}
+            onToggleAll={() => {
+              const next = !(soundOn && musicOn);
+              if (soundOn !== next) onToggleSound();
+              setMusicEnabled(next);
+            }}
+            onToggleSound={onToggleSound}
+            onToggleMusic={toggleMusic}
+            onToggleHaptics={onToggleHaptics}
+            onToggleAutoSave={onToggleAutoSave}
+            onSave={() => onSave?.()}
+            onQuit={() => onQuit?.()}
+            onClose={() => setSettingsOpen(false)}
+          />
         )}
       </div>
 
@@ -1776,34 +1493,3 @@ export function WardScreen({
   );
 }
 
-function SettingRow({
-  label,
-  icon,
-  on,
-  onToggle,
-}: {
-  label: string;
-  icon: string;
-  on: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className="flex w-full items-center justify-between gap-2 rounded-2xl border-2 border-border bg-background px-3 py-3"
-    >
-      <span className="font-display flex items-center gap-2 text-base font-black uppercase">
-        <span className="text-xl">{icon}</span>
-        {label}
-      </span>
-      <span
-        className={cn(
-          "font-display rounded-xl px-3 py-1 text-sm font-black",
-          on ? "bg-calm text-calm-foreground" : "bg-muted text-muted-foreground",
-        )}
-      >
-        {on ? "ON" : "OFF"}
-      </span>
-    </button>
-  );
-}
