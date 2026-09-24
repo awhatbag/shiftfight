@@ -69,6 +69,20 @@ export function CannulaGame({ level, paused, onDone }: Props) {
   const bandsRef = useRef(bands);
   bandsRef.current = bands;
 
+  const [skinTone, setSkinTone] = useState<(typeof SKIN_TONES)[number]>(SKIN_TONES[0]);
+  useEffect(() => {
+    try {
+      const previous = Number(window.localStorage.getItem(SKIN_TONE_KEY) ?? "-1");
+      const next = (previous + 1) % SKIN_TONES.length;
+      setSkinTone(SKIN_TONES[next] ?? SKIN_TONES[0]);
+      window.localStorage.setItem(SKIN_TONE_KEY, String(next));
+    } catch {
+      setSkinTone(SKIN_TONES[0]);
+    }
+  }, []);
+
+
+
   useEffect(() => {
     if (intro) return;
     const id = setInterval(() => {
