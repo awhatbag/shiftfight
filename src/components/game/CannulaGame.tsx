@@ -20,21 +20,12 @@ const SKIN_TONES = [
 ] as const;
 const SKIN_TONE_KEY = "shift-fight-cannula-skin-tone";
 
-/** Hi-bit (32-bit era) arm drawn on a high-density 240x440 vertical canvas. */
+/** Hi-bit (32-bit era) arm drawn on a 240x440 canvas, rasterised at half res. */
 const CANVAS_W = 240;
 const CANVAS_H = 440;
+const PIXEL_SCALE = 0.5; // render at 120x220, scale up crisp -> fine hi-bit pixels
 const ARM_TOP = 34;
 const ARM_SPAN = 224;
-
-/** Long tonal ramp per skin tone, in the style of 32-bit arcade sprites. */
-const SKIN = "var(--suture-skin)";
-const SKIN_HI2 = "color-mix(in oklab, var(--suture-skin) 68%, white)";
-const SKIN_HI1 = "color-mix(in oklab, var(--suture-skin) 84%, white)";
-const SKIN_MID = "color-mix(in oklab, var(--suture-skin) 94%, black)";
-const SKIN_SH1 = "color-mix(in oklab, var(--suture-skin) 84%, black)";
-const SKIN_SH2 = "color-mix(in oklab, var(--suture-skin) 70%, black)";
-const SKIN_LINE = "color-mix(in oklab, var(--suture-skin) 52%, black)";
-const SKIN_DEEP = "color-mix(in oklab, var(--suture-skin) 38%, black)";
 
 const VEIN_DEEP = "oklch(0.42 0.14 262)";
 const VEIN_MID = "oklch(0.52 0.15 258)";
@@ -43,7 +34,36 @@ const ART_DEEP = "oklch(0.44 0.19 22)";
 const ART_MID = "oklch(0.56 0.21 24)";
 const ART_HI = "oklch(0.68 0.19 26)";
 
+type Oklch = [l: number, c: number, h: number];
 
+/** Base skin LCH per tone, matching the suturing mini-game palette. */
+const SKIN_BASE: Record<(typeof SKIN_TONES)[number], Oklch> = {
+  "suture-skin-light": [0.88, 0.065, 58],
+  "suture-skin-tan": [0.74, 0.105, 62],
+  "suture-skin-brown": [0.56, 0.105, 54],
+  "suture-skin-dark": [0.39, 0.075, 48],
+};
+
+function mixToward([l, c, h]: Oklch, t: number, toWhite: boolean): string {
+  const nl = toWhite ? l + (1 - l) * t : l * (1 - t);
+  const nc = toWhite ? c * (1 - t * 0.35) : c * (1 - t * 0.25);
+  return `oklch(${nl.toFixed(3)} ${nc.toFixed(3)} ${h})`;
+}
+
+/** 6-8 step tonal ramp per skin, in the style of 32-bit arcade sprites. */
+function buildRamp(base: Oklch) {
+  return {
+    hi2: mixToward(base, 0.55, true),
+    hi1: mixToward(base, 0.3, true),
+    mid: mixToward(base, 0.05, false),
+    sh1: mixToward(base, 0.17, false),
+    sh2: mixToward(base, 0.31, false),
+    line: mixToward(base, 0.48, false),
+    deep: mixToward(base, 0.62, false),
+  };
+}
+
+type Ramp = ReturnType<typeof buildRamp>;
 
 function buildBands(level: number, round: number): Band[] {
   const rnd = () => Math.random();
@@ -62,7 +82,118 @@ function buildBands(level: number, round: number): Band[] {
     const x = slots[i++] ?? 0.9;
     bands.push({ x, w: Math.max(0.07, veinW * 0.8), kind: "artery" });
   }
+  // keep vessels from visually merging: nudge apart, collision radii unchanged
+  bands.sort((a, b) => a.x - b.x);
+  for (let b = 1; b < bands.length; b++) {
+    const minGap = (bands[b - 1].w + bands[b].w) / 2 + 0.02;
+    if (bands[b].x - bands[b - 1].x < minGap) {
+      bands[b].x = Math.min(0.86, bands[b - 1].x + minGap);
+    }
+  }
   return bands;
+}
+
+/* ---------- SVG builders (rasterised to a pixel canvas) ---------- */
+
+function armSvg(bands: Band[], r: Ramp): string {
+  const vessels = bands
+    .map((b) => {
+      const cy = ARM_TOP + b.x * ARM_SPAN;
+      const h = Math.max(7, b.w * ARM_SPAN * 0.5);
+      const isV = b.kind === "vein";
+      const deep = isV ? VEIN_DEEP : ART_DEEP;
+      const mid = isV ? VEIN_MID : ART_MID;
+      const hi = isV ? VEIN_HI : ART_HI;
+      const wave = `M66 ${cy + 3} C 88 ${cy - 7}, 104 ${cy + 8}, 122 ${cy} S 156 ${cy - 8}, 176 ${cy + 3}`;
+      return `<g>
+        <ellipse cx="120" cy="${cy}" rx="56" ry="${(h * 0.95).toFixed(1)}" fill="${isV ? "oklch(0.52 0.14 258 / 0.14)" : "oklch(0.58 0.2 24 / 0.13)"}"/>
+        <path d="${wave}" fill="none" stroke="${deep}" stroke-width="${h.toFixed(1)}" stroke-linecap="round" opacity="0.55"/>
+        <path d="${wave}" fill="none" stroke="${mid}" stroke-width="${(h * 0.62).toFixed(1)}" stroke-linecap="round"/>
+        <path d="M78 ${cy + 0.5} C 96 ${cy - 7}, 108 ${cy + 5}, 124 ${cy - 2}" fill="none" stroke="${hi}" stroke-width="${Math.max(1.5, h * 0.2).toFixed(1)}" stroke-linecap="round" opacity="0.75"/>
+        <path d="M126 ${cy} q 14 ${isV ? -12 : 12} 30 ${isV ? -14 : 14}" fill="none" stroke="${mid}" stroke-width="${Math.max(2, h * 0.32).toFixed(1)}" stroke-linecap="round" opacity="0.6"/>
+      </g>`;
+    })
+    .join("");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}">
+    <path d="M66 -2 L66 92 L68 152 L72 212 L80 264 L85 288 L74 302 L65 324 L63 362 L68 398 L77 426 L163 426 L172 398 L177 362 L175 324 L166 302 L155 288 L160 264 L168 212 L172 152 L174 92 L174 -2 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M72 306 L48 316 L37 337 L40 360 L54 368 L72 357 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
+    ${[
+      [78, 100],
+      [102, 124],
+      [126, 148],
+      [150, 168],
+    ]
+      .map(
+        ([a, b]) =>
+          `<path d="M${a} 418 L${a} 434 Q${(a + b) / 2} 440 ${b} 434 L${b} 418 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="2.5" stroke-linejoin="round"/>`,
+      )
+      .join("")}
+    <path d="M88 4 L104 4 L100 280 L86 280 Z" fill="${r.hi1}" opacity="0.5"/>
+    <path d="M93 8 L100 8 L97 268 L91 268 Z" fill="${r.hi2}" opacity="0.45"/>
+    <path d="M144 4 L170 4 L160 280 L142 280 Z" fill="${r.sh1}" opacity="0.42"/>
+    <path d="M160 6 L171 6 L158 276 L150 276 Z" fill="${r.sh2}" opacity="0.38"/>
+    <path d="M86 292 Q120 300 154 292" fill="none" stroke="${r.sh2}" stroke-width="3" opacity="0.55"/>
+    <path d="M84 300 Q120 309 156 300" fill="none" stroke="${r.sh1}" stroke-width="2.5" opacity="0.45"/>
+    <ellipse cx="88" cy="344" rx="20" ry="30" fill="${r.hi1}" opacity="0.38"/>
+    <ellipse cx="152" cy="352" rx="22" ry="38" fill="${r.sh1}" opacity="0.32"/>
+    <path d="M70 410 Q120 420 172 408" fill="none" stroke="${r.sh2}" stroke-width="4" opacity="0.4"/>
+    ${[
+      [78, 100],
+      [102, 124],
+      [126, 148],
+      [150, 168],
+    ]
+      .map(
+        ([a, b], i) =>
+          `<path d="M${a + 3} 420 Q${(a + b) / 2} 424 ${b - 3} 420" fill="none" stroke="${r.sh2}" stroke-width="2" opacity="0.5"/>
+           <path d="M${a + 5} 429 Q${(a + b) / 2} 433 ${b - 5} 429" fill="none" stroke="${r.hi1}" stroke-width="2.5" opacity="0.55"/>`,
+      )
+      .join("")}
+    ${vessels}
+  </svg>`;
+}
+
+function cannulaSvg(): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="78 -24 162 48">
+    <rect x="96" y="-2.6" width="80" height="5.2" fill="oklch(0.62 0.02 250)"/>
+    <rect x="96" y="-2.6" width="80" height="1.6" fill="oklch(0.9 0.01 250)"/>
+    <rect x="96" y="1.4" width="80" height="1.4" fill="oklch(0.4 0.02 250)"/>
+    <path d="M96 -2.6 L96 2.6 L82 2.6 Z" fill="oklch(0.86 0.01 250)"/>
+    <path d="M96 -2.6 L88 0.4 L82 2.6 Z" fill="oklch(0.55 0.02 250)" opacity="0.7"/>
+    <path d="M176 -20 L206 -12 L206 -6 L176 -6 Z" fill="oklch(0.56 0.13 195)" stroke="oklch(0.3 0.05 210)" stroke-width="1"/>
+    <path d="M176 20 L206 12 L206 6 L176 6 Z" fill="oklch(0.5 0.12 195)" stroke="oklch(0.3 0.05 210)" stroke-width="1"/>
+    <rect x="176" y="-9" width="36" height="18" rx="3" fill="oklch(0.86 0.05 200 / 0.9)" stroke="oklch(0.45 0.04 220)" stroke-width="1.2"/>
+    <rect x="180" y="-5" width="20" height="10" rx="2" fill="oklch(0.66 0.16 22 / 0.55)"/>
+    <rect x="180" y="-5" width="20" height="3" fill="oklch(0.95 0.02 200 / 0.7)"/>
+    <rect x="210" y="-7" width="24" height="14" rx="3" fill="oklch(0.52 0.12 195)" stroke="oklch(0.36 0.08 200)" stroke-width="1.2"/>
+    <rect x="214" y="-5" width="2" height="10" fill="oklch(0.7 0.1 195)" opacity="0.7"/>
+    <rect x="219" y="-5" width="2" height="10" fill="oklch(0.7 0.1 195)" opacity="0.7"/>
+    <rect x="224" y="-5" width="2" height="10" fill="oklch(0.7 0.1 195)" opacity="0.7"/>
+    <rect x="229" y="-5" width="2" height="10" fill="oklch(0.7 0.1 195)" opacity="0.7"/>
+  </svg>`;
+}
+
+/** Rasterise an SVG string to a small canvas for crisp hi-bit scaling. */
+async function rasterise(svg: string, w: number, h: number): Promise<HTMLCanvasElement> {
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  try {
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("svg rasterise failed"));
+      img.src = url;
+    });
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d")!;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, 0, 0, w, h);
+    return c;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 export function CannulaGame({ level, paused, onDone }: Props) {
@@ -97,7 +228,52 @@ export function CannulaGame({ level, paused, onDone }: Props) {
     }
   }, []);
 
+  /* rasterised pixel layers */
+  const screenRef = useRef<HTMLCanvasElement | null>(null);
+  const armLayer = useRef<HTMLCanvasElement | null>(null);
+  const cannulaLayer = useRef<HTMLCanvasElement | null>(null);
+  const [artReady, setArtReady] = useState(0);
 
+  useEffect(() => {
+    let alive = true;
+    const ramp = buildRamp(SKIN_BASE[skinTone]);
+    (async () => {
+      try {
+        const [arm, cann] = await Promise.all([
+          rasterise(armSvg(bands, ramp), CANVAS_W * PIXEL_SCALE, CANVAS_H * PIXEL_SCALE),
+          rasterise(cannulaSvg(), Math.ceil(162 * PIXEL_SCALE), Math.ceil(48 * PIXEL_SCALE)),
+        ]);
+        if (!alive) return;
+        armLayer.current = arm;
+        cannulaLayer.current = cann;
+        setArtReady((n) => n + 1);
+      } catch {
+        /* leave previous layers */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [bands, skinTone]);
+
+  /* composite the pixel layers each frame */
+  useEffect(() => {
+    const screen = screenRef.current;
+    const arm = armLayer.current;
+    const cann = cannulaLayer.current;
+    if (!screen || !arm || !cann) return;
+    const ctx = screen.getContext("2d");
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, screen.width, screen.height);
+    ctx.drawImage(arm, 0, 0);
+    const s = PIXEL_SCALE;
+    const cx = ((78 + 162 / 2) - cann.width / (2 * s) + 162 / 2) * 0; // keep simple math below
+    void cx;
+    const drawX = Math.round((78 + (162 - cann.width / s) / 2) * s);
+    const drawY = Math.round((ARM_TOP + pos * ARM_SPAN - 24) * s);
+    ctx.drawImage(cann, drawX, drawY);
+  }, [pos, artReady]);
 
   useEffect(() => {
     if (intro) return;
@@ -251,133 +427,14 @@ export function CannulaGame({ level, paused, onDone }: Props) {
         onClick={tap}
         className="relative flex flex-1 flex-col items-center justify-center rounded-3xl border-2 border-border bg-card p-3"
       >
-        <div
-          className={cn("relative flex w-full flex-1 justify-center overflow-hidden", skinTone)}
-          style={{ backgroundColor: "transparent", imageRendering: "pixelated" }}
-        >
-          <svg viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} className="h-full w-auto">
-            {/* forearm + resting hand, 32-bit style silhouette with sel-out edges */}
-            <path
-              d="M66 -2 L66 92 L68 152 L72 212 L80 264 L85 288 L74 302 L65 324 L63 362 L68 398 L77 426 L163 426 L172 398 L177 362 L175 324 L166 302 L155 288 L160 264 L168 212 L172 152 L174 92 L174 -2 Z"
-              fill={SKIN}
-              stroke={SKIN_LINE}
-              strokeWidth="3"
-              strokeLinejoin="round"
-            />
-            {/* thumb with thenar webbing */}
-            <path
-              d="M72 306 L48 316 L37 337 L40 360 L54 368 L72 357 Z"
-              fill={SKIN}
-              stroke={SKIN_LINE}
-              strokeWidth="3"
-              strokeLinejoin="round"
-            />
-            {/* fingers */}
-            {[
-              [78, 100],
-              [102, 124],
-              [126, 148],
-              [150, 168],
-            ].map(([a, b], i) => (
-              <path
-                key={i}
-                d={`M${a} 418 L${a} 434 Q${(a! + b!) / 2} 440 ${b} 434 L${b} 418 Z`}
-                fill={SKIN}
-                stroke={SKIN_LINE}
-                strokeWidth="2.5"
-                strokeLinejoin="round"
-              />
-            ))}
-            {/* volume: long tonal ramp down the forearm */}
-            <path d="M88 4 L104 4 L100 280 L86 280 Z" fill={SKIN_HI1} opacity="0.5" />
-            <path d="M93 8 L100 8 L97 268 L91 268 Z" fill={SKIN_HI2} opacity="0.45" />
-            <path d="M144 4 L170 4 L160 280 L142 280 Z" fill={SKIN_SH1} opacity="0.42" />
-            <path d="M160 6 L171 6 L158 276 L150 276 Z" fill={SKIN_SH2} opacity="0.38" />
-            {/* wrist creases */}
-            <path d="M86 292 Q120 300 154 292" fill="none" stroke={SKIN_SH2} strokeWidth="3" opacity="0.55" />
-            <path d="M84 300 Q120 309 156 300" fill="none" stroke={SKIN_SH1} strokeWidth="2.5" opacity="0.45" />
-            {/* thenar pad + palm shading */}
-            <ellipse cx="88" cy="344" rx="20" ry="30" fill={SKIN_HI1} opacity="0.38" />
-            <ellipse cx="152" cy="352" rx="22" ry="38" fill={SKIN_SH1} opacity="0.32" />
-            <path d="M70 410 Q120 420 172 408" fill="none" stroke={SKIN_SH2} strokeWidth="4" opacity="0.4" />
-            {/* knuckle folds + nail beds */}
-            {[
-              [78, 100],
-              [102, 124],
-              [126, 148],
-              [150, 168],
-            ].map(([a, b], i) => (
-              <g key={`k${i}`}>
-                <path d={`M${a! + 3} 420 Q${(a! + b!) / 2} 424 ${b! - 3} 420`} fill="none" stroke={SKIN_SH2} strokeWidth="2" opacity="0.5" />
-                <path d={`M${a! + 5} 429 Q${(a! + b!) / 2} 433 ${b! - 5} 429`} fill="none" stroke={SKIN_HI1} strokeWidth="2.5" opacity="0.55" />
-              </g>
-            ))}
-            {/* sub-dermal vessels running under the skin */}
-            {bands.map((b, i) => {
-              const cy = ARM_TOP + b.x * ARM_SPAN;
-              const h = Math.max(7, b.w * ARM_SPAN * 0.5);
-              const isV = b.kind === "vein";
-              return (
-                <g key={i}>
-                  <ellipse
-                    cx={120}
-                    cy={cy}
-                    rx={56}
-                    ry={h * 0.95}
-                    fill={isV ? "oklch(0.52 0.14 258 / 0.14)" : "oklch(0.58 0.2 24 / 0.13)"}
-                  />
-                  <path
-                    d={`M66 ${cy + 3} C 88 ${cy - 7}, 104 ${cy + 8}, 122 ${cy} S 156 ${cy - 8}, 176 ${cy + 3}`}
-                    fill="none"
-                    stroke={isV ? VEIN_DEEP : ART_DEEP}
-                    strokeWidth={h}
-                    strokeLinecap="round"
-                    opacity="0.55"
-                  />
-                  <path
-                    d={`M66 ${cy + 3} C 88 ${cy - 7}, 104 ${cy + 8}, 122 ${cy} S 156 ${cy - 8}, 176 ${cy + 3}`}
-                    fill="none"
-                    stroke={isV ? VEIN_MID : ART_MID}
-                    strokeWidth={h * 0.62}
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d={`M78 ${cy + 0.5} C 96 ${cy - 7}, 108 ${cy + 5}, 124 ${cy - 2}`}
-                    fill="none"
-                    stroke={isV ? VEIN_HI : ART_HI}
-                    strokeWidth={Math.max(1.5, h * 0.2)}
-                    strokeLinecap="round"
-                    opacity="0.75"
-                  />
-                  <path
-                    d={`M126 ${cy} q 14 ${isV ? -12 : 12} 30 ${isV ? -14 : 14}`}
-                    fill="none"
-                    stroke={isV ? VEIN_MID : ART_MID}
-                    strokeWidth={Math.max(2, h * 0.32)}
-                    strokeLinecap="round"
-                    opacity="0.6"
-                  />
-                </g>
-              );
-            })}
-            {/* IV catheter, parked on the right, needle aimed at the arm */}
-            <g transform={`translate(0 ${ARM_TOP + pos * ARM_SPAN})`}>
-              <rect x="96" y="-2.6" width="80" height="5.2" fill="oklch(0.62 0.02 250)" />
-              <rect x="96" y="-2.6" width="80" height="1.6" fill="oklch(0.9 0.01 250)" />
-              <rect x="96" y="1.4" width="80" height="1.4" fill="oklch(0.4 0.02 250)" />
-              <path d="M96 -2.6 L96 2.6 L82 2.6 Z" fill="oklch(0.86 0.01 250)" />
-              <path d="M96 -2.6 L88 0.4 L82 2.6 Z" fill="oklch(0.55 0.02 250)" opacity="0.7" />
-              <path d="M176 -20 L206 -12 L206 -6 L176 -6 Z" fill="oklch(0.56 0.13 195)" stroke={SKIN_DEEP} strokeWidth="1" />
-              <path d="M176 20 L206 12 L206 6 L176 6 Z" fill="oklch(0.5 0.12 195)" stroke={SKIN_DEEP} strokeWidth="1" />
-              <rect x="176" y="-9" width="36" height="18" rx="3" fill="oklch(0.86 0.05 200 / 0.9)" stroke="oklch(0.45 0.04 220)" strokeWidth="1.2" />
-              <rect x="180" y="-5" width="20" height="10" rx="2" fill="oklch(0.66 0.16 22 / 0.55)" />
-              <rect x="180" y="-5" width="20" height="3" fill="oklch(0.95 0.02 200 / 0.7)" />
-              <rect x="210" y="-7" width="24" height="14" rx="3" fill="oklch(0.52 0.12 195)" stroke="oklch(0.36 0.08 200)" strokeWidth="1.2" />
-              {[214, 219, 224, 229].map((rx) => (
-                <rect key={rx} x={rx} y="-5" width="2" height="10" fill="oklch(0.7 0.1 195)" opacity="0.7" />
-              ))}
-            </g>
-          </svg>
+        <div className="relative flex w-full flex-1 justify-center overflow-hidden">
+          <canvas
+            ref={screenRef}
+            width={CANVAS_W * PIXEL_SCALE}
+            height={CANVAS_H * PIXEL_SCALE}
+            className="h-full w-auto"
+            style={{ imageRendering: "pixelated" }}
+          />
 
           {hit && (
             <span
