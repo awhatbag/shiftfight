@@ -85,9 +85,11 @@ function buildBands(level: number, round: number): Band[] {
   // keep vessels from visually merging: nudge apart, collision radii unchanged
   bands.sort((a, b) => a.x - b.x);
   for (let b = 1; b < bands.length; b++) {
-    const minGap = (bands[b - 1].w + bands[b].w) / 2 + 0.02;
-    if (bands[b].x - bands[b - 1].x < minGap) {
-      bands[b].x = Math.min(0.86, bands[b - 1].x + minGap);
+    const prev = bands[b - 1]!;
+    const cur = bands[b]!;
+    const minGap = (prev.w + cur.w) / 2 + 0.02;
+    if (cur.x - prev.x < minGap) {
+      cur.x = Math.min(0.86, prev.x + minGap);
     }
   }
   return bands;
@@ -118,17 +120,16 @@ function armSvg(bands: Band[], r: Ramp): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}">
     <path d="M66 -2 L66 92 L68 152 L72 212 L80 264 L85 288 L74 302 L65 324 L63 362 L68 398 L77 426 L163 426 L172 398 L177 362 L175 324 L166 302 L155 288 L160 264 L168 212 L172 152 L174 92 L174 -2 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
     <path d="M72 306 L48 316 L37 337 L40 360 L54 368 L72 357 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
-    ${[
+    const FINGERS: [number, number][] = [
       [78, 100],
       [102, 124],
       [126, 148],
       [150, 168],
-    ]
-      .map(
-        ([a, b]) =>
-          `<path d="M${a} 418 L${a} 434 Q${(a + b) / 2} 440 ${b} 434 L${b} 418 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="2.5" stroke-linejoin="round"/>`,
-      )
-      .join("")}
+    ];
+    ${FINGERS.map(
+      ([a, b]) =>
+        `<path d="M${a} 418 L${a} 434 Q${(a + b) / 2} 440 ${b} 434 L${b} 418 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="2.5" stroke-linejoin="round"/>`,
+    ).join("")}
     <path d="M88 4 L104 4 L100 280 L86 280 Z" fill="${r.hi1}" opacity="0.5"/>
     <path d="M93 8 L100 8 L97 268 L91 268 Z" fill="${r.hi2}" opacity="0.45"/>
     <path d="M144 4 L170 4 L160 280 L142 280 Z" fill="${r.sh1}" opacity="0.42"/>
