@@ -15,6 +15,9 @@ import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, GATES, STATION, STATION_CHAIRS, STATION_FRAME, msPerUnit, routeTo, stationChair, stationChairInWard, type Point } from "@/game/wardNav";
 import type { ActiveEvent, Banner, CatastrophePhase, RollingHazard } from "./wardTypes";
+import { WardHud } from "./WardHud";
+import { PatientActionPanel } from "./PatientActionPanel";
+import { CatastropheHazardLayer } from "./CatastropheHazardLayer";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import { NO_EFFECTS, type Effects } from "@/game/gear";
@@ -1099,8 +1102,6 @@ export function WardScreen({
     say("ABANDONED", "-15 points. The DON noticed.", false);
   }
 
-  const lowTime = secondsLeft <= 15;
-
   return (
     <div
       className={cn(
@@ -1108,123 +1109,24 @@ export function WardScreen({
         (manualPause || settingsOpen) && "game-frozen",
       )}
     >
-      {/* HUD */}
-      <div className="z-10 space-y-2 px-3 pt-2">
-        <div className="flex items-stretch gap-2">
-          <div
-            className={cn(
-              "flex flex-1 items-center gap-2 rounded-2xl border-2 border-border bg-card px-3 py-1.5",
-              lowTime && "animate-throb border-alarm",
-            )}
-          >
-            <span className="text-2xl leading-none">⏱️</span>
-            <div className="min-w-0 flex-1">
-              <p
-                className={cn(
-                  "font-display text-3xl font-black leading-none tabular-nums",
-                  lowTime && "text-alarm",
-                )}
-              >
-                {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
-              </p>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-[width] duration-100 ease-linear",
-                    lowTime ? "bg-alarm" : "bg-primary",
-                  )}
-                  style={{ width: `${shiftLeft * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => {
-              setManualPause((p) => {
-                if (!p) setPauseLine(randomPauseLine());
-                return !p;
-              });
-            }}
-            aria-label={manualPause ? "Resume shift" : "Pause shift"}
-            className="chunky chunky-press grid w-14 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
-          >
-            {manualPause ? "▶️" : "⏸️"}
-          </button>
-          <button
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-            className="chunky chunky-press grid w-14 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
-          >
-            ⚙️
-          </button>
-        </div>
-
-        <div className="flex items-stretch gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-2xl border-2 border-border bg-card px-2.5 py-1.5">
-            <span className="text-xl leading-none">❤️</span>
-            <div className="min-w-0 flex-1">
-              <div className="h-3 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-200",
-                    stability > 55 ? "bg-calm" : stability > 25 ? "bg-gold" : "bg-alarm",
-                  )}
-                  style={{ width: `${stability}%` }}
-                />
-              </div>
-            </div>
-          </div>
-          <span className="font-display grid place-items-center rounded-2xl border-2 border-border bg-card px-2 text-sm font-black">
-            ⭐{stats.current.points}
-          </span>
-          <span
-            className={cn(
-              "font-display grid place-items-center rounded-2xl border-2 border-border px-2 text-sm font-black",
-              combo > 2 ? "animate-throb bg-gold text-gold-foreground" : "bg-card",
-            )}
-          >
-            🔥x{combo}
-          </span>
-        </div>
-
-        {/* this shift's challenges — compact tracker with live progress */}
-        <div className="flex items-stretch gap-1.5 overflow-hidden">
-          {objectives.map((o) => {
-            const prog = Math.min(
-              o.target,
-              objectiveProgress(o.key, {
-                ...counters.current,
-                points: stats.current.points,
-              }),
-            );
-            return (
-              <span
-                key={o.key}
-                title={o.label}
-                className={cn(
-                  "flex min-w-0 flex-1 items-center gap-1 rounded-xl border-2 border-border px-1.5 py-0.5 text-[10px] font-bold leading-tight",
-                  o.done ? "bg-calm text-calm-foreground" : "bg-card",
-                )}
-              >
-                <span className="text-sm leading-none">{o.done ? "✅" : o.icon}</span>
-                <span className={cn("truncate", o.done && "line-through")}>{o.label}</span>
-                <span className="font-display ml-auto shrink-0">
-                  {prog}/{o.target}
-                </span>
-              </span>
-            );
-          })}
-        </div>
-
-        {jobSecurity > 0 && jobSecurity < FINAL_WARNING_AT && (
-          <p className="font-display animate-throb rounded-xl bg-alarm px-2 py-1 text-center text-[11px] font-black uppercase tracking-wider text-alarm-foreground">
-            ⚠️ Final warning · job security {jobSecurity}%
-          </p>
-        )}
-
-      </div>
-
+      <WardHud
+        secondsLeft={secondsLeft}
+        shiftLeft={shiftLeft}
+        stability={stability}
+        points={stats.current.points}
+        combo={combo}
+        objectives={objectives}
+        counters={counters.current}
+        jobSecurity={jobSecurity}
+        paused={manualPause}
+        onTogglePause={() => {
+          setManualPause((paused) => {
+            if (!paused) setPauseLine(randomPauseLine());
+            return !paused;
+          });
+        }}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
 
       {/* WARD */}
       <div
@@ -1421,41 +1323,11 @@ export function WardScreen({
           );
         })}
 
-        {/* supplied avocado sprites travel only east to west; bed hits settle
-            at floor level, wait five seconds, then flicker away */}
-        {avocados.map((avocado) => {
-          const age = gameT.current - avocado.born;
-          const collided = avocado.hitX !== null && age >= avocado.hitAt;
-          const stoppedFor = collided ? age - avocado.hitAt : 0;
-          const gone = collided ? stoppedFor > 5_850 : age > avocado.speed + 500;
-          if (gone) return null;
-          const travel = Math.min(1, age / avocado.speed);
-          const x = collided && avocado.hitX !== null ? avocado.hitX : 1.1 - travel * 1.22;
-          const y = collided
-            ? avocado.y + 0.045
-            : avocado.y + (avocado.endY - avocado.y) * travel + Math.sin(age / 115) * 0.007;
-          const flicker = collided && stoppedFor > 5_000 && Math.floor(stoppedFor / 90) % 2 === 0;
-          const sprites = catastrophe.hazardSprites;
-          const art = sprites[avocado.art % sprites.length] ?? sprites[0];
-          return (
-            <img
-              key={avocado.id}
-              src={art}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              className="pointer-events-none absolute z-[88] object-contain"
-              style={{
-                left: `${x * 100}%`,
-                top: `${y * 100}%`,
-                height: `${avocado.size}%`,
-                width: `${avocado.size * 1.15}%`,
-                opacity: flicker ? 0.15 : 1,
-                transform: `translate(-50%,-50%) rotate(${collided ? avocado.spin * 70 : avocado.spin * age * 0.24}deg)`,
-              }}
-            />
-          );
-        })}
+        <CatastropheHazardLayer
+          hazards={avocados}
+          sprites={catastrophe.hazardSprites}
+          now={gameT.current}
+        />
 
         {/* contact shadows — a single low layer so characters always
             walk over them, never underneath */}
@@ -1854,87 +1726,12 @@ export function WardScreen({
         )}
       </div>
 
-      {/* action overlay — floats above the ward so opening it never resizes the play area */}
-      <div
-        className={cn(
-          "absolute inset-x-0 bottom-0 z-30",
-          selectedEvent
-            ? "max-h-[58%] overflow-y-auto rounded-t-3xl border-t-2 border-border bg-card px-3 pb-4 pt-3 shadow-[0_-10px_24px_-16px_oklch(0_0_0/0.5)]"
-            : "pointer-events-none px-2 pb-1",
-        )}
-      >
-        {selectedEvent ? (
-          <div className="animate-slide-up space-y-1.5">
-            {(() => {
-              const here = nurseHereBed === selectedEvent.bed;
-              return (
-                <>
-                  <div className="flex items-start gap-2">
-                    <span className="text-3xl leading-none">{here ? selectedEvent.def.icon : "🚶‍♀️"}</span>
-                    <div className="min-w-0">
-                      <p className="font-display truncate text-base font-black uppercase">
-                        {beds[selectedEvent.bed]?.name}
-                        {here ? ` — ${selectedEvent.def.label}` : " — on my way"}
-                      </p>
-                      <p
-                        className={cn(
-                          "font-bold leading-snug",
-                          here ? "text-2xl text-foreground" : "text-base text-muted-foreground",
-                        )}
-                      >
-                        {here ? (
-                          isCatastropheEvent(selectedEvent.def) ? (
-                            <>
-                              {selectedEvent.def.callLine && (
-                                <span className="block">“{selectedEvent.def.callLine}”</span>
-                              )}
-                              <span className="mt-1 block">{selectedEvent.def.brief}</span>
-                            </>
-                          ) : selectedEvent.def.brief
-                        ) : "Walking over… you'll see what they want on arrival."}
-                      </p>
-                    </div>
-                  </div>
-                   {here ? (
-                     <div className="grid grid-cols-3 gap-1.5">
-                       {(Object.keys(selectedEvent.def.options) as ActionKind[]).map((a) => (
-                        <button
-                          key={a}
-                          onClick={() => doAction(a)}
-                          className={cn(
-                            "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5",
-                            ACTION_META[a].color,
-                          )}
-                        >
-                          <span className="text-2xl leading-none">{ACTION_META[a].icon}</span>
-                          <span className="font-display text-xs font-black">{a}</span>
-                          <span className="text-xs font-semibold leading-tight opacity-95">
-                            {selectedEvent.def.options[a]}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[0, 1, 2].map((i) => (
-                        <div
-                          key={i}
-                          className="flex flex-col items-center gap-0.5 rounded-2xl bg-muted px-1 py-1.5 opacity-70"
-                        >
-                          <span className="text-xl leading-none">❓</span>
-                          <span className="font-display text-[11px] font-black text-muted-foreground">
-                            ???
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-        ) : null}
-      </div>
+      <PatientActionPanel
+        event={selectedEvent}
+        beds={beds}
+        nurseHereBed={nurseHereBed}
+        onAction={doAction}
+      />
 
       {/* mini-game overlay + controls */}
       {mini && (
