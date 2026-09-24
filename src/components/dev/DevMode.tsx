@@ -1,3 +1,4 @@
+import { CATASTROPHES } from "@/game/catastrophes";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { MINI_GAMES } from "@/game/minigames";
