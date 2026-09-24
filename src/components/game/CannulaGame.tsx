@@ -12,6 +12,23 @@ type Band = { x: number; w: number; kind: "vein" | "artery" };
 
 const ROUNDS = 3;
 
+const SKIN_TONES = [
+  "suture-skin-light",
+  "suture-skin-tan",
+  "suture-skin-brown",
+  "suture-skin-dark",
+] as const;
+const SKIN_TONE_KEY = "shift-fight-cannula-skin-tone";
+
+/** Pixel-art helpers: the arm is drawn on a 120x220 vertical canvas. */
+const ARM_TOP = 14;
+const ARM_SPAN = 112;
+const SKIN = "var(--suture-skin)";
+const SKIN_SHADE = "color-mix(in oklab, var(--suture-skin) 78%, black)";
+const SKIN_LIGHT = "color-mix(in oklab, var(--suture-skin) 82%, white)";
+const SKIN_LINE = "color-mix(in oklab, var(--suture-skin) 55%, black)";
+
+
 function buildBands(level: number, round: number): Band[] {
   const rnd = () => Math.random();
   const veinW = Math.max(0.09, 0.3 - level * 0.03 - round * 0.015);
