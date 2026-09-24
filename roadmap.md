@@ -13,3 +13,5 @@
 - [x] Restore direct avocado patient interactions with complaint, problem, and actions shown together.
 - [x] Avocado Avalanche: normal patient flow, 0.5s follow-up problems, tallied outcome, DON conclusion art, job-security impact
 - [x] Avocado Avalanche intro: player-dismissed continue button with rotating avocado names
+- [ ] Refine the Cannula mini-game into detailed 32-bit pixel art (higher-density grid, contoured arm/hand, organic veins, detailed catheter)
+- [ ] Move the cannula to the right side of the screen, needle pointing inward
