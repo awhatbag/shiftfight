@@ -20,13 +20,29 @@ const SKIN_TONES = [
 ] as const;
 const SKIN_TONE_KEY = "shift-fight-cannula-skin-tone";
 
-/** Pixel-art helpers: the arm is drawn on a 120x220 vertical canvas. */
-const ARM_TOP = 14;
-const ARM_SPAN = 112;
+/** Hi-bit (32-bit era) arm drawn on a high-density 240x440 vertical canvas. */
+const CANVAS_W = 240;
+const CANVAS_H = 440;
+const ARM_TOP = 34;
+const ARM_SPAN = 224;
+
+/** Long tonal ramp per skin tone, in the style of 32-bit arcade sprites. */
 const SKIN = "var(--suture-skin)";
-const SKIN_SHADE = "color-mix(in oklab, var(--suture-skin) 78%, black)";
-const SKIN_LIGHT = "color-mix(in oklab, var(--suture-skin) 82%, white)";
-const SKIN_LINE = "color-mix(in oklab, var(--suture-skin) 55%, black)";
+const SKIN_HI2 = "color-mix(in oklab, var(--suture-skin) 68%, white)";
+const SKIN_HI1 = "color-mix(in oklab, var(--suture-skin) 84%, white)";
+const SKIN_MID = "color-mix(in oklab, var(--suture-skin) 94%, black)";
+const SKIN_SH1 = "color-mix(in oklab, var(--suture-skin) 84%, black)";
+const SKIN_SH2 = "color-mix(in oklab, var(--suture-skin) 70%, black)";
+const SKIN_LINE = "color-mix(in oklab, var(--suture-skin) 52%, black)";
+const SKIN_DEEP = "color-mix(in oklab, var(--suture-skin) 38%, black)";
+
+const VEIN_DEEP = "oklch(0.42 0.14 262)";
+const VEIN_MID = "oklch(0.52 0.15 258)";
+const VEIN_HI = "oklch(0.66 0.13 252)";
+const ART_DEEP = "oklch(0.44 0.19 22)";
+const ART_MID = "oklch(0.56 0.21 24)";
+const ART_HI = "oklch(0.68 0.19 26)";
+
 
 
 function buildBands(level: number, round: number): Band[] {
