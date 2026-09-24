@@ -124,28 +124,44 @@ function armSvg(bands: Band[], r: Ramp): string {
     })
     .join("");
 
+  const ARM_D =
+    "M66 -2 C65 60 67 120 70 170 C73 215 78 255 85 288 C78 296 68 310 65 326 C62 346 63 378 68 398 L77 426 L163 426 L172 398 C176 378 178 346 175 324 C172 310 162 296 155 288 C162 255 167 215 170 170 C173 120 175 60 174 -2 Z";
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}">
-    <path d="M66 -2 L66 92 L68 152 L72 212 L80 264 L85 288 L74 302 L65 324 L63 362 L68 398 L77 426 L163 426 L172 398 L177 362 L175 324 L166 302 L155 288 L160 264 L168 212 L172 152 L174 92 L174 -2 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M72 306 L48 316 L37 337 L40 360 L54 368 L72 357 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
+    <defs>
+      <clipPath id="armclip"><path d="${ARM_D}"/></clipPath>
+      <linearGradient id="vol" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0" stop-color="${r.sh1}"/>
+        <stop offset="0.18" stop-color="${r.hi1}"/>
+        <stop offset="0.34" stop-color="${r.hi2}" stop-opacity="0.7"/>
+        <stop offset="0.55" stop-color="${r.mid}"/>
+        <stop offset="0.8" stop-color="${r.sh1}"/>
+        <stop offset="1" stop-color="${r.sh2}"/>
+      </linearGradient>
+    </defs>
+    <path d="M72 306 C60 308 48 316 40 332 C35 344 38 358 48 366 C56 370 64 364 72 357 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M48 340 C44 348 46 356 52 360" fill="none" stroke="${r.hi1}" stroke-width="2" opacity="0.6"/>
     ${FINGERS.map(
       ([a, b]) =>
         `<path d="M${a} 418 L${a} 434 Q${(a + b) / 2} 440 ${b} 434 L${b} 418 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="2.5" stroke-linejoin="round"/>`,
     ).join("")}
-    <path d="M88 4 L104 4 L100 280 L86 280 Z" fill="${r.hi1}" opacity="0.5"/>
-    <path d="M93 8 L100 8 L97 268 L91 268 Z" fill="${r.hi2}" opacity="0.45"/>
-    <path d="M144 4 L170 4 L160 280 L142 280 Z" fill="${r.sh1}" opacity="0.42"/>
-    <path d="M160 6 L171 6 L158 276 L150 276 Z" fill="${r.sh2}" opacity="0.38"/>
-    <path d="M86 292 Q120 300 154 292" fill="none" stroke="${r.sh2}" stroke-width="3" opacity="0.55"/>
-    <path d="M84 300 Q120 309 156 300" fill="none" stroke="${r.sh1}" stroke-width="2.5" opacity="0.45"/>
-    <ellipse cx="88" cy="344" rx="20" ry="30" fill="${r.hi1}" opacity="0.38"/>
-    <ellipse cx="152" cy="352" rx="22" ry="38" fill="${r.sh1}" opacity="0.32"/>
-    <path d="M70 410 Q120 420 172 408" fill="none" stroke="${r.sh2}" stroke-width="4" opacity="0.4"/>
+    <path d="${ARM_D}" fill="url(#vol)"/>
+    <g clip-path="url(#armclip)">
+      <path d="M100 10 C102 90 104 170 110 250" fill="none" stroke="${r.hi2}" stroke-width="4" opacity="0.35"/>
+      <path d="M150 20 C148 110 144 200 140 270" fill="none" stroke="${r.sh2}" stroke-width="5" opacity="0.25"/>
+      <path d="M112 300 L108 400 M122 302 L122 404 M132 300 L136 400 M142 298 L150 398" fill="none" stroke="${r.hi1}" stroke-width="2" opacity="0.35"/>
+      <path d="M86 292 Q120 300 154 292" fill="none" stroke="${r.sh2}" stroke-width="3" opacity="0.55"/>
+      <path d="M84 300 Q120 309 156 300" fill="none" stroke="${r.sh1}" stroke-width="2.5" opacity="0.45"/>
+      <ellipse cx="88" cy="344" rx="20" ry="30" fill="${r.hi1}" opacity="0.38"/>
+      <ellipse cx="152" cy="352" rx="22" ry="38" fill="${r.sh1}" opacity="0.32"/>
+      <path d="M70 410 Q120 420 172 408" fill="none" stroke="${r.sh2}" stroke-width="4" opacity="0.4"/>
+      ${vessels}
+    </g>
+    <path d="${ARM_D}" fill="none" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
     ${FINGERS.map(
       ([a, b]) =>
         `<path d="M${a + 3} 420 Q${(a + b) / 2} 424 ${b - 3} 420" fill="none" stroke="${r.sh2}" stroke-width="2" opacity="0.5"/>
          <path d="M${a + 5} 429 Q${(a + b) / 2} 433 ${b - 5} 429" fill="none" stroke="${r.hi1}" stroke-width="2.5" opacity="0.55"/>`,
     ).join("")}
-    ${vessels}
   </svg>`;
 }
 
@@ -422,12 +438,12 @@ export function CannulaGame({ level, paused, onDone }: Props) {
         onClick={tap}
         className="relative flex flex-1 flex-col items-center justify-center rounded-3xl border-2 border-border bg-card p-3"
       >
-        <div className="relative flex w-full flex-1 justify-center overflow-hidden">
+        <div className="relative w-full min-h-0 flex-1 overflow-hidden">
           <canvas
             ref={screenRef}
             width={CANVAS_W * PIXEL_SCALE}
             height={CANVAS_H * PIXEL_SCALE}
-            className="h-full w-auto"
+            className="absolute inset-0 h-full w-full object-contain"
             style={{ imageRendering: "pixelated" }}
           />
 
