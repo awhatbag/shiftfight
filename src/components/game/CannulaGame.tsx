@@ -65,6 +65,13 @@ function buildRamp(base: Oklch) {
 
 type Ramp = ReturnType<typeof buildRamp>;
 
+const FINGERS: [number, number][] = [
+  [78, 100],
+  [102, 124],
+  [126, 148],
+  [150, 168],
+];
+
 function buildBands(level: number, round: number): Band[] {
   const rnd = () => Math.random();
   const veinW = Math.max(0.09, 0.3 - level * 0.03 - round * 0.015);
@@ -120,12 +127,6 @@ function armSvg(bands: Band[], r: Ramp): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}">
     <path d="M66 -2 L66 92 L68 152 L72 212 L80 264 L85 288 L74 302 L65 324 L63 362 L68 398 L77 426 L163 426 L172 398 L177 362 L175 324 L166 302 L155 288 L160 264 L168 212 L172 152 L174 92 L174 -2 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
     <path d="M72 306 L48 316 L37 337 L40 360 L54 368 L72 357 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="3" stroke-linejoin="round"/>
-    const FINGERS: [number, number][] = [
-      [78, 100],
-      [102, 124],
-      [126, 148],
-      [150, 168],
-    ];
     ${FINGERS.map(
       ([a, b]) =>
         `<path d="M${a} 418 L${a} 434 Q${(a + b) / 2} 440 ${b} 434 L${b} 418 Z" fill="${r.mid}" stroke="${r.line}" stroke-width="2.5" stroke-linejoin="round"/>`,
@@ -139,18 +140,11 @@ function armSvg(bands: Band[], r: Ramp): string {
     <ellipse cx="88" cy="344" rx="20" ry="30" fill="${r.hi1}" opacity="0.38"/>
     <ellipse cx="152" cy="352" rx="22" ry="38" fill="${r.sh1}" opacity="0.32"/>
     <path d="M70 410 Q120 420 172 408" fill="none" stroke="${r.sh2}" stroke-width="4" opacity="0.4"/>
-    ${[
-      [78, 100],
-      [102, 124],
-      [126, 148],
-      [150, 168],
-    ]
-      .map(
-        ([a, b], i) =>
-          `<path d="M${a + 3} 420 Q${(a + b) / 2} 424 ${b - 3} 420" fill="none" stroke="${r.sh2}" stroke-width="2" opacity="0.5"/>
-           <path d="M${a + 5} 429 Q${(a + b) / 2} 433 ${b - 5} 429" fill="none" stroke="${r.hi1}" stroke-width="2.5" opacity="0.55"/>`,
-      )
-      .join("")}
+    ${FINGERS.map(
+      ([a, b]) =>
+        `<path d="M${a + 3} 420 Q${(a + b) / 2} 424 ${b - 3} 420" fill="none" stroke="${r.sh2}" stroke-width="2" opacity="0.5"/>
+         <path d="M${a + 5} 429 Q${(a + b) / 2} 433 ${b - 5} 429" fill="none" stroke="${r.hi1}" stroke-width="2.5" opacity="0.55"/>`,
+    ).join("")}
     ${vessels}
   </svg>`;
 }
