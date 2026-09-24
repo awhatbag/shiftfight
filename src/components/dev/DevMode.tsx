@@ -300,12 +300,15 @@ export const DEV_CATEGORIES: Category[] = [
     render: (_api, ui) => (
       <div className="space-y-2">
         <Row label="Catastrophic events">
-          <button
-            onClick={() => emitDevCommand("avocadoAvalanche")}
-            className="chunky-press w-full rounded-2xl bg-alarm py-3 font-display text-sm font-black uppercase text-alarm-foreground"
-          >
-            🥑 Trigger Avocado Avalanche
-          </button>
+          {CATASTROPHES.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => emitDevCommand(c.devCommand)}
+              className="chunky-press w-full rounded-2xl bg-alarm py-3 font-display text-sm font-black uppercase text-alarm-foreground"
+            >
+              {c.devLabel}
+            </button>
+          ))}
           {!ui.info.inShift && (
             <p className="text-[11px] text-muted-foreground">
               Queued for the next live ward.

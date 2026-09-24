@@ -4,9 +4,6 @@ import curtainAsset from "@/assets/curtain-partition.png.asset.json";
 import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
 import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
 import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
-import avocado1Asset from "@/assets/avocado1.png.asset.json";
-import avocado2Asset from "@/assets/avocado2.png.asset.json";
-import avocado3Asset from "@/assets/avocado3.png.asset.json";
 import donWorriedAsset from "@/assets/DON_worried.png.asset.json";
 import donHappyAsset from "@/assets/DON_happy.png.asset.json";
 import donDisappointedAsset from "@/assets/DON_disappointed.png.asset.json";
@@ -70,17 +67,14 @@ import {
   donVisitChance,
 } from "@/game/don";
 import {
-  AVOCADO_DURATION_MS,
-  AVOCADO_EVENTS,
-  AVOCADO_RESPAWN_MS,
-  avalancheConclusion,
+  CATASTROPHES,
+  catastrophesForLevel,
   emptyTally,
-  gradeAvalanche,
-  isAvocadoEvent,
-  nextAvalancheButtonLabel,
-  type AvocadoTally,
+  isCatastropheEvent,
+  type CatastropheDef,
   type CatastropheOutcome,
-} from "@/game/avocado";
+  type CatastropheTally,
+} from "@/game/catastrophes";
 
 export type ShiftStats = {
   level: number;
@@ -400,8 +394,10 @@ export function WardScreen({
 
   /* Level 3's self-contained catastrophic event. Normal ward events are
      suspended, never converted into admissions or moved between beds. */
+  const [catastrophe, setCatastrophe] = useState<CatastropheDef>(CATASTROPHES[0]!);
+  const catastropheRef = useRef<CatastropheDef>(CATASTROPHES[0]!);
   const [avocadoPhase, setAvocadoPhase] = useState<AvocadoPhase>(null);
-  const [avocadoDevRequested, setAvocadoDevRequested] = useState(false);
+  const [avocadoDevRequested, setAvocadoDevRequested] = useState<string | null>(null);
   const [avocados, setAvocados] = useState<RollingAvocado[]>([]);
   const avocadoStarted = useRef(false);
   const avocadoStartT = useRef(0);
@@ -412,12 +408,12 @@ export function WardScreen({
   const avocadoPhaseRef = useRef<AvocadoPhase>(null);
   avocadoPhaseRef.current = avocadoPhase;
   /** temporary tally used only to grade the catastrophe */
-  const avocadoTally = useRef<AvocadoTally>(emptyTally());
+  const avocadoTally = useRef<CatastropheTally>(emptyTally());
   const [avocadoResult, setAvocadoResult] = useState<
     { outcome: CatastropheOutcome; title: string; line: string } | null
   >(null);
   /** rotating label for the intro announcement's continue button */
-  const [avocadoIntroLabel, setAvocadoIntroLabel] = useState("Brace for guac ▶");
+  const [avocadoIntroLabel, setAvocadoIntroLabel] = useState(CATASTROPHES[0]!.defaultIntroLabel);
 
   /* mini-game state */
   const [miniOffer, setMiniOffer] = useState<null | {
@@ -600,7 +596,8 @@ export function WardScreen({
       Catastrophe problems use the SAME countdown as ordinary problems on this
       level, including bed upgrades, gear and shift heat. */
   const makeAvocadoEvent = useCallback((bed: number): ActiveEvent => {
-    const def = AVOCADO_EVENTS[Math.floor(Math.random() * AVOCADO_EVENTS.length)] ?? AVOCADO_EVENTS[0]!;
+    const pool = catastropheRef.current.events;
+    const def = pool[Math.floor(Math.random() * pool.length)] ?? pool[0]!;
     avocadoTally.current.generated += 1;
     const heat = Math.min(1, gameT.current / SHIFT_MS);
     const u = URGENCY_META[urgencyOf(def)];
@@ -621,11 +618,13 @@ export function WardScreen({
   }, [upgrades, mods, cfg]);
 
 
-  const beginAvocadoAvalanche = useCallback(() => {
+  const beginAvocadoAvalanche = useCallback((def: CatastropheDef) => {
     if (avocadoStarted.current || phase !== "play" || mini || miniOffer) return;
     avocadoStarted.current = true;
+    catastropheRef.current = def;
+    setCatastrophe(def);
     setSelected(null);
-    setAvocadoIntroLabel(nextAvalancheButtonLabel());
+    setAvocadoIntroLabel(def.nextIntroLabel());
     setAvocadoPhase("intro");
   }, [mini, miniOffer, phase]);
 
@@ -642,20 +641,25 @@ export function WardScreen({
     buzz(35);
   }, [activeBeds, makeAvocadoEvent]);
 
-  /* Automatic availability is Level 3 only and always begins with at least
-     forty seconds left. Dev Mode can invoke the same contained event directly. */
+  /* Automatic availability follows each catastrophe's level and minimum
+     remaining time. Dev Mode can invoke any registered catastrophe directly. */
   useEffect(() => {
     if (phase !== "play" || avocadoStarted.current) return;
-    if (
-      avocadoDevRequested ||
-      (level === 3 && SHIFT_MS - gameT.current >= 40_000 && gameT.current >= avocadoTriggerT.current)
-    ) {
-      beginAvocadoAvalanche();
-      setAvocadoDevRequested(false);
+    const requested = CATASTROPHES.find((c) => c.id === avocadoDevRequested);
+    const auto = catastrophesForLevel(level).find(
+      (c) => SHIFT_MS - gameT.current >= c.minRemainingMs && gameT.current >= avocadoTriggerT.current,
+    );
+    const def = requested ?? auto;
+    if (def) {
+      beginAvocadoAvalanche(def);
+      setAvocadoDevRequested(null);
     }
   }, [tick, level, phase, avocadoDevRequested, beginAvocadoAvalanche]);
 
-  useEffect(() => onDevCommand("avocadoAvalanche", () => setAvocadoDevRequested(true)), []);
+  useEffect(() => {
+    const offs = CATASTROPHES.map((c) => onDevCommand(c.devCommand, () => setAvocadoDevRequested(c.id)));
+    return () => offs.forEach((off) => off());
+  }, []);
 
   /* Dense opening wave, easing to a lighter stream. Movement remains a small
      positional effect rather than a physics system. */
@@ -665,7 +669,7 @@ export function WardScreen({
       if (rateRef.current === 0) return;
       const now = gameT.current;
       if (now < avocadoNextSpawnT.current) return;
-      const progress = Math.min(1, (now - avocadoStartT.current) / AVOCADO_DURATION_MS);
+      const progress = Math.min(1, (now - avocadoStartT.current) / catastropheRef.current.durationMs);
       const burst = progress < 0.08 ? 4 : progress < 0.3 ? 2 : 1;
       const created = Array.from({ length: burst }, () => {
         const y = 0.33 + Math.random() * 0.59;
@@ -697,21 +701,22 @@ export function WardScreen({
 
   useEffect(() => {
     if (avocadoPhase !== "active") return;
-    if (gameT.current - avocadoStartT.current < AVOCADO_DURATION_MS) return;
-    setEvents(suspendedEvents.current.map((event) => ({ ...event, born: event.born + AVOCADO_DURATION_MS })));
+    const def = catastropheRef.current;
+    if (gameT.current - avocadoStartT.current < def.durationMs) return;
+    setEvents(suspendedEvents.current.map((event) => ({ ...event, born: event.born + def.durationMs })));
     suspendedEvents.current = [];
     setSelected(null);
     /* grade the catastrophe from the outcomes normal gameplay produced */
-    const outcome = gradeAvalanche(avocadoTally.current);
+    const outcome = def.grade(avocadoTally.current);
     stats.current.catastrophe = outcome;
-    setAvocadoResult({ outcome, ...avalancheConclusion(outcome) });
+    setAvocadoResult({ outcome, ...def.conclusion(outcome) });
     setAvocadoPhase("conclusion");
     /* the closing card always clears itself and hands the ward back */
     scheduleAvocado(() => {
       setAvocadoPhase(null);
       setAvocados([]);
       setAvocadoResult(null);
-      setAvocadoDevRequested(false);
+      setAvocadoDevRequested(null);
       avocadoTally.current = emptyTally();
     }, 4_000);
   }, [tick, avocadoPhase, scheduleAvocado]);
