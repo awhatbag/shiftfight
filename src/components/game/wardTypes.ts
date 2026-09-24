@@ -25,3 +25,11 @@ export type RollingHazard = {
   hitAt: number;
   spin: number;
 };
+
+export type StaffRuntime = {
+  path: import("@/game/wardNav").Point[];
+  eventId: number | null;
+  goingHome: boolean;
+  cooldownUntil: number;
+  lastT: number;
+};
