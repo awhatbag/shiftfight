@@ -15,3 +15,5 @@
 - [x] Avocado Avalanche intro: player-dismissed continue button with rotating avocado names
 - [x] Refine the Cannula mini-game into detailed 32-bit pixel art (higher-density grid, contoured arm/hand, organic veins, detailed catheter)
 - [x] Move the cannula to the right side of the screen, needle pointing inward
+
+- [ ] Refactor WardScreen into focused modules without changing gameplay.

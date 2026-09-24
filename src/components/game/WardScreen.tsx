@@ -4,15 +4,17 @@ import curtainAsset from "@/assets/curtain-partition.png.asset.json";
 import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
 import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
 import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
-import donWorriedAsset from "@/assets/DON_worried.png.asset.json";
-import donHappyAsset from "@/assets/DON_happy.png.asset.json";
-import donDisappointedAsset from "@/assets/DON_disappointed.png.asset.json";
-import donAngryAsset from "@/assets/DON_angry.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse } from "./Nurse";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
+import { BED_ARRIVAL, BED_SLOTS, GATES, STATION, STATION_CHAIRS, STATION_FRAME, msPerUnit, routeTo, stationChair, stationChairInWard, type Point } from "@/game/wardNav";
+import type { ActiveEvent, Banner, CatastrophePhase, RollingHazard } from "./wardTypes";
+import { WardHud } from "./WardHud";
+import { PatientActionPanel } from "./PatientActionPanel";
+import { CatastropheHazardLayer } from "./CatastropheHazardLayer";
+import { CatastropheConclusion, CatastropheIntro, DonBubble, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import { NO_EFFECTS, type Effects } from "@/game/gear";
@@ -100,211 +102,6 @@ export type ShiftStats = {
   /** outcome of a catastrophic event, when one ran this shift */
   catastrophe?: CatastropheOutcome | null;
 };
-
-
-type ActiveEvent = {
-  id: number;
-  bed: number;
-  def: EventDef;
-  born: number; // game-time ms
-  ttl: number;
-  /** payout multiplier per offered action, randomised at spawn */
-  scores: Partial<Record<ActionKind, number>>;
-};
-
-type Banner = { id: number; title: string; sub: string; good: boolean };
-type Point = { x: number; y: number };
-type AvocadoPhase = null | "intro" | "active" | "conclusion";
-type RollingAvocado = {
-  id: number;
-  art: number;
-  born: number;
-  y: number;
-  endY: number;
-  size: number;
-  speed: number;
-  hitX: number | null;
-  hitAt: number;
-  spin: number;
-};
-
-/** Fixed 890 × 1123 ward-world coordinates, matching the supplied layout mock-up. */
-const BED_SLOTS: Point[] = [
-  { x: 0.245, y: 0.375 },
-  { x: 0.755, y: 0.375 },
-  { x: 0.245, y: 0.545 },
-  { x: 0.755, y: 0.545 },
-  { x: 0.245, y: 0.71 },
-  { x: 0.755, y: 0.71 },
-  { x: 0.245, y: 0.865 },
-  { x: 0.755, y: 0.865 },
-];
-
-const STATION_FRAME = { x: 0.21, y: 0.11, width: 0.58, height: 0.22 };
-
-/** chair centres in the nurses' station artwork, from left to right */
-const STATION_CHAIRS: readonly [Point, Point, Point, Point, Point] = [
-  { x: 0.195, y: 0.485 },
-  { x: 0.35, y: 0.49 },
-  { x: 0.5, y: 0.5 },
-  { x: 0.645, y: 0.49 },
-  { x: 0.795, y: 0.485 },
-];
-
-function stationChair(index: number): Point {
-  return STATION_CHAIRS[index] ?? STATION_CHAIRS[0];
-}
-
-function stationChairInWard(index: number): Point {
-  const chair = stationChair(index);
-  return {
-    x: STATION_FRAME.x + chair.x * STATION_FRAME.width,
-    y: STATION_FRAME.y + chair.y * STATION_FRAME.height,
-  };
-}
-
-/** ward-space destination matching the first visible chair */
-const STATION: Point = stationChairInWard(0);
-
-/** curtain sections in the corridor the nurse must walk around.
-    box = exact placement measured from the ward reference artwork
-    (890x1123 world space), expressed as fractions of the ward world. */
-const GATES = [
-  {
-    y: 0.405,
-    side: "left" as const,
-    lane: 0.61,
-    box: { left: 0.2921, top: 0.3401, width: 0.1663, height: 0.1470 },
-  },
-  {
-    y: 0.57,
-    side: "right" as const,
-    lane: 0.39,
-    box: { left: 0.5281, top: 0.4934, width: 0.1685, height: 0.1416 },
-  },
-  {
-    y: 0.735,
-    side: "left" as const,
-    lane: 0.61,
-    box: { left: 0.3146, top: 0.6608, width: 0.1629, height: 0.1630 },
-  },
-];
-
-/** bedside standing spots, one per bed, taken from the ward path map */
-const BED_ARRIVAL: Point[] = [
-  { x: 0.24, y: 0.33 },
-  { x: 0.79, y: 0.33 },
-  { x: 0.23, y: 0.6 },
-  { x: 0.79, y: 0.5 },
-  { x: 0.24, y: 0.77 },
-  { x: 0.76, y: 0.75 },
-  { x: 0.24, y: 0.92 },
-  { x: 0.76, y: 0.92 },
-];
-
-/* ---------- walkable network (fixed ward-world coordinates) ----------
-   Horizontal lanes run in the clear floor between bed rows; a single
-   central spine joins them, and the station is entered/left over the
-   open north top of the desk and down the outer side aisles. */
-const LANE_Y = [0.33, 0.46, 0.628, 0.7875, 0.94];
-const LANE_X = [0.24, 0.5, 0.79];
-const DESK_TOP_Y = 0.14;
-const SIDE_X = [0.16, 0.84];
-
-type NavNode = { p: Point; edges: number[] };
-
-const NAV: NavNode[] = [];
-function navAdd(p: Point) {
-  NAV.push({ p, edges: [] });
-  return NAV.length - 1;
-}
-function navLink(a: number, b: number) {
-  NAV[a]!.edges.push(b);
-  NAV[b]!.edges.push(a);
-}
-
-const laneNode: number[][] = LANE_Y.map((y) => LANE_X.map((x) => navAdd({ x, y })));
-LANE_Y.forEach((_, r) => {
-  navLink(laneNode[r]![0]!, laneNode[r]![1]!);
-  navLink(laneNode[r]![1]!, laneNode[r]![2]!);
-  if (r > 0) navLink(laneNode[r - 1]![1]!, laneNode[r]![1]!);
-});
-
-/* station approach: outer side aisles up over the desk arms */
-const deskTopL = navAdd({ x: SIDE_X[0]!, y: DESK_TOP_Y });
-const deskTopR = navAdd({ x: SIDE_X[1]!, y: DESK_TOP_Y });
-const deskTopC = navAdd({ x: 0.5, y: DESK_TOP_Y });
-const outL = navAdd({ x: SIDE_X[0]!, y: LANE_Y[0]! });
-const outR = navAdd({ x: SIDE_X[1]!, y: LANE_Y[0]! });
-navLink(deskTopL, deskTopC);
-navLink(deskTopC, deskTopR);
-navLink(deskTopL, outL);
-navLink(deskTopR, outR);
-navLink(outL, laneNode[0]![0]!);
-navLink(outR, laneNode[0]![2]!);
-
-/* bedside spots hang off their own lane */
-const bedNode = BED_ARRIVAL.map((p, i) => {
-  const id = navAdd(p);
-  const lane = [0, 0, 2, 1, 3, 3, 4, 4][i]!;
-  const col = i % 2 === 0 ? 0 : 2;
-  const anchor = laneNode[lane]![col]!;
-  if (anchor !== id) navLink(id, anchor);
-  return id;
-});
-
-function dist(a: Point, b: Point) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-function nearestNavNode(p: Point) {
-  let best = 0;
-  let bd = Infinity;
-  NAV.forEach((n, i) => {
-    const d = dist(n.p, p);
-    if (d < bd) {
-      bd = d;
-      best = i;
-    }
-  });
-  return best;
-}
-
-function navPath(a: number, b: number): Point[] {
-  const dists = NAV.map(() => Infinity);
-  const prev = NAV.map(() => -1);
-  const seen = NAV.map(() => false);
-  dists[a] = 0;
-  for (;;) {
-    let cur = -1;
-    let cd = Infinity;
-    dists.forEach((d, i) => {
-      if (!seen[i] && d < cd) {
-        cd = d;
-        cur = i;
-      }
-    });
-    if (cur === -1 || cur === b) break;
-    seen[cur] = true;
-    for (const e of NAV[cur]!.edges) {
-      const nd = cd + dist(NAV[cur]!.p, NAV[e]!.p);
-      if (nd < dists[e]!) {
-        dists[e] = nd;
-        prev[e] = cur;
-      }
-    }
-  }
-  const out: Point[] = [];
-  let cur = b;
-  while (cur !== -1) {
-    out.unshift(NAV[cur]!.p);
-    if (cur === a) break;
-    cur = prev[cur]!;
-  }
-  return out;
-}
-
-const MS_PER_UNIT = (u: Upgrades) => Math.max(620, 1500 - u.speed * 230);
 
 
 export function WardScreen({
@@ -396,16 +193,16 @@ export function WardScreen({
      suspended, never converted into admissions or moved between beds. */
   const [catastrophe, setCatastrophe] = useState<CatastropheDef>(CATASTROPHES[0]!);
   const catastropheRef = useRef<CatastropheDef>(CATASTROPHES[0]!);
-  const [avocadoPhase, setAvocadoPhase] = useState<AvocadoPhase>(null);
+  const [avocadoPhase, setAvocadoPhase] = useState<CatastrophePhase>(null);
   const [avocadoDevRequested, setAvocadoDevRequested] = useState<string | null>(null);
-  const [avocados, setAvocados] = useState<RollingAvocado[]>([]);
+  const [avocados, setAvocados] = useState<RollingHazard[]>([]);
   const avocadoStarted = useRef(false);
   const avocadoStartT = useRef(0);
   const avocadoTriggerT = useRef(12_000 + Math.random() * 34_000);
   const avocadoNextSpawnT = useRef(0);
   const avocadoUid = useRef(1);
   const suspendedEvents = useRef<ActiveEvent[]>([]);
-  const avocadoPhaseRef = useRef<AvocadoPhase>(null);
+  const avocadoPhaseRef = useRef<CatastrophePhase>(null);
   avocadoPhaseRef.current = avocadoPhase;
   /** temporary tally used only to grade the catastrophe */
   const avocadoTally = useRef<CatastropheTally>(emptyTally());
@@ -690,7 +487,7 @@ export function WardScreen({
           hitX,
           hitAt: hitX === null ? speed : speed * ((1.08 - hitX) / 1.2),
           spin: Math.random() > 0.5 ? 1 : -1,
-        } satisfies RollingAvocado;
+        } satisfies RollingHazard;
       });
       setAvocados((current) => [...current, ...created]);
       avocadoNextSpawnT.current = now + 170 + progress * 720 + Math.random() * (180 + progress * 420);
@@ -952,55 +749,6 @@ export function WardScreen({
   const nurseHereBed = atBed;
 
   /* ---------------- movement ---------------- */
-  const routeTo = useCallback(
-    (dest: Point, from: Point): Point[] => {
-      const atStation = (p: Point) => p.y < 0.3;
-      const pts: Point[] = [];
-
-      /* leaving a chair: step north over the open top of the desk first */
-      const startNode = atStation(from)
-        ? (pts.push({ x: from.x, y: DESK_TOP_Y }),
-          from.x < 0.5 ? deskTopL : deskTopR)
-        : nearestNavNode(from);
-      if (atStation(from)) pts.push(NAV[startNode]!.p);
-
-      const endNode = atStation(dest)
-        ? dest.x < 0.5
-          ? deskTopL
-          : deskTopR
-        : nearestNavNode(dest);
-
-      pts.push(...navPath(startNode, endNode));
-      if (atStation(dest)) pts.push({ x: dest.x, y: DESK_TOP_Y });
-      pts.push(dest);
-
-      /* prune duplicate / collinear waypoints for smooth motion */
-      const out: Point[] = [];
-      for (const p of pts) {
-        const prev = out[out.length - 1] ?? from;
-        if (Math.abs(prev.x - p.x) < 0.004 && Math.abs(prev.y - p.y) < 0.004)
-          continue;
-        const before = out[out.length - 2] ?? from;
-        if (
-          out.length &&
-          Math.abs(before.x - prev.x) < 0.004 &&
-          Math.abs(prev.x - p.x) < 0.004
-        )
-          out.pop();
-        else if (
-          out.length &&
-          Math.abs(before.y - prev.y) < 0.004 &&
-          Math.abs(prev.y - p.y) < 0.004
-        )
-          out.pop();
-        out.push(p);
-      }
-      return out;
-    },
-    [],
-  );
-
-
 
   const walkTo = useCallback(
     (dest: Point, bed: number | null, slow = false) => {
@@ -1011,14 +759,14 @@ export function WardScreen({
       lastMoveT.current = gameT.current;
       setWalking(true);
     },
-    [routeTo],
+    [],
   );
 
   useEffect(() => {
     if (rate === 0 || !journey.current.length) return;
     let remaining =
       (gameT.current - lastMoveT.current) /
-      (MS_PER_UNIT(upgrades) * mods.travelMult * (returning.current ? 1.9 : 1));
+      (msPerUnit(upgrades) * mods.travelMult * (returning.current ? 1.9 : 1));
     lastMoveT.current = gameT.current;
     let current = nurseRef.current;
     while (remaining > 0 && journey.current.length) {
@@ -1090,7 +838,7 @@ export function WardScreen({
       }
 
       if (!rt.path.length) continue;
-      let remaining = (now - rt.lastT) / (MS_PER_UNIT(upgrades) * 1.3);
+      let remaining = (now - rt.lastT) / (msPerUnit(upgrades) * 1.3);
       rt.lastT = now;
       let cur = staffPosRef.current[key] ?? staffHome(key);
       while (remaining > 0 && rt.path.length) {
@@ -1351,8 +1099,6 @@ export function WardScreen({
     say("ABANDONED", "-15 points. The DON noticed.", false);
   }
 
-  const lowTime = secondsLeft <= 15;
-
   return (
     <div
       className={cn(
@@ -1360,123 +1106,24 @@ export function WardScreen({
         (manualPause || settingsOpen) && "game-frozen",
       )}
     >
-      {/* HUD */}
-      <div className="z-10 space-y-2 px-3 pt-2">
-        <div className="flex items-stretch gap-2">
-          <div
-            className={cn(
-              "flex flex-1 items-center gap-2 rounded-2xl border-2 border-border bg-card px-3 py-1.5",
-              lowTime && "animate-throb border-alarm",
-            )}
-          >
-            <span className="text-2xl leading-none">⏱️</span>
-            <div className="min-w-0 flex-1">
-              <p
-                className={cn(
-                  "font-display text-3xl font-black leading-none tabular-nums",
-                  lowTime && "text-alarm",
-                )}
-              >
-                {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
-              </p>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-[width] duration-100 ease-linear",
-                    lowTime ? "bg-alarm" : "bg-primary",
-                  )}
-                  style={{ width: `${shiftLeft * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => {
-              setManualPause((p) => {
-                if (!p) setPauseLine(randomPauseLine());
-                return !p;
-              });
-            }}
-            aria-label={manualPause ? "Resume shift" : "Pause shift"}
-            className="chunky chunky-press grid w-14 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
-          >
-            {manualPause ? "▶️" : "⏸️"}
-          </button>
-          <button
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-            className="chunky chunky-press grid w-14 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl text-secondary-foreground"
-          >
-            ⚙️
-          </button>
-        </div>
-
-        <div className="flex items-stretch gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-2xl border-2 border-border bg-card px-2.5 py-1.5">
-            <span className="text-xl leading-none">❤️</span>
-            <div className="min-w-0 flex-1">
-              <div className="h-3 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-200",
-                    stability > 55 ? "bg-calm" : stability > 25 ? "bg-gold" : "bg-alarm",
-                  )}
-                  style={{ width: `${stability}%` }}
-                />
-              </div>
-            </div>
-          </div>
-          <span className="font-display grid place-items-center rounded-2xl border-2 border-border bg-card px-2 text-sm font-black">
-            ⭐{stats.current.points}
-          </span>
-          <span
-            className={cn(
-              "font-display grid place-items-center rounded-2xl border-2 border-border px-2 text-sm font-black",
-              combo > 2 ? "animate-throb bg-gold text-gold-foreground" : "bg-card",
-            )}
-          >
-            🔥x{combo}
-          </span>
-        </div>
-
-        {/* this shift's challenges — compact tracker with live progress */}
-        <div className="flex items-stretch gap-1.5 overflow-hidden">
-          {objectives.map((o) => {
-            const prog = Math.min(
-              o.target,
-              objectiveProgress(o.key, {
-                ...counters.current,
-                points: stats.current.points,
-              }),
-            );
-            return (
-              <span
-                key={o.key}
-                title={o.label}
-                className={cn(
-                  "flex min-w-0 flex-1 items-center gap-1 rounded-xl border-2 border-border px-1.5 py-0.5 text-[10px] font-bold leading-tight",
-                  o.done ? "bg-calm text-calm-foreground" : "bg-card",
-                )}
-              >
-                <span className="text-sm leading-none">{o.done ? "✅" : o.icon}</span>
-                <span className={cn("truncate", o.done && "line-through")}>{o.label}</span>
-                <span className="font-display ml-auto shrink-0">
-                  {prog}/{o.target}
-                </span>
-              </span>
-            );
-          })}
-        </div>
-
-        {jobSecurity > 0 && jobSecurity < FINAL_WARNING_AT && (
-          <p className="font-display animate-throb rounded-xl bg-alarm px-2 py-1 text-center text-[11px] font-black uppercase tracking-wider text-alarm-foreground">
-            ⚠️ Final warning · job security {jobSecurity}%
-          </p>
-        )}
-
-      </div>
-
+      <WardHud
+        secondsLeft={secondsLeft}
+        shiftLeft={shiftLeft}
+        stability={stability}
+        points={stats.current.points}
+        combo={combo}
+        objectives={objectives}
+        counters={counters.current}
+        jobSecurity={jobSecurity}
+        paused={manualPause}
+        onTogglePause={() => {
+          setManualPause((paused) => {
+            if (!paused) setPauseLine(randomPauseLine());
+            return !paused;
+          });
+        }}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
 
       {/* WARD */}
       <div
@@ -1673,41 +1320,11 @@ export function WardScreen({
           );
         })}
 
-        {/* supplied avocado sprites travel only east to west; bed hits settle
-            at floor level, wait five seconds, then flicker away */}
-        {avocados.map((avocado) => {
-          const age = gameT.current - avocado.born;
-          const collided = avocado.hitX !== null && age >= avocado.hitAt;
-          const stoppedFor = collided ? age - avocado.hitAt : 0;
-          const gone = collided ? stoppedFor > 5_850 : age > avocado.speed + 500;
-          if (gone) return null;
-          const travel = Math.min(1, age / avocado.speed);
-          const x = collided && avocado.hitX !== null ? avocado.hitX : 1.1 - travel * 1.22;
-          const y = collided
-            ? avocado.y + 0.045
-            : avocado.y + (avocado.endY - avocado.y) * travel + Math.sin(age / 115) * 0.007;
-          const flicker = collided && stoppedFor > 5_000 && Math.floor(stoppedFor / 90) % 2 === 0;
-          const sprites = catastrophe.hazardSprites;
-          const art = sprites[avocado.art % sprites.length] ?? sprites[0];
-          return (
-            <img
-              key={avocado.id}
-              src={art}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              className="pointer-events-none absolute z-[88] object-contain"
-              style={{
-                left: `${x * 100}%`,
-                top: `${y * 100}%`,
-                height: `${avocado.size}%`,
-                width: `${avocado.size * 1.15}%`,
-                opacity: flicker ? 0.15 : 1,
-                transform: `translate(-50%,-50%) rotate(${collided ? avocado.spin * 70 : avocado.spin * age * 0.24}deg)`,
-              }}
-            />
-          );
-        })}
+        <CatastropheHazardLayer
+          hazards={avocados}
+          sprites={catastrophe.hazardSprites}
+          now={gameT.current}
+        />
 
         {/* contact shadows — a single low layer so characters always
             walk over them, never underneath */}
@@ -1784,409 +1401,54 @@ export function WardScreen({
           </div>
         )}
 
-        {/* the DON only appears on the live ward screen, never during mini-games or overlays */}
         {don && phase === "play" && !mini && !settingsOpen && !manualPause && (
-          <div
-            className="pointer-events-none absolute left-1/2 top-[2%] z-[45] flex -translate-x-1/2 flex-col items-center"
-            aria-label="The DON is on the ward"
-          >
-            <div className="animate-pop max-w-[220px] rounded-2xl border-2 border-border bg-card px-2.5 py-1 text-center shadow-lg">
-              <p className="font-display text-[11px] font-black uppercase leading-tight">
-                {don.line}
-              </p>
-            </div>
-            <span className="animate-bob mt-0.5 grid h-11 w-11 place-items-center rounded-full border-2 border-alarm bg-card text-2xl shadow-lg ring-4 ring-alarm/30">
-              🧑‍💼
-            </span>
-            <span className="font-display rounded-full bg-alarm px-1.5 text-[8px] font-black uppercase text-alarm-foreground">
-              DON
-            </span>
-          </div>
+          <DonBubble line={don.line} />
         )}
 
 
-
-        {/* shift objectives briefing */}
         {briefing && (
-          <div className="absolute inset-0 z-[70] grid place-items-center bg-background/85 p-4 backdrop-blur-sm">
-            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 shadow-2xl">
-              <p className="font-display text-center text-[11px] font-black uppercase tracking-widest text-primary">
-                Shift {cfg.level} · {cfg.name}
-              </p>
-              <h3 className="font-display mt-1 text-center text-2xl font-black uppercase leading-none">
-                “{story.title}”
-              </h3>
-              <p className="mt-1 text-center text-sm font-semibold text-muted-foreground">
-                {story.lead}
-              </p>
-              <p className="font-display mt-3 text-center text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-                This shift's challenges
-              </p>
-              <div className="mt-3 space-y-2">
-                {objectives.map((o) => (
-                  <div
-                    key={o.key}
-                    className="flex items-center gap-2 rounded-2xl border-2 border-border bg-background px-2.5 py-2"
-                  >
-                    <span className="text-2xl leading-none">{o.icon}</span>
-                    <span className="min-w-0 flex-1 text-sm font-bold leading-tight">
-                      {o.label}
-                    </span>
-                    <span className="font-display shrink-0 rounded-full bg-gold px-2 py-0.5 text-xs font-black text-gold-foreground">
-                      +{o.reward.amount} {o.reward.type === "points" ? "⭐" : "✨"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => setBriefing(false)}
-                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
-              >
-                Start shift ▶
-              </button>
-            </div>
-          </div>
+          <ShiftBriefing level={cfg.level} name={cfg.name} title={story.title} lead={story.lead} objectives={objectives} onStart={() => setBriefing(false)} />
         )}
-
         {avocadoPhase === "intro" && (
-          <div className="absolute inset-0 z-[90] grid place-items-center bg-background/90 p-4 backdrop-blur-sm">
-            <div className="animate-pop w-full max-w-sm rounded-3xl border-4 border-alarm bg-card p-4 text-center shadow-2xl">
-              <img
-                src={donWorriedAsset.url}
-                alt="Worried Director of Nursing"
-                className="mx-auto h-40 w-auto object-contain [image-rendering:pixelated]"
-              />
-              <p className="font-display mt-1 text-sm font-black uppercase text-alarm">🚨 Catastrophic Event 🚨</p>
-              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">{catastrophe.intro.title}</h3>
-              {catastrophe.intro.lines.map((line, i) => (
-                <p key={line} className={`${i === 0 ? "mt-3" : "mt-2"} text-sm font-bold`}>“{line}”</p>
-              ))}
-              <p className="mt-2 text-sm font-black">“{catastrophe.intro.closing}”</p>
-              <button
-                onClick={() => {
-                  playForwardClick();
-                  startAvocadoAvalanche();
-                }}
-                className="chunky chunky-press mt-4 w-full rounded-2xl bg-alarm py-4 font-display text-xl font-black uppercase text-alarm-foreground"
-              >
-                {avocadoIntroLabel}
-              </button>
-            </div>
-          </div>
+          <CatastropheIntro catastrophe={catastrophe} buttonLabel={avocadoIntroLabel} onStart={() => { playForwardClick(); startAvocadoAvalanche(); }} />
         )}
-
         {avocadoPhase === "conclusion" && avocadoResult && (
-          <div className="absolute inset-0 z-[90] grid place-items-center bg-background/90 p-4 backdrop-blur-sm">
-            <div
-              className={`animate-pop w-full max-w-sm rounded-3xl border-4 bg-card p-4 text-center shadow-2xl ${
-                avocadoResult.outcome === "positive"
-                  ? "border-calm"
-                  : avocadoResult.outcome === "neutral"
-                    ? "border-gold"
-                    : "border-alarm"
-              }`}
-            >
-              <img
-                src={
-                  avocadoResult.outcome === "positive"
-                    ? donHappyAsset.url
-                    : avocadoResult.outcome === "neutral"
-                      ? donDisappointedAsset.url
-                      : donAngryAsset.url
-                }
-                alt="Director of Nursing"
-                className="mx-auto h-44 w-auto object-contain [image-rendering:pixelated]"
-              />
-              <h3 className="font-display text-2xl font-black uppercase leading-none">{avocadoResult.title}</h3>
-              <p className="mt-3 text-base font-bold">DON: “{avocadoResult.line}”</p>
-              <p className="mt-3 text-xs font-bold uppercase opacity-70">
-                {avocadoTally.current.generated} problems · {avocadoTally.current.best} best ·{" "}
-                {avocadoTally.current.sortOf} sort of · {avocadoTally.current.worst} worst ·{" "}
-                {avocadoTally.current.missed} missed
-              </p>
-            </div>
-          </div>
+          <CatastropheConclusion result={avocadoResult} tally={avocadoTally.current} />
         )}
-
-        {/* start cue */}
-        {phase === "ready" && !briefing && (
-          <div className="absolute inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm">
-            <p
-              key={cue}
-              className="font-display animate-pop text-center text-5xl font-black uppercase leading-none text-primary"
-            >
-              {cue}
-            </p>
-          </div>
-        )}
-
-
-        {/* first-shift walkthrough */}
-        {tutorial && phase === "play" && tutStep === 0 && (
-          <div className="absolute inset-0 z-[65] grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
-            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
-              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
-                First shift? Ten-second tour
-              </p>
-              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">
-                Your job 🏥
-              </h3>
-              <p className="mt-3 text-base font-bold">
-                Keep every patient stable until the shift timer runs out.
-              </p>
-              <p className="mt-1 text-base font-semibold text-muted-foreground">
-                When a bay lights up or rings the bell, someone needs you.
-              </p>
-              <button
-                onClick={() => setTutStep(1)}
-                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
-              >
-                Got it ▶
-              </button>
-            </div>
-          </div>
-        )}
-        {tutorial && phase === "play" && tutStep === 2 && (
-          <div className="absolute inset-0 z-[65] grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
-            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
-              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
-                She's on her way
-              </p>
-              <h3 className="font-display mt-1 text-3xl font-black uppercase leading-none">
-                Read, then respond 💬
-              </h3>
-              <p className="mt-3 text-base font-bold">
-                When she arrives you'll see what's wrong — pick the response that fits.
-              </p>
-              <p className="mt-1 text-base font-semibold text-muted-foreground">
-                The best answer pays full points. Others pay half, nothing, or even
-                cost you — revealed only after you choose. Judge, don't guess!
-              </p>
-              <button
-                onClick={() => setTutStep(3)}
-                className="chunky chunky-press mt-4 w-full rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase text-primary-foreground"
-              >
-                Got it ▶
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* end countdown — floats over the ward, synced to the real timer */}
-        {endCountValue !== null && (
-          <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center">
-            <div className="text-center">
-              <p className="font-display text-xl font-black uppercase tracking-widest text-primary drop-shadow-[0_2px_0_var(--color-background)]">
-                Shift finishes in
-              </p>
-              <p
-                key={endCountValue}
-                className="font-display animate-pop text-[7rem] font-black leading-none text-primary drop-shadow-[0_4px_0_var(--color-background)]"
-              >
-                {endCountValue}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* mini-game offer */}
-        {miniOffer && (
-          <div className="absolute inset-0 z-50 grid place-items-center bg-background/85 p-5 backdrop-blur-sm">
-            <div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl">
-              <p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">
-                Bonus round available
-              </p>
-              <h3 className="font-display text-2xl font-black uppercase leading-none">
-                {miniGameByKey(miniOffer.kind).name}
-              </h3>
-              <p className="mt-1 text-sm font-bold">{miniGameByKey(miniOffer.kind).blurb}</p>
-              <p className="font-display mt-2 rounded-2xl bg-[image:var(--gradient-gold)] py-2 text-xl font-black text-gold-foreground">
-                Reward: up to +{miniOffer.bonus} ⭐
-              </p>
-              <p className="font-display mt-1 text-sm font-black uppercase text-calm-foreground">
-                + 12 ✨ XP for finishing it
-              </p>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                A small bonus on top of your shift — finish it for the full reward. The ward
-                keeps ticking at 1/3 speed and you can abandon any time.
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setMiniOffer(null)}
-                  className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-lg font-black uppercase text-secondary-foreground"
-                >
-                  Skip
-                </button>
-                <button
-                  onClick={startMini}
-                  className="chunky chunky-press rounded-2xl bg-primary py-3 font-display text-lg font-black uppercase text-primary-foreground"
-                >
-                  Start ▶
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* pause veil */}
-        {manualPause && (
-          <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-background/85 px-6 text-center backdrop-blur-sm">
-            <p className="font-display text-4xl font-black uppercase">Paused</p>
-            <p className="text-sm font-semibold text-muted-foreground">{pauseLine}</p>
-            <button
-              onClick={() => setManualPause(false)}
-              className="chunky chunky-press rounded-2xl bg-primary px-8 py-4 font-display text-xl font-black uppercase text-primary-foreground"
-            >
-              Resume ▶
-            </button>
-          </div>
-        )}
-
-        {/* settings */}
+        {phase === "ready" && !briefing && <ReadyCue cue={cue} />}
+        {tutorial && phase === "play" && tutStep === 0 && <TutorialOverlay step={0} onNext={() => setTutStep(1)} />}
+        {tutorial && phase === "play" && tutStep === 2 && <TutorialOverlay step={2} onNext={() => setTutStep(3)} />}
+        {endCountValue !== null && <EndCountdown count={endCountValue} />}
+        {miniOffer && <MiniOfferOverlay offer={miniOffer} onSkip={() => setMiniOffer(null)} onStart={startMini} />}
+        {manualPause && <PauseOverlay line={pauseLine} onResume={() => setManualPause(false)} />}
         {settingsOpen && (
-          <div className="absolute inset-0 z-[70] grid place-items-center bg-background/90 p-5 backdrop-blur-sm">
-            <div className="w-full space-y-2 rounded-3xl border-4 border-border bg-card p-4">
-              <h3 className="font-display text-2xl font-black uppercase">Settings</h3>
-              <SettingRow
-                label="All sound"
-                icon="🔊"
-                on={soundOn && musicOn}
-                onToggle={() => {
-                  const next = !(soundOn && musicOn);
-                  if (soundOn !== next) onToggleSound();
-                  setMusicEnabled(next);
-                }}
-              />
-              <SettingRow
-                label="Game sounds"
-                icon="🎮"
-                on={soundOn}
-                onToggle={onToggleSound}
-              />
-              <SettingRow
-                label="Music"
-                icon="🎵"
-                on={musicOn}
-                onToggle={toggleMusic}
-              />
-              <SettingRow
-                label="Haptics"
-                icon="📳"
-                on={hapticsOn}
-                onToggle={onToggleHaptics}
-              />
-              <SettingRow
-                label="Auto-save"
-                icon="💾"
-                on={autoSaveOn}
-                onToggle={onToggleAutoSave}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => onSave?.()}
-                  className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-lg font-black uppercase text-secondary-foreground"
-                >
-                  💾 Save
-                </button>
-                <button
-                  onClick={() => onQuit?.()}
-                  className="chunky chunky-press rounded-2xl bg-alarm py-3 font-display text-lg font-black uppercase text-alarm-foreground"
-                >
-                  🚪 Quit
-                </button>
-              </div>
-              <button
-                onClick={() => setSettingsOpen(false)}
-                className="chunky chunky-press w-full rounded-2xl bg-primary py-3 font-display text-lg font-black uppercase text-primary-foreground"
-              >
-                Back to shift
-              </button>
-            </div>
-          </div>
+          <SettingsOverlay
+            soundOn={soundOn}
+            musicOn={musicOn}
+            hapticsOn={hapticsOn}
+            autoSaveOn={autoSaveOn}
+            onToggleAll={() => {
+              const next = !(soundOn && musicOn);
+              if (soundOn !== next) onToggleSound();
+              setMusicEnabled(next);
+            }}
+            onToggleSound={onToggleSound}
+            onToggleMusic={toggleMusic}
+            onToggleHaptics={onToggleHaptics}
+            onToggleAutoSave={onToggleAutoSave}
+            onSave={() => onSave?.()}
+            onQuit={() => onQuit?.()}
+            onClose={() => setSettingsOpen(false)}
+          />
         )}
       </div>
 
-      {/* action overlay — floats above the ward so opening it never resizes the play area */}
-      <div
-        className={cn(
-          "absolute inset-x-0 bottom-0 z-30",
-          selectedEvent
-            ? "max-h-[58%] overflow-y-auto rounded-t-3xl border-t-2 border-border bg-card px-3 pb-4 pt-3 shadow-[0_-10px_24px_-16px_oklch(0_0_0/0.5)]"
-            : "pointer-events-none px-2 pb-1",
-        )}
-      >
-        {selectedEvent ? (
-          <div className="animate-slide-up space-y-1.5">
-            {(() => {
-              const here = nurseHereBed === selectedEvent.bed;
-              return (
-                <>
-                  <div className="flex items-start gap-2">
-                    <span className="text-3xl leading-none">{here ? selectedEvent.def.icon : "🚶‍♀️"}</span>
-                    <div className="min-w-0">
-                      <p className="font-display truncate text-base font-black uppercase">
-                        {beds[selectedEvent.bed]?.name}
-                        {here ? ` — ${selectedEvent.def.label}` : " — on my way"}
-                      </p>
-                      <p
-                        className={cn(
-                          "font-bold leading-snug",
-                          here ? "text-2xl text-foreground" : "text-base text-muted-foreground",
-                        )}
-                      >
-                        {here ? (
-                          isCatastropheEvent(selectedEvent.def) ? (
-                            <>
-                              {selectedEvent.def.callLine && (
-                                <span className="block">“{selectedEvent.def.callLine}”</span>
-                              )}
-                              <span className="mt-1 block">{selectedEvent.def.brief}</span>
-                            </>
-                          ) : selectedEvent.def.brief
-                        ) : "Walking over… you'll see what they want on arrival."}
-                      </p>
-                    </div>
-                  </div>
-                   {here ? (
-                     <div className="grid grid-cols-3 gap-1.5">
-                       {(Object.keys(selectedEvent.def.options) as ActionKind[]).map((a) => (
-                        <button
-                          key={a}
-                          onClick={() => doAction(a)}
-                          className={cn(
-                            "chunky chunky-press flex flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5",
-                            ACTION_META[a].color,
-                          )}
-                        >
-                          <span className="text-2xl leading-none">{ACTION_META[a].icon}</span>
-                          <span className="font-display text-xs font-black">{a}</span>
-                          <span className="text-xs font-semibold leading-tight opacity-95">
-                            {selectedEvent.def.options[a]}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[0, 1, 2].map((i) => (
-                        <div
-                          key={i}
-                          className="flex flex-col items-center gap-0.5 rounded-2xl bg-muted px-1 py-1.5 opacity-70"
-                        >
-                          <span className="text-xl leading-none">❓</span>
-                          <span className="font-display text-[11px] font-black text-muted-foreground">
-                            ???
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-        ) : null}
-      </div>
+      <PatientActionPanel
+        event={selectedEvent}
+        beds={beds}
+        nurseHereBed={nurseHereBed}
+        onAction={doAction}
+      />
 
       {/* mini-game overlay + controls */}
       {mini && (
@@ -2231,34 +1493,3 @@ export function WardScreen({
   );
 }
 
-function SettingRow({
-  label,
-  icon,
-  on,
-  onToggle,
-}: {
-  label: string;
-  icon: string;
-  on: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className="flex w-full items-center justify-between gap-2 rounded-2xl border-2 border-border bg-background px-3 py-3"
-    >
-      <span className="font-display flex items-center gap-2 text-base font-black uppercase">
-        <span className="text-xl">{icon}</span>
-        {label}
-      </span>
-      <span
-        className={cn(
-          "font-display rounded-xl px-3 py-1 text-sm font-black",
-          on ? "bg-calm text-calm-foreground" : "bg-muted text-muted-foreground",
-        )}
-      >
-        {on ? "ON" : "OFF"}
-      </span>
-    </button>
-  );
-}
