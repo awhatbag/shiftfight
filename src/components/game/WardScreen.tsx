@@ -1109,8 +1109,8 @@ export function WardScreen({
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
+      <div ref={wardRef} className="ward-viewport relative flex-1 select-none overflow-hidden bg-ward-deep">
       <WardScene
-        wardRef={wardRef}
         level={cfg.level}
         levelName={cfg.name}
         beds={beds}
@@ -1137,7 +1137,7 @@ export function WardScreen({
         now={gameT.current}
       />
 
-      <div className="ward-viewport pointer-events-none absolute inset-x-0 bottom-0 top-[112px] select-none overflow-hidden">
+      <div className="absolute inset-0">
         {/* banner */}
         {banner && (
           <div className="pointer-events-none absolute inset-x-2 top-[36%] z-30 flex justify-center">

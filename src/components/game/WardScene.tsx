@@ -1,4 +1,3 @@
-import type { RefObject } from "react";
 import wardBackgroundAsset from "@/assets/shift-fight-ward-spring-background.png.asset.json";
 import curtainAsset from "@/assets/curtain-partition.png.asset.json";
 import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
@@ -11,8 +10,8 @@ import { Nurse, type NurseAction, type NurseDirection } from "./Nurse";
 import { CatastropheHazardLayer } from "./CatastropheHazardLayer";
 import type { ActiveEvent, RollingHazard, StaffRuntime } from "./wardTypes";
 
-export function WardScene({ wardRef, level, levelName, beds, events, flash, selected, nurseHereBed, onTapBed, onGoStation, staff, staffRuntime, staffPositions, staffHome, staffFlash, redAlert, onTapStaff, character, nurse, walking, nurseAction, nurseDirection, hazards, hazardSprites, now }: {
-  wardRef: RefObject<HTMLDivElement | null>; level: number; levelName: string; beds: BedState[]; events: ActiveEvent[];
+export function WardScene({ level, levelName, beds, events, flash, selected, nurseHereBed, onTapBed, onGoStation, staff, staffRuntime, staffPositions, staffHome, staffFlash, redAlert, onTapStaff, character, nurse, walking, nurseAction, nurseDirection, hazards, hazardSprites, now }: {
+  level: number; levelName: string; beds: BedState[]; events: ActiveEvent[];
   flash: Record<number, "good" | "bad" | null>; selected: number | null; nurseHereBed: number | null;
   onTapBed: (bed: number) => void; onGoStation: () => void; staff: string[]; staffRuntime: Record<string, StaffRuntime>;
   staffPositions: Record<string, Point>; staffHome: (key: string) => Point; staffFlash: string | null; redAlert: boolean;
@@ -20,7 +19,7 @@ export function WardScene({ wardRef, level, levelName, beds, events, flash, sele
   nurseAction: NurseAction; nurseDirection: NurseDirection; hazards: RollingHazard[]; hazardSprites: string[]; now: number;
 }) {
   const selectedEvent = events.find((event) => event.bed === selected);
-  return <div ref={wardRef} className="ward-viewport relative flex-1 select-none overflow-hidden bg-ward-deep"><div className="ward-world">
+  return <div className="ward-world">
     <img src={wardBackgroundAsset.url} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover" draggable={false}/>
     <div className="absolute z-10" style={{ left: `${STATION_FRAME.x * 100}%`, top: `${STATION_FRAME.y * 100}%`, width: `${STATION_FRAME.width * 100}%`, height: `${STATION_FRAME.height * 100}%` }}>
       <button onClick={onGoStation} className="pointer-events-auto absolute inset-0 text-left" aria-label="Return to nurses station"><img src={nursesStationAsset.url} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-contain"/><div className="absolute bottom-[17%] left-1/2 w-[22%] -translate-x-1/2 text-center text-primary-foreground"><p className="font-display truncate text-[9px] font-black uppercase leading-none">Lv {level}</p><p className="font-display truncate text-[6px] font-black uppercase leading-none">{levelName}</p></div></button>
@@ -45,5 +44,5 @@ export function WardScene({ wardRef, level, levelName, beds, events, flash, sele
     <CatastropheHazardLayer hazards={hazards} sprites={hazardSprites} now={now}/>
     <div className="pointer-events-none absolute inset-0 z-[4]">{beds.map((bed) => { const slot = BED_SLOTS[bed.id]; if (!slot) return null; return <div key={`sh-bed-${bed.id}`} className="absolute rounded-[50%] bg-black/45 blur-[5px]" style={{ left: `${slot.x * 100}%`, top: `${(slot.y + 0.042) * 100}%`, width: "25%", height: "6%", transform: "translate(-50%,-50%)" }}/>; })}{GATES.map((gate) => <div key={`sh-curtain-${gate.y}`} className="absolute rounded-[50%] bg-black/45 blur-[5px]" style={{ left: `${(gate.box.left + gate.box.width / 2) * 100}%`, top: `${(gate.box.top + gate.box.height - 0.02) * 100}%`, width: `${gate.box.width * 88}%`, height: "4.5%", transform: "translate(-50%,-50%)" }}/>)}</div>
     <div className={cn("pointer-events-none absolute h-[84px] w-[62px] transition-all ease-linear", !walking && nurseHereBed === null && "invisible")} style={{ left: `${nurse.x * 100}%`, top: `${nurse.y * 100}%`, transform: "translate(-50%,-80%)", transitionDuration: "80ms", zIndex: Math.round(nurse.y * 100) + 1 }}><Nurse character={character} moving={walking} action={nurseAction} direction={nurseDirection} expression={selectedEvent && nurseHereBed !== null ? "concerned" : "neutral"}/></div>
-  </div></div>;
+  </div>;
 }
