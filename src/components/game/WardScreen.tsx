@@ -1,19 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import wardBackgroundAsset from "@/assets/shift-fight-ward-spring-background.png.asset.json";
-import curtainAsset from "@/assets/curtain-partition.png.asset.json";
-import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
-import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
-import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
 import { cn } from "@/lib/utils";
-import { Bed, type BedState } from "./Bed";
-import { Nurse } from "./Nurse";
+import type { BedState } from "./Bed";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
-import { BED_ARRIVAL, BED_SLOTS, GATES, STATION, STATION_CHAIRS, STATION_FRAME, msPerUnit, routeTo, stationChair, stationChairInWard, type Point } from "@/game/wardNav";
-import type { ActiveEvent, Banner, CatastrophePhase, RollingHazard } from "./wardTypes";
+import { BED_ARRIVAL, BED_SLOTS, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
+import type { ActiveEvent, Banner, CatastrophePhase, RollingHazard, StaffRuntime } from "./wardTypes";
 import { WardHud } from "./WardHud";
+import { WardScene } from "./WardScene";
 import { PatientActionPanel } from "./PatientActionPanel";
-import { CatastropheHazardLayer } from "./CatastropheHazardLayer";
 import { CatastropheConclusion, CatastropheIntro, DonBubble, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
@@ -31,7 +25,6 @@ import {
 } from "@/lib/sfx";
 import { isMusicOn, playMusic, setMusicEnabled, stopMusic, subscribeMusic, toggleMusic } from "@/lib/music";
 import {
-  ACTION_META,
   EVENTS,
   shuffledPatientNames,
   MAX_BEDS,
@@ -55,7 +48,6 @@ import {
 import {
   emptyCounters,
   evaluateObjectives,
-  objectiveProgress,
   pickObjectives,
   type ShiftCounters,
   type ShiftObjective,
@@ -65,7 +57,6 @@ import {
   DON_VISIT_MS,
   pickDonQuip,
   DON_QUIPS,
-  FINAL_WARNING_AT,
   donVisitChance,
 } from "@/game/don";
 import {
@@ -286,14 +277,7 @@ export function WardScreen({
 
 
   /* ---------------- staff runtime ---------------- */
-  type StaffRt = {
-    path: Point[];
-    eventId: number | null;
-    goingHome: boolean;
-    cooldownUntil: number;
-    lastT: number;
-  };
-  const staffRt = useRef<Record<string, StaffRt>>({});
+  const staffRt = useRef<Record<string, StaffRuntime>>({});
   const staffPosRef = useRef<Record<string, Point>>({});
   const [staffPos, setStaffPos] = useState<Record<string, Point>>({});
   const [staffFlash, setStaffFlash] = useState<string | null>(null);
@@ -1125,262 +1109,35 @@ export function WardScreen({
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      {/* WARD */}
-      <div
-        ref={wardRef}
-        className="ward-viewport relative flex-1 select-none overflow-hidden bg-ward-deep"
-      >
-        <div className="ward-world">
-          <img
-            src={wardBackgroundAsset.url}
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-            draggable={false}
-          />
+      <div ref={wardRef} className="ward-viewport relative flex-1 select-none overflow-hidden bg-ward-deep">
+      <WardScene
+        level={cfg.level}
+        levelName={cfg.name}
+        beds={beds}
+        events={events}
+        flash={flash}
+        selected={selected}
+        nurseHereBed={nurseHereBed}
+        onTapBed={tapBed}
+        onGoStation={goStation}
+        staff={staff}
+        staffRuntime={staffRt.current}
+        staffPositions={staffPos}
+        staffHome={staffHome}
+        staffFlash={staffFlash}
+        redAlert={redAlert}
+        onTapStaff={tapStaff}
+        character={character}
+        nurse={nurse}
+        walking={walking}
+        nurseAction={nurseAction}
+        nurseDirection={nurseDirection}
+        hazards={avocados}
+        hazardSprites={catastrophe.hazardSprites}
+        now={gameT.current}
+      />
 
-          {/* nurses station — fixed to the floor plan, with its original chair anchors */}
-          <div
-            className="absolute z-10"
-            style={{
-              left: `${STATION_FRAME.x * 100}%`,
-              top: `${STATION_FRAME.y * 100}%`,
-              width: `${STATION_FRAME.width * 100}%`,
-              height: `${STATION_FRAME.height * 100}%`,
-            }}
-          >
-            <button
-              onClick={goStation}
-              className="pointer-events-auto absolute inset-0 text-left"
-              aria-label="Return to nurses station"
-            >
-              <img
-                src={nursesStationAsset.url}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-              />
-              <div className="absolute bottom-[17%] left-1/2 w-[22%] -translate-x-1/2 text-center text-primary-foreground">
-                <p className="font-display truncate text-[9px] font-black uppercase leading-none">Lv {cfg.level}</p>
-                <p className="font-display truncate text-[6px] font-black uppercase leading-none">{cfg.name}</p>
-              </div>
-            </button>
-
-            <div className="pointer-events-none absolute inset-0" aria-label="Five station chairs">
-              {Array.from({ length: 5 }, (_, i) => {
-                const staffKey = i > 0 ? staff[i - 1] : undefined;
-                const info = staffKey ? STAFF.find((s) => s.key === staffKey) : undefined;
-                const rt = staffKey ? staffRt.current[staffKey] : undefined;
-                const playerSeated = i === 0 && !walking && atBed === null;
-                const seated = playerSeated || (!!staffKey && !rt?.eventId && !rt?.path.length);
-                const activated = !!staffKey && seated && redAlert;
-                const chair = stationChair(i);
-                return (
-                  <button
-                    key={i}
-                    onClick={() => staffKey ? tapStaff(staffKey) : goStation()}
-                    aria-label={staffKey ? `Send ${info?.name ?? "staff"}` : i === 0 ? "Nurse chair" : "Empty chair"}
-                    className={cn(
-                      "pointer-events-auto absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center text-xl",
-                      activated && "animate-throb rounded-full ring-4 ring-alarm/30",
-                    )}
-                    style={{ left: `${chair.x * 100}%`, top: `${chair.y * 100}%` }}
-                  >
-                    <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-full">
-                      {playerSeated ? (
-                        <span className="block h-[52px] w-[41px] overflow-hidden"><Nurse character={character} action="sit" direction="north" /></span>
-                      ) : seated && info ? info.icon : ""}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* station facade — counter, side arms and outer rims drawn over
-              nurses; only the inner floor (chairs) stays open */}
-          <div
-            className="pointer-events-none absolute"
-            style={{
-              left: `${STATION_FRAME.x * 100}%`,
-              top: `${STATION_FRAME.y * 100}%`,
-              width: `${STATION_FRAME.width * 100}%`,
-              height: `${STATION_FRAME.height * 100}%`,
-              /* depth-sorted on the desk's front edge so anyone standing
-                 south of the counter walks in front of it */
-              zIndex: Math.round((STATION_FRAME.y + STATION_FRAME.height) * 100),
-              clipPath:
-                "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 13% 24%, 13% 62%, 87% 62%, 87% 24%, 13% 24%)",
-            }}
-          >
-
-            <img
-              src={nursesStationAsset.url}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              className="absolute inset-0 h-full w-full object-contain"
-            />
-          </div>
-
-
-
-        {/* curtain obstacles */}
-        {GATES.map((g) => (
-          <div
-            key={g.y}
-            className="pointer-events-none absolute overflow-visible"
-            style={{
-              top: `${g.box.top * 100}%`,
-              left: `${g.box.left * 100}%`,
-              width: `${g.box.width * 100}%`,
-              height: `${g.box.height * 100}%`,
-              zIndex: Math.round((g.y + 0.0325) * 100),
-            }}
-          >
-            <img
-              src={curtainAsset.url}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              className="h-full w-full object-fill"
-              style={{ transform: g.side === "right" ? "scaleX(-1)" : undefined }}
-            />
-          </div>
-        ))}
-
-        {/* staff characters */}
-        {staff.map((k) => {
-          const info = STAFF.find((s) => s.key === k);
-          const rt = staffRt.current[k];
-          const pos = staffPos[k] ?? staffHome(k);
-          const onJob = !!rt && (rt.eventId !== null || rt.path.length > 0);
-          const activated = !onJob && redAlert;
-          return onJob ? (
-            <button
-              key={k}
-              onClick={() => tapStaff(k)}
-              aria-label={`Send ${info?.name ?? "staff"}`}
-              className="absolute z-20 grid h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center"
-              style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%` }}
-            >
-              <span
-                className={cn(
-                  "grid h-10 w-10 place-items-center rounded-full border-2 border-border bg-card text-xl shadow-md",
-                  onJob && "animate-throb border-primary",
-                  activated && "animate-throb border-alarm ring-4 ring-alarm/40",
-                  staffFlash === k && "animate-pop",
-                )}
-              >
-                {info?.icon ?? "🧑‍⚕️"}
-              </span>
-            </button>
-          ) : null;
-        })}
-
-        {/* beds */}
-        {beds.map((b) => {
-          const slot = BED_SLOTS[b.id]!;
-          const ev = events.find((e) => e.bed === b.id);
-          const urg = ev ? urgencyOf(ev.def) : null;
-          return (
-            <div
-              key={b.id}
-              className="absolute h-[14%] w-[26%]"
-              style={{
-                left: `${slot.x * 100}%`,
-                top: `${slot.y * 100}%`,
-                transform: "translate(-50%,-50%)",
-                zIndex: Math.round(slot.y * 100),
-              }}
-            >
-              {urg && urg !== "routine" && level <= 3 && (
-                <span
-                  className={cn(
-                    "font-display absolute -bottom-1 right-1 z-20 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
-                    URGENCY_META[urg].chip,
-                    urg === "critical" && "animate-throb",
-                  )}
-                >
-                  {URGENCY_META[urg].label}
-                </span>
-              )}
-              <Bed
-                bed={b}
-                event={ev?.def}
-                progress={ev ? 1 - (gameT.current - ev.born) / ev.ttl : 0}
-                flash={flash[b.id] ?? null}
-                active={selected === b.id}
-                nurseHere={nurseHereBed === b.id}
-                revealed={nurseHereBed === b.id}
-                onTap={() => tapBed(b.id)}
-              />
-            </div>
-          );
-        })}
-
-        <CatastropheHazardLayer
-          hazards={avocados}
-          sprites={catastrophe.hazardSprites}
-          now={gameT.current}
-        />
-
-        {/* contact shadows — a single low layer so characters always
-            walk over them, never underneath */}
-        <div className="pointer-events-none absolute inset-0 z-[4]">
-          {beds.map((b) => {
-            const slot = BED_SLOTS[b.id]!;
-            return (
-              <div
-                key={`sh-bed-${b.id}`}
-                className="absolute rounded-[50%] bg-black/45 blur-[5px]"
-                style={{
-                  left: `${slot.x * 100}%`,
-                  top: `${(slot.y + 0.042) * 100}%`,
-                  width: "25%",
-                  height: "6%",
-                  transform: "translate(-50%,-50%)",
-                }}
-              />
-            );
-          })}
-          {GATES.map((g) => (
-            <div
-              key={`sh-curtain-${g.y}`}
-              className="absolute rounded-[50%] bg-black/45 blur-[5px]"
-              style={{
-                left: `${(g.box.left + g.box.width / 2) * 100}%`,
-                top: `${(g.box.top + g.box.height - 0.02) * 100}%`,
-                width: `${g.box.width * 88}%`,
-                height: "4.5%",
-                transform: "translate(-50%,-50%)",
-              }}
-            />
-          ))}
-        </div>
-
-
-
-
-        {/* nurse */}
-        <div
-          className={cn(
-            "pointer-events-none absolute h-[84px] w-[62px] transition-all ease-linear",
-            !walking && atBed === null && "invisible",
-          )}
-          style={{
-            left: `${nurse.x * 100}%`,
-            top: `${nurse.y * 100}%`,
-            transform: "translate(-50%,-80%)",
-            transitionDuration: "80ms",
-            zIndex: Math.round(nurse.y * 100) + 1,
-          }}
-        >
-          <Nurse character={character} moving={walking} action={nurseAction} direction={nurseDirection} expression={selectedEvent && atBed !== null ? "concerned" : "neutral"} />
-        </div>
-        </div>
-
+      <div className="absolute inset-0">
         {/* banner */}
         {banner && (
           <div className="pointer-events-none absolute inset-x-2 top-[36%] z-30 flex justify-center">
@@ -1441,6 +1198,7 @@ export function WardScreen({
             onClose={() => setSettingsOpen(false)}
           />
         )}
+      </div>
       </div>
 
       <PatientActionPanel
