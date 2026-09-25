@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import type { BedState } from "./Bed";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
