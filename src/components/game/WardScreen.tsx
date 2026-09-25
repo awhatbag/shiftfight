@@ -1199,6 +1199,7 @@ export function WardScreen({
           />
         )}
       </div>
+      </div>
 
       <PatientActionPanel
         event={selectedEvent}
