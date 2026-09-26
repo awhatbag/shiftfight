@@ -972,8 +972,6 @@ function IntroScreen({
   onToggleSound,
   onToggleAllAudio,
   onToggleHaptics,
-  onLoad,
-  hasSave,
   saveNote,
   onPlay,
   onLadder,
@@ -983,8 +981,6 @@ function IntroScreen({
   onToggleSound: () => void;
   onToggleAllAudio: () => void;
   onToggleHaptics: () => void;
-  onLoad: () => void;
-  hasSave: boolean;
   saveNote: string;
   onPlay: () => void;
   onLadder: () => void;
