@@ -952,6 +952,39 @@ function Game() {
           />
         )}
 
+        {clockInPrompt && (
+          <div className="absolute inset-0 z-[95] flex flex-col justify-center gap-3 bg-background/95 p-6 text-center">
+            <p className="font-display text-2xl font-black uppercase">⏰ Clock in?</p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              You have a saved shift on this device. Carry on where you left off, or start a fresh one?
+            </p>
+            <button
+              onClick={() => {
+                setClockInPrompt(false);
+                loadProgress();
+              }}
+              className="chunky chunky-press w-full rounded-2xl bg-primary py-3 font-display text-base font-black uppercase text-primary-foreground"
+            >
+              ↩ Continue my saved shift
+            </button>
+            <button
+              onClick={() => {
+                setClockInPrompt(false);
+                setPhase("character");
+              }}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+            >
+              🆕 Start a new shift
+            </button>
+            <button
+              onClick={() => setClockInPrompt(false)}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-2.5 font-display text-xs font-black uppercase text-secondary-foreground"
+            >
+              Cancel ✕
+            </button>
+          </div>
+        )}
+
         {slotPicker && (
           <SaveSlotPicker
             mode={slotPicker}
