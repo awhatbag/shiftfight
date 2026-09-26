@@ -307,6 +307,7 @@ function Game() {
     Array.from({ length: SLOT_COUNT }, () => null),
   );
   const [slotPicker, setSlotPicker] = useState<null | "save" | "load">(null);
+  const [clockInPrompt, setClockInPrompt] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [autoSaveOn, setAutoSaveOn] = useState(true);
   const [tutorialDone, setTutorialDone] = useState(true);
