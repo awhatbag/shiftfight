@@ -307,6 +307,7 @@ function Game() {
     Array.from({ length: SLOT_COUNT }, () => null),
   );
   const [slotPicker, setSlotPicker] = useState<null | "save" | "load">(null);
+  const [clockInPrompt, setClockInPrompt] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [autoSaveOn, setAutoSaveOn] = useState(true);
   const [tutorialDone, setTutorialDone] = useState(true);
@@ -690,10 +691,8 @@ function Game() {
             onToggleSound={toggleSound}
             onToggleAllAudio={toggleAllAudio}
             onToggleHaptics={toggleHaptics}
-            onLoad={loadProgress}
-            hasSave={hasSave}
             saveNote={saveNote}
-            onPlay={() => setPhase("character")}
+            onPlay={() => (hasSave ? setClockInPrompt(true) : setPhase("character"))}
             onLadder={() => setPhase("ladder")}
           />
         )}
@@ -953,6 +952,39 @@ function Game() {
           />
         )}
 
+        {clockInPrompt && (
+          <div className="absolute inset-0 z-[95] flex flex-col justify-center gap-3 bg-background/95 p-6 text-center">
+            <p className="font-display text-2xl font-black uppercase">⏰ Clock in?</p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              You have a saved shift on this device. Carry on where you left off, or start a fresh one?
+            </p>
+            <button
+              onClick={() => {
+                setClockInPrompt(false);
+                loadProgress();
+              }}
+              className="chunky chunky-press w-full rounded-2xl bg-primary py-3 font-display text-base font-black uppercase text-primary-foreground"
+            >
+              ↩ Continue my saved shift
+            </button>
+            <button
+              onClick={() => {
+                setClockInPrompt(false);
+                setPhase("character");
+              }}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+            >
+              🆕 Start a new shift
+            </button>
+            <button
+              onClick={() => setClockInPrompt(false)}
+              className="chunky chunky-press w-full rounded-2xl bg-secondary py-2.5 font-display text-xs font-black uppercase text-secondary-foreground"
+            >
+              Cancel ✕
+            </button>
+          </div>
+        )}
+
         {slotPicker && (
           <SaveSlotPicker
             mode={slotPicker}
@@ -973,8 +1005,6 @@ function IntroScreen({
   onToggleSound,
   onToggleAllAudio,
   onToggleHaptics,
-  onLoad,
-  hasSave,
   saveNote,
   onPlay,
   onLadder,
@@ -984,8 +1014,6 @@ function IntroScreen({
   onToggleSound: () => void;
   onToggleAllAudio: () => void;
   onToggleHaptics: () => void;
-  onLoad: () => void;
-  hasSave: boolean;
   saveNote: string;
   onPlay: () => void;
   onLadder: () => void;
@@ -1048,13 +1076,6 @@ function IntroScreen({
         </button>
       </div>
 
-      <button
-        onClick={onLoad}
-        disabled={!hasSave}
-        className="chunky chunky-press relative z-10 w-[82%] max-w-[300px] rounded-2xl bg-secondary py-2.5 font-display text-sm font-black uppercase text-secondary-foreground disabled:opacity-50"
-      >
-        ↩ Continue save
-      </button>
       {saveNote && (
         <p className="relative z-10 font-display text-xs font-black uppercase text-calm-foreground">
           {saveNote}
