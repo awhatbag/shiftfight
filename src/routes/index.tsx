@@ -1043,13 +1043,6 @@ function IntroScreen({
         </button>
       </div>
 
-      <button
-        onClick={onLoad}
-        disabled={!hasSave}
-        className="chunky chunky-press relative z-10 w-[82%] max-w-[300px] rounded-2xl bg-secondary py-2.5 font-display text-sm font-black uppercase text-secondary-foreground disabled:opacity-50"
-      >
-        ↩ Continue save
-      </button>
       {saveNote && (
         <p className="relative z-10 font-display text-xs font-black uppercase text-calm-foreground">
           {saveNote}
