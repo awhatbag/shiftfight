@@ -691,10 +691,8 @@ function Game() {
             onToggleSound={toggleSound}
             onToggleAllAudio={toggleAllAudio}
             onToggleHaptics={toggleHaptics}
-            onLoad={loadProgress}
-            hasSave={hasSave}
             saveNote={saveNote}
-            onPlay={() => setPhase("character")}
+            onPlay={() => (hasSave ? setClockInPrompt(true) : setPhase("character"))}
             onLadder={() => setPhase("ladder")}
           />
         )}
