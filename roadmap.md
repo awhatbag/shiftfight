@@ -17,3 +17,4 @@
 - [x] Move the cannula to the right side of the screen, needle pointing inward
 
 - [x] Refactor WardScreen into focused modules without changing gameplay.
+- [x] Clock in with an existing save now prompts Continue saved shift (opens save slots) or Start a new shift; Continue save button removed from the title screen.
