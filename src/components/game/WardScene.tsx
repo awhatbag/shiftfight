@@ -1,6 +1,7 @@
 import wardBackgroundAsset from "@/assets/shift-fight-ward-spring-background.png.asset.json";
 import curtainAsset from "@/assets/curtain-partition.png.asset.json";
 import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
+import criticalMarkAsset from "@/assets/critical-mark.png.asset.json";
 import { STAFF, URGENCY_META, urgencyOf } from "@/game/config";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_SLOTS, GATES, STATION_CHAIRS, STATION_FRAME, stationChair, type Point } from "@/game/wardNav";
