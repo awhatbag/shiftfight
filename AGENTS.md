@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+East-to-west catastrophe hazards sample their stepped sprite centre against the shared invisible mask derived from the supplied collision map; this keeps collisions artwork-accurate and reusable without bed geometry.

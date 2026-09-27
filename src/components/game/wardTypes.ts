@@ -22,8 +22,10 @@ export type RollingHazard = {
   size: number;
   speed: number;
   hitX: number | null;
+  hitY: number | null;
   hitAt: number;
   spin: number;
+  stepMs: number;
 };
 
 export type StaffRuntime = {
