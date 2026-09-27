@@ -5,7 +5,8 @@ import collisionMask from "@/assets/east-west-collision-mask.png.asset.json";
 let maskPromise: Promise<ImageData> | undefined;
 
 export function loadEastWestCollisionMap(): Promise<ImageData> {
-  maskPromise ??= new Promise((resolve, reject) => {
+  if (maskPromise) return maskPromise;
+  const loading = new Promise<ImageData>((resolve, reject) => {
     const image = new Image();
     image.onload = () => {
       const canvas = document.createElement("canvas");
@@ -19,12 +20,13 @@ export function loadEastWestCollisionMap(): Promise<ImageData> {
     image.onerror = () => reject(new Error("Collision map failed to load"));
     image.src = collisionMask.url;
   }).catch((error) => { maskPromise = undefined; throw error; });
-  return maskPromise;
+  maskPromise = loading;
+  return loading;
 }
 
 export function eastWestCollisionAt(map: ImageData, x: number, y: number): boolean {
   const px = Math.floor(x * map.width);
   const py = Math.floor(y * map.height);
   if (px < 0 || px >= map.width || py < 0 || py >= map.height) return false;
-  return map.data[(py * map.width + px) * 4 + 3] > 127;
+  return (map.data[(py * map.width + px) * 4 + 3] ?? 0) > 127;
 }
