@@ -473,20 +473,18 @@ export function WardScreen({
           hitX: null,
           hitY: null,
           hitAt: speed,
-          spin: Math.random() > 0.5 ? 1 : -1,
+          spin: -1,
           stepMs: 85 + Math.floor(Math.random() * 45),
         };
-        // Only a random quarter participate. Every chosen hazard samples its
-        // centre against the same map future east-to-west objects can use.
-        if (Math.random() < 0.25) {
-          for (let age = 0; age <= speed; age += hazard.stepMs) {
-            const position = rollingHazardPosition(hazard, age);
-            if (eastWestCollisionAt(collisionMap, position.x, position.y)) {
-              hazard.hitX = position.x;
-              hazard.hitY = position.y;
-              hazard.hitAt = age;
-              break;
-            }
+        // Every hazard samples its centre against the same map future
+        // east-to-west objects can use.
+        for (let age = 0; age <= speed; age += hazard.stepMs) {
+          const position = rollingHazardPosition(hazard, age);
+          if (eastWestCollisionAt(collisionMap, position.x, position.y)) {
+            hazard.hitX = position.x;
+            hazard.hitY = position.y;
+            hazard.hitAt = age;
+            break;
           }
         }
         return hazard;
