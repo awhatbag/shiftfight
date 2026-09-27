@@ -5,6 +5,8 @@ import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
 import type { ActiveEvent, Banner, CatastrophePhase, RollingHazard, StaffRuntime } from "./wardTypes";
+import { loadEastWestCollisionMap, eastWestCollisionAt } from "@/game/eastWestCollision";
+import { rollingHazardPosition } from "./rollingHazardMotion";
 import { WardHud } from "./WardHud";
 import { WardScene } from "./WardScene";
 import { PatientActionPanel } from "./PatientActionPanel";
@@ -446,7 +448,11 @@ export function WardScreen({
      positional effect rather than a physics system. */
   useEffect(() => {
     if (avocadoPhase !== "active") return undefined;
-    const spawn = () => {
+    let cancelled = false;
+    let interval: number | undefined;
+    void loadEastWestCollisionMap().then((collisionMap) => {
+      if (cancelled) return;
+      const spawn = () => {
       if (rateRef.current === 0) return;
       const now = gameT.current;
       if (now < avocadoNextSpawnT.current) return;
@@ -455,12 +461,8 @@ export function WardScreen({
       const created = Array.from({ length: burst }, () => {
         const y = 0.33 + Math.random() * 0.59;
         const diagonal = (Math.random() - 0.5) * 0.1;
-        const rightBed = BED_SLOTS.filter((bed) => bed.x > 0.5).find((bed) => Math.abs(bed.y - y) < 0.045);
-        const leftBed = BED_SLOTS.filter((bed) => bed.x < 0.5).find((bed) => Math.abs(bed.y - y) < 0.04);
-        const hit = rightBed ?? leftBed;
         const speed = 7_000 + Math.random() * 5_000;
-        const hitX = hit?.x ?? null;
-        return {
+        const hazard: RollingHazard = {
           id: avocadoUid.current++,
           art: avocadoUid.current % 3,
           born: now,
@@ -468,16 +470,33 @@ export function WardScreen({
           endY: Math.max(0.3, Math.min(0.96, y + diagonal)),
           size: 5.5 + Math.random() * 1.8,
           speed,
-          hitX,
-          hitAt: hitX === null ? speed : speed * ((1.08 - hitX) / 1.2),
+          hitX: null,
+          hitY: null,
+          hitAt: speed,
           spin: Math.random() > 0.5 ? 1 : -1,
-        } satisfies RollingHazard;
+          stepMs: 85 + Math.floor(Math.random() * 45),
+        };
+        // Only a random quarter participate. Every chosen hazard samples its
+        // centre against the same map future east-to-west objects can use.
+        if (Math.random() < 0.25) {
+          for (let age = 0; age <= speed; age += hazard.stepMs) {
+            const position = rollingHazardPosition(hazard, age);
+            if (eastWestCollisionAt(collisionMap, position.x, position.y)) {
+              hazard.hitX = position.x;
+              hazard.hitY = position.y;
+              hazard.hitAt = age;
+              break;
+            }
+          }
+        }
+        return hazard;
       });
       setAvocados((current) => [...current, ...created]);
       avocadoNextSpawnT.current = now + 170 + progress * 720 + Math.random() * (180 + progress * 420);
     };
-    const id = window.setInterval(spawn, 90);
-    return () => window.clearInterval(id);
+      interval = window.setInterval(spawn, 90);
+    }).catch((error) => console.error("East-west collision map unavailable", error));
+    return () => { cancelled = true; if (interval !== undefined) window.clearInterval(interval); };
   }, [avocadoPhase]);
 
   useEffect(() => {
