@@ -593,7 +593,7 @@ export function WardScreen({
       // pick a severity band first, so urgent/critical show up even early on
       const w = cfg.sevWeights;
       const total = w[0] + w[1] + w[2];
-      let roll = Math.random() * total;
+      let roll = Infinity; // TEMP-VERIFY
       let sev: 1 | 2 | 3 = 1;
       if (roll > w[0]) sev = 2;
       roll -= w[0];
