@@ -798,6 +798,7 @@ export function WardScreen({
       setWalking(false);
       setNurseAction(journeyBed.current === null ? "sit" : "idle");
       setAtBed(journeyBed.current);
+      journeyBed.current = null;
     }
   }, [tick, rate, upgrades]);
 
@@ -1156,7 +1157,7 @@ export function WardScreen({
         now={gameT.current}
       />
 
-      <div className="absolute inset-0">
+      <div className="pointer-events-none absolute inset-0">
         {/* banner */}
         {banner && (
           <div className="pointer-events-none absolute inset-x-2 top-[36%] z-30 flex justify-center">
