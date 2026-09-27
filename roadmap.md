@@ -18,5 +18,3 @@
 
 - [x] Refactor WardScreen into focused modules without changing gameplay.
 - [x] Clock in with an existing save now prompts Continue saved shift (opens save slots) or Start a new shift; Continue save button removed from the title screen.
-- [ ] Critical indicator v2: use markup_1000038401.jpg artwork, 25% smaller, sits on top of the bed (not above)
-- [ ] Revert TEMP-VERIFY forced critical spawn in WardScreen after verification
