@@ -633,6 +633,8 @@ export function WardScreen({
       if (roll > w[1]) sev = 3;
       /** bed upgrades / gear can quieten the silly routine bells */
       if (sev === 1 && mods.sillyMult < 1 && Math.random() > mods.sillyMult) return;
+      /** chattier kit / staff turn some calls into extra routine bells instead */
+      if (sev > 1 && mods.sillyMult > 1 && Math.random() < mods.sillyMult - 1) sev = 1;
       const pool = EVENTS.filter((ev) => ev.severity === sev);
       const def = pool[Math.floor(Math.random() * pool.length)]!;
       const u = URGENCY_META[urgencyOf(def)];
