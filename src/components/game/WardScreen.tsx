@@ -75,7 +75,11 @@ function shuffledActions(def: EventDef): ActionKind[] {
   const actions = Object.keys(def.options) as ActionKind[];
   for (let i = actions.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [actions[i], actions[j]] = [actions[j]!, actions[i]!];
+    const current = actions[i];
+    const chosen = actions[j];
+    if (current === undefined || chosen === undefined) continue;
+    actions[i] = chosen;
+    actions[j] = current;
   }
   return actions;
 }
