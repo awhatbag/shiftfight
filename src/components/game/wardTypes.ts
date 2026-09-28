@@ -7,6 +7,7 @@ export type ActiveEvent = {
   born: number;
   ttl: number;
   scores: Partial<Record<ActionKind, number>>;
+  actionOrder: ActionKind[];
 };
 
 export type Banner = { id: number; title: string; sub: string; good: boolean };

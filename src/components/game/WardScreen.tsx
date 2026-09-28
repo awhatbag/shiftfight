@@ -71,6 +71,19 @@ import {
   type CatastropheTally,
 } from "@/game/catastrophes";
 
+function shuffledActions(def: EventDef): ActionKind[] {
+  const actions = Object.keys(def.options) as ActionKind[];
+  for (let i = actions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const current = actions[i];
+    const chosen = actions[j];
+    if (current === undefined || chosen === undefined) continue;
+    actions[i] = chosen;
+    actions[j] = current;
+  }
+  return actions;
+}
+
 export type ShiftStats = {
   level: number;
   points: number;
@@ -397,6 +410,7 @@ export function WardScreen({
         cfg.timeMult *
         (1 - heat * 0.18),
       scores: rollOutcomes(def),
+      actionOrder: shuffledActions(def),
     };
   }, [upgrades, mods, cfg]);
 
@@ -626,6 +640,7 @@ export function WardScreen({
         def,
         born: gameT.current,
         scores: rollOutcomes(def),
+        actionOrder: shuffledActions(def),
         ttl:
           def.ttl *
           ttlMult(upgrades) *
