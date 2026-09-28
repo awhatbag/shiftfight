@@ -502,6 +502,7 @@ export function WardScreen({
             break;
           }
         }
+        }
         return hazard;
       });
       setAvocados((current) => [...current, ...created]);
