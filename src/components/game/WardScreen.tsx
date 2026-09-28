@@ -490,8 +490,9 @@ export function WardScreen({
           spin: -1,
           stepMs: 85 + Math.floor(Math.random() * 45),
         };
-        // Every hazard samples its centre against the same map future
-        // east-to-west objects can use.
+        // About half of hazards sample their centre against the same map
+        // future east-to-west objects can use.
+        if (Math.random() < 0.5) {
         for (let age = 0; age <= speed; age += hazard.stepMs) {
           const position = rollingHazardPosition(hazard, age);
           if (eastWestCollisionAt(collisionMap, position.x, position.y)) {
