@@ -821,14 +821,12 @@ function Game() {
               });
             }}
             onBuyGear={(k, cost) => {
-              setGear((g) => {
-                if (g.includes(k)) return g;
-                setPoints((p) => p - cost);
-                const owned = [...g, k];
-                /* a new purchase is worn straight away, replacing its category slot */
-                setEquippedGear((e) => toggleEquipped(owned, e, k));
-                return owned;
-              });
+              if (gear.includes(k)) return;
+              setPoints((p) => p - cost);
+              const owned = [...gear, k];
+              setGear(owned);
+              /* a new purchase is worn straight away, replacing its category slot */
+              setEquippedGear((e) => toggleEquipped(owned, e, k));
             }}
             onToggleGear={(k) => {
               setEquippedGear((e) => toggleEquipped(gear, e, k));
