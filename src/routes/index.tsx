@@ -24,7 +24,12 @@ import {
   STAFF,
   type Upgrades,
 } from "@/game/config";
-import { combineEffects, gearEffects } from "@/game/gear";
+import {
+  combineEffects,
+  gearEffects,
+  normalizeEquipped,
+  toggleEquipped,
+} from "@/game/gear";
 import { bedUpgradeEffects } from "@/game/bedUpgrades";
 import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
 import { shiftTitle } from "@/game/shifts";
