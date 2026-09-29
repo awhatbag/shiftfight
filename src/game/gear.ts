@@ -217,6 +217,32 @@ export function combineEffects(parts: Partial<Effects>[]): Effects {
   );
 }
 
-export function gearEffects(owned: string[]): Effects {
-  return combineEffects(owned.map((k) => gearByKey(k)?.effects ?? {}));
+/** effects for the items the nurse is currently wearing */
+export function gearEffects(equipped: string[]): Effects {
+  return combineEffects(equipped.map((k) => gearByKey(k)?.effects ?? {}));
+}
+
+/**
+ * Keeps an equipped list valid: only owned items, at most one per category.
+ * Older saves have no equipped list — everything owned is worn, one per slot.
+ */
+export function normalizeEquipped(owned: string[], equipped?: string[]): string[] {
+  const source = equipped ?? owned;
+  const seen = new Set<GearCategory>();
+  const out: string[] = [];
+  for (const key of source) {
+    const item = gearByKey(key);
+    if (!item || !owned.includes(key) || seen.has(item.category)) continue;
+    seen.add(item.category);
+    out.push(key);
+  }
+  return out;
+}
+
+/** equips a key (replacing its category slot) or removes it when already worn */
+export function toggleEquipped(owned: string[], equipped: string[], key: string): string[] {
+  const item = gearByKey(key);
+  if (!item || !owned.includes(key)) return equipped;
+  if (equipped.includes(key)) return equipped.filter((k) => k !== key);
+  return [...equipped.filter((k) => gearByKey(k)?.category !== item.category), key];
 }
