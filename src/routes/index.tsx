@@ -609,6 +609,7 @@ function Game() {
     setUpgrades,
     setStaff,
     setGear,
+    setEquippedGear,
     setBedUpgrades,
     setBedOverride,
     jobSecurity,
@@ -643,6 +644,7 @@ function Game() {
       setUpgrades({ speed: 0, response: 0, equipment: 0 });
       setStaff([]);
       setGear([]);
+      setEquippedGear([]);
       setBedUpgrades([]);
       setBedOverride(null);
       setTutorialDone(false);
@@ -805,6 +807,7 @@ function Game() {
             bedCount={bedCount}
             staff={staff}
             gear={gear}
+            equippedGear={equippedGear}
             bedUpgrades={bedUpgrades}
             onBuy={(k, cost) => {
               setPoints((p) => p - cost);
@@ -821,8 +824,13 @@ function Game() {
               setGear((g) => {
                 if (g.includes(k)) return g;
                 setPoints((p) => p - cost);
+                /* a new purchase is worn straight away if its slot is empty */
+                setEquippedGear((e) => normalizeEquipped([...g, k], [...e, k]));
                 return [...g, k];
               });
+            }}
+            onToggleGear={(k) => {
+              setEquippedGear((e) => toggleEquipped(gear, e, k));
             }}
             onBuyBedUpgrade={(k, cost) => {
               setBedUpgrades((b) => {
