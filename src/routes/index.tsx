@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
+import { AdBanner } from "@/components/game/AdBanner";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
