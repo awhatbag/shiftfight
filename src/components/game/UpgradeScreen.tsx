@@ -18,10 +18,12 @@ export function UpgradeScreen({
   bedCount,
   staff,
   gear,
+  equippedGear,
   bedUpgrades,
   onBuy,
   onHire,
   onBuyGear,
+  onToggleGear,
   onBuyBedUpgrade,
   onSave,
   saveNote,
@@ -44,6 +46,7 @@ export function UpgradeScreen({
   onBuy: (k: keyof Upgrades, cost: number) => void;
   onHire: (k: string, cost: number) => void;
   onBuyGear: (k: string, cost: number) => void;
+  onToggleGear: (k: string) => void;
   onBuyBedUpgrade: (k: string, cost: number) => void;
   onSave: () => void;
   saveNote: string;
