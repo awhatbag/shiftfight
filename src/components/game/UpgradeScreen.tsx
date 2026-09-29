@@ -42,6 +42,7 @@ export function UpgradeScreen({
   bedCount: number;
   staff: string[];
   gear: string[];
+  equippedGear: string[];
   bedUpgrades: string[];
   onBuy: (k: keyof Upgrades, cost: number) => void;
   onHire: (k: string, cost: number) => void;
