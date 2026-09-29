@@ -679,6 +679,7 @@ function Game() {
   return (
     <main className="flex min-h-dvh justify-center bg-ward-deep">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
+        <AdBanner />
         {phase !== "dev" && phase !== "shift" && (
           <TopBar phase={phase} level={level} onBack={handleBack} onMenu={() => setMenuOpen(true)} onContinue={play} />
         )}
