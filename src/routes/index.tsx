@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
+import { AdBanner } from "@/components/game/AdBanner";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
@@ -679,6 +680,7 @@ function Game() {
   return (
     <main className="flex min-h-dvh justify-center bg-ward-deep">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
+        <AdBanner />
         {phase !== "dev" && phase !== "shift" && (
           <TopBar phase={phase} level={level} onBack={handleBack} onMenu={() => setMenuOpen(true)} onContinue={play} />
         )}
