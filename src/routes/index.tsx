@@ -93,6 +93,8 @@ type SaveData = {
   jobSecurity?: number;
   /** added with equipment / bed upgrades / ward architecture */
   gear?: string[];
+  /** which owned items are currently worn (one per category) */
+  equippedGear?: string[];
   bedUpgrades?: string[];
   highestLevel?: number;
   wardProgress?: WardProgress;
@@ -296,6 +298,7 @@ function Game() {
   });
   const [staff, setStaff] = useState<string[]>([]);
   const [gear, setGear] = useState<string[]>([]);
+  const [equippedGear, setEquippedGear] = useState<string[]>([]);
   const [bedUpgrades, setBedUpgrades] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
   const [review, setReview] = useState<ShiftReview | null>(null);
@@ -394,6 +397,7 @@ function Game() {
       staff,
       jobSecurity,
       gear,
+      equippedGear,
       bedUpgrades,
       highestLevel,
       wardProgress,
@@ -449,6 +453,7 @@ function Game() {
     setUpgrades(d.upgrades ?? { speed: 0, response: 0, equipment: 0 });
     setStaff(d.staff ?? []);
     setGear(d.gear ?? []);
+    setEquippedGear(normalizeEquipped(d.gear ?? [], d.equippedGear));
     setBedUpgrades(d.bedUpgrades ?? []);
     setHighestLevel(d.highestLevel ?? d.level ?? 1);
     setWardProgress(d.wardProgress ?? {});
@@ -495,7 +500,7 @@ function Game() {
 
   /** every equipment / bed upgrade / staff effect, combined into one object */
   const mods = combineEffects([
-    gearEffects(gear),
+    gearEffects(equippedGear),
     ...bedUpgradeEffects(bedUpgrades),
     ...staff.map((k) => STAFF.find((s) => s.key === k)?.effects ?? {}),
   ]);
@@ -547,6 +552,7 @@ function Game() {
       staff,
       jobSecurity: r.after,
       gear,
+      equippedGear,
       bedUpgrades,
       highestLevel: nextHighest,
       wardProgress: nextWardProgress,
@@ -587,6 +593,7 @@ function Game() {
     upgrades,
     staff,
     gear,
+    equippedGear,
     bedUpgrades,
     highestLevel,
     wardId: ward.id,
