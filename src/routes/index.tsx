@@ -24,7 +24,12 @@ import {
   STAFF,
   type Upgrades,
 } from "@/game/config";
-import { combineEffects, gearEffects } from "@/game/gear";
+import {
+  combineEffects,
+  gearEffects,
+  normalizeEquipped,
+  toggleEquipped,
+} from "@/game/gear";
 import { bedUpgradeEffects } from "@/game/bedUpgrades";
 import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
 import { shiftTitle } from "@/game/shifts";
@@ -88,6 +93,8 @@ type SaveData = {
   jobSecurity?: number;
   /** added with equipment / bed upgrades / ward architecture */
   gear?: string[];
+  /** which owned items are currently worn (one per category) */
+  equippedGear?: string[];
   bedUpgrades?: string[];
   highestLevel?: number;
   wardProgress?: WardProgress;
@@ -291,6 +298,7 @@ function Game() {
   });
   const [staff, setStaff] = useState<string[]>([]);
   const [gear, setGear] = useState<string[]>([]);
+  const [equippedGear, setEquippedGear] = useState<string[]>([]);
   const [bedUpgrades, setBedUpgrades] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
   const [review, setReview] = useState<ShiftReview | null>(null);
@@ -389,6 +397,7 @@ function Game() {
       staff,
       jobSecurity,
       gear,
+      equippedGear,
       bedUpgrades,
       highestLevel,
       wardProgress,
@@ -444,6 +453,7 @@ function Game() {
     setUpgrades(d.upgrades ?? { speed: 0, response: 0, equipment: 0 });
     setStaff(d.staff ?? []);
     setGear(d.gear ?? []);
+    setEquippedGear(normalizeEquipped(d.gear ?? [], d.equippedGear));
     setBedUpgrades(d.bedUpgrades ?? []);
     setHighestLevel(d.highestLevel ?? d.level ?? 1);
     setWardProgress(d.wardProgress ?? {});
@@ -490,7 +500,7 @@ function Game() {
 
   /** every equipment / bed upgrade / staff effect, combined into one object */
   const mods = combineEffects([
-    gearEffects(gear),
+    gearEffects(equippedGear),
     ...bedUpgradeEffects(bedUpgrades),
     ...staff.map((k) => STAFF.find((s) => s.key === k)?.effects ?? {}),
   ]);
@@ -542,6 +552,7 @@ function Game() {
       staff,
       jobSecurity: r.after,
       gear,
+      equippedGear,
       bedUpgrades,
       highestLevel: nextHighest,
       wardProgress: nextWardProgress,
@@ -582,6 +593,7 @@ function Game() {
     upgrades,
     staff,
     gear,
+    equippedGear,
     bedUpgrades,
     highestLevel,
     wardId: ward.id,
@@ -597,6 +609,7 @@ function Game() {
     setUpgrades,
     setStaff,
     setGear,
+    setEquippedGear,
     setBedUpgrades,
     setBedOverride,
     jobSecurity,
@@ -631,6 +644,7 @@ function Game() {
       setUpgrades({ speed: 0, response: 0, equipment: 0 });
       setStaff([]);
       setGear([]);
+      setEquippedGear([]);
       setBedUpgrades([]);
       setBedOverride(null);
       setTutorialDone(false);
@@ -793,6 +807,7 @@ function Game() {
             bedCount={bedCount}
             staff={staff}
             gear={gear}
+            equippedGear={equippedGear}
             bedUpgrades={bedUpgrades}
             onBuy={(k, cost) => {
               setPoints((p) => p - cost);
@@ -806,11 +821,15 @@ function Game() {
               });
             }}
             onBuyGear={(k, cost) => {
-              setGear((g) => {
-                if (g.includes(k)) return g;
-                setPoints((p) => p - cost);
-                return [...g, k];
-              });
+              if (gear.includes(k)) return;
+              setPoints((p) => p - cost);
+              const owned = [...gear, k];
+              setGear(owned);
+              /* a new purchase is worn straight away, replacing its category slot */
+              setEquippedGear((e) => toggleEquipped(owned, e, k));
+            }}
+            onToggleGear={(k) => {
+              setEquippedGear((e) => toggleEquipped(gear, e, k));
             }}
             onBuyBedUpgrade={(k, cost) => {
               setBedUpgrades((b) => {

@@ -18,10 +18,12 @@ export function UpgradeScreen({
   bedCount,
   staff,
   gear,
+  equippedGear,
   bedUpgrades,
   onBuy,
   onHire,
   onBuyGear,
+  onToggleGear,
   onBuyBedUpgrade,
   onSave,
   saveNote,
@@ -40,10 +42,12 @@ export function UpgradeScreen({
   bedCount: number;
   staff: string[];
   gear: string[];
+  equippedGear: string[];
   bedUpgrades: string[];
   onBuy: (k: keyof Upgrades, cost: number) => void;
   onHire: (k: string, cost: number) => void;
   onBuyGear: (k: string, cost: number) => void;
+  onToggleGear: (k: string) => void;
   onBuyBedUpgrade: (k: string, cost: number) => void;
   onSave: () => void;
   saveNote: string;
@@ -167,17 +171,19 @@ export function UpgradeScreen({
               </p>
               {items.map((g) => {
                 const owned = gear.includes(g.key);
+                const equipped = equippedGear.includes(g.key);
                 const locked = rank.level < (g.rank ?? 1);
                 const can = !owned && !locked && points >= g.cost;
                 return (
                   <button
                     key={g.key}
-                    disabled={!can}
+                    disabled={!owned && !can}
                     data-sfx="equip"
-                    onClick={() => onBuyGear(g.key, g.cost)}
+                    onClick={() => (owned ? onToggleGear(g.key) : onBuyGear(g.key, g.cost))}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
-                      can ? "chunky chunky-press" : "opacity-60",
+                      owned || can ? "chunky chunky-press" : "opacity-60",
+                      equipped && "border-calm bg-calm/10",
                     )}
                   >
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
@@ -191,8 +197,21 @@ export function UpgradeScreen({
                         {g.blurb}
                       </p>
                     </div>
-                    <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
-                      {owned ? "OWNED" : locked ? `🔒 Lv${g.rank}` : `⭐${g.cost}`}
+                    <span
+                      className={cn(
+                        "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
+                        equipped
+                          ? "bg-calm text-calm-foreground"
+                          : "bg-primary text-primary-foreground",
+                      )}
+                    >
+                      {equipped
+                        ? "EQUIPPED"
+                        : owned
+                          ? "EQUIP"
+                          : locked
+                            ? `🔒 Lv${g.rank}`
+                            : `⭐${g.cost}`}
                     </span>
                   </button>
                 );

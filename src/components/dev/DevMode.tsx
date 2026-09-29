@@ -30,6 +30,7 @@ export type DevApi = {
   upgrades: Upgrades;
   staff: string[];
   gear: string[];
+  equippedGear: string[];
   bedUpgrades: string[];
   highestLevel: number;
   wardId: string;
@@ -41,6 +42,7 @@ export type DevApi = {
   setUpgrades: (u: Upgrades) => void;
   setStaff: (s: string[]) => void;
   setGear: (g: string[]) => void;
+  setEquippedGear: (g: string[]) => void;
   setBedUpgrades: (b: string[]) => void;
   setBedOverride: (n: number | null) => void;
   jobSecurity: number;
@@ -544,13 +546,25 @@ export const DEV_CATEGORIES: Category[] = [
             <div className="space-y-1">
               {GEAR_ITEMS.filter((g) => g.category === c.key).map((g) => {
                 const owned = api.gear.includes(g.key);
+                const equipped = api.equippedGear.includes(g.key);
                 return (
                   <button
                     key={g.key}
                     onClick={() =>
-                      api.setGear(
-                        owned ? api.gear.filter((k) => k !== g.key) : [...api.gear, g.key],
-                      )
+                      owned
+                        ? api.setEquippedGear(
+                            equipped
+                              ? api.equippedGear.filter((k) => k !== g.key)
+                              : [
+                                  ...api.equippedGear.filter(
+                                    (k) =>
+                                      GEAR_ITEMS.find((x) => x.key === k)?.category !==
+                                      g.category,
+                                  ),
+                                  g.key,
+                                ],
+                          )
+                        : api.setGear([...api.gear, g.key])
                     }
                     className="chunky-press flex w-full items-center gap-2 rounded-xl border-2 border-border bg-card p-2 text-left"
                   >
@@ -564,7 +578,7 @@ export const DEV_CATEGORIES: Category[] = [
                         owned ? "bg-calm text-calm-foreground" : "bg-muted text-muted-foreground",
                       )}
                     >
-                      {owned ? "OWNED" : "OFF"}
+                      {equipped ? "WORN" : owned ? "OWNED" : "OFF"}
                     </span>
                   </button>
                 );
