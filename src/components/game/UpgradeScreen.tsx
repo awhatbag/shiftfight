@@ -176,7 +176,7 @@ export function UpgradeScreen({
                 return (
                   <button
                     key={g.key}
-                    disabled={owned ? locked === false ? false : false : !can}
+                    disabled={!owned && !can}
                     data-sfx="equip"
                     onClick={() => (owned ? onToggleGear(g.key) : onBuyGear(g.key, g.cost))}
                     className={cn(
