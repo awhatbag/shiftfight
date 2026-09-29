@@ -824,9 +824,10 @@ function Game() {
               setGear((g) => {
                 if (g.includes(k)) return g;
                 setPoints((p) => p - cost);
-                /* a new purchase is worn straight away if its slot is empty */
-                setEquippedGear((e) => normalizeEquipped([...g, k], [...e, k]));
-                return [...g, k];
+                const owned = [...g, k];
+                /* a new purchase is worn straight away, replacing its category slot */
+                setEquippedGear((e) => toggleEquipped(owned, e, k));
+                return owned;
               });
             }}
             onToggleGear={(k) => {
