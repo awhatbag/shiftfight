@@ -30,6 +30,7 @@ export type DevApi = {
   upgrades: Upgrades;
   staff: string[];
   gear: string[];
+  equippedGear: string[];
   bedUpgrades: string[];
   highestLevel: number;
   wardId: string;
@@ -41,6 +42,7 @@ export type DevApi = {
   setUpgrades: (u: Upgrades) => void;
   setStaff: (s: string[]) => void;
   setGear: (g: string[]) => void;
+  setEquippedGear: (g: string[]) => void;
   setBedUpgrades: (b: string[]) => void;
   setBedOverride: (n: number | null) => void;
   jobSecurity: number;
