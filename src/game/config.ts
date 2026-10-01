@@ -1644,15 +1644,29 @@ export const PATIENT_NAMES = [
   "Duchess Doreen",
 ];
 
-/** one distinct name per bed, reshuffled every shift */
+/** names used by the previous shift, so the next one feels like a fresh cohort */
+let recentPatientNames: string[] = [];
+
+/** one distinct name per bed, reshuffled every shift and avoiding the last shift's patients */
 export function shuffledPatientNames(count: number): string[] {
-  const pool = [...PATIENT_NAMES];
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j]!, pool[i]!];
-  }
-  return Array.from({ length: count }, (_, i) => pool[i % pool.length] ?? `Bay ${i + 1}`);
+  const shuffle = (arr: string[]) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j]!, arr[i]!];
+    }
+    return arr;
+  };
+  const fresh = shuffle(PATIENT_NAMES.filter((n) => !recentPatientNames.includes(n)));
+  const reusable = shuffle(PATIENT_NAMES.filter((n) => recentPatientNames.includes(n)));
+  const pool = [...fresh, ...reusable];
+  const picked = Array.from(
+    { length: count },
+    (_, i) => pool[i % pool.length] ?? `Bay ${i + 1}`,
+  );
+  recentPatientNames = picked;
+  return picked;
 }
+
 
 /** Big bank of obviously-fictional medication names. Not real drugs. */
 export const FICTIONAL_MEDS = [

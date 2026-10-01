@@ -18,12 +18,15 @@ import {
 } from "@/game/character";
 import {
   bedsForLevel,
+  MAX_BEDS,
   MAX_LEVEL,
   MAX_STAFF,
   nurseRank,
+  shuffledPatientNames,
   STAFF,
   type Upgrades,
 } from "@/game/config";
+
 import {
   combineEffects,
   gearEffects,
@@ -304,6 +307,9 @@ function Game() {
   const [review, setReview] = useState<ShiftReview | null>(null);
   const [jobSecurity, setJobSecurity] = useState(JOB_SECURITY_START);
   const [runKey, setRunKey] = useState(0);
+  /** roster locked in the moment a shift starts, so it never re-rolls mid-shift */
+  const [shiftPatientNames, setShiftPatientNames] = useState<string[]>([]);
+
   const [level, setLevel] = useState(1);
   const [highestLevel, setHighestLevel] = useState(1);
   const [wardProgress, setWardProgress] = useState<WardProgress>({});
@@ -687,8 +693,10 @@ function Game() {
   function play() {
 
     setRunKey((k) => k + 1);
+    setShiftPatientNames(shuffledPatientNames(MAX_BEDS));
     setPhase("shift");
   }
+
 
 
   return (
@@ -758,7 +766,9 @@ function Game() {
         {phase === "shift" && (
           <WardScreen
             key={runKey}
+            patientNames={shiftPatientNames}
             level={level}
+
             upgrades={upgrades}
             bedCount={bedCount}
             staffBonus={staffBonus}
