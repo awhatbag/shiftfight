@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { BedState } from "./Bed";
+import { pickPatientSprites } from "@/game/patientBeds";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
@@ -179,16 +180,18 @@ export function WardScreen({
     [patientNames],
   );
 
-  // The first supplied patient bed follows a female patient in the shift roster.
-  const patientBedId = shiftNames.findIndex((name, i) =>
-    i < activeBeds && /^(Ms|Mrs|Lady|Dame|Duchess) /.test(name),
+  // One supplied patient-bed sprite per occupied bed, picked to match each
+  // roster name (male/female titles), reshuffled every shift.
+  const shiftSprites = useMemo(
+    () => pickPatientSprites(shiftNames),
+    [shiftNames],
   );
 
   const beds: BedState[] = Array.from({ length: MAX_BEDS }, (_, i) => ({
     id: i,
     name: shiftNames[i] ?? `Bay ${i + 1}`,
     locked: i >= activeBeds,
-    patientSprite: i === (patientBedId < 0 ? 0 : patientBedId),
+    patientSprite: shiftSprites[i],
   }));
 
 

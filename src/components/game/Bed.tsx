@@ -1,24 +1,28 @@
 import { cn } from "@/lib/utils";
 import type { EventDef } from "@/game/config";
+import { PATIENT_BED_SPRITES } from "@/game/patientBeds";
 import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
 import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
-import plainPatientBedAsset from "@/assets/patient_f_plain_01.png.asset.json";
 
 export type BedState = {
   id: number;
   name: string;
   locked: boolean;
-  patientSprite?: boolean;
+  /** id from PATIENT_BED_SPRITES; undefined = empty bed artwork */
+  patientSprite?: string | undefined;
 };
 
-function BedSprite({ side, patientSprite }: { side: "left" | "right"; patientSprite?: boolean }) {
+function BedSprite({ side, patientSprite }: { side: "left" | "right"; patientSprite?: string | undefined }) {
+  const sprite = patientSprite
+    ? PATIENT_BED_SPRITES.find((s) => s.id === patientSprite)?.asset
+    : undefined;
   return (
     <img
-      src={patientSprite ? plainPatientBedAsset.url : side === "left" ? leftSideBedAsset.url : rightSideBedAsset.url}
+      src={sprite ? sprite.url : side === "left" ? leftSideBedAsset.url : rightSideBedAsset.url}
       alt=""
       aria-hidden="true"
       draggable={false}
-      className={cn("pointer-events-none h-full w-full object-contain", patientSprite && side === "right" && "scale-x-[-1]")}
+      className={cn("pointer-events-none h-full w-full object-contain", sprite && side === "right" && "scale-x-[-1]")}
     />
   );
 }
@@ -61,7 +65,7 @@ export function Bed({
       )}
     >
       <div className="pointer-events-none absolute inset-0">
-        <BedSprite side={bed.id % 2 === 0 ? "left" : "right"} patientSprite={!bed.locked && !!bed.patientSprite} />
+        <BedSprite side={bed.id % 2 === 0 ? "left" : "right"} patientSprite={!bed.locked ? bed.patientSprite : undefined} />
       </div>
 
       {bed.locked ? (
