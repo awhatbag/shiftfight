@@ -18,12 +18,15 @@ import {
 } from "@/game/character";
 import {
   bedsForLevel,
+  MAX_BEDS,
   MAX_LEVEL,
   MAX_STAFF,
   nurseRank,
+  shuffledPatientNames,
   STAFF,
   type Upgrades,
 } from "@/game/config";
+
 import {
   combineEffects,
   gearEffects,
@@ -763,7 +766,9 @@ function Game() {
         {phase === "shift" && (
           <WardScreen
             key={runKey}
+            patientNames={shiftPatientNames}
             level={level}
+
             upgrades={upgrades}
             bedCount={bedCount}
             staffBonus={staffBonus}
