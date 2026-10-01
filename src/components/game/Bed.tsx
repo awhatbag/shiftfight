@@ -13,16 +13,22 @@ export type BedState = {
 };
 
 function BedSprite({ side, patientSprite }: { side: "left" | "right"; patientSprite?: string | undefined }) {
-  const sprite = patientSprite
-    ? PATIENT_BED_SPRITES.find((s) => s.id === patientSprite)?.asset
+  const entry = patientSprite
+    ? PATIENT_BED_SPRITES.find((s) => s.id === patientSprite)
     : undefined;
+  const sprite = entry?.asset;
   return (
     <img
       src={sprite ? sprite.url : side === "left" ? leftSideBedAsset.url : rightSideBedAsset.url}
       alt=""
       aria-hidden="true"
       draggable={false}
-      className={cn("pointer-events-none h-full w-full object-contain", sprite && side === "right" && "scale-x-[-1]")}
+      className={cn(
+        "pointer-events-none w-full object-contain",
+        // taller canvases keep the same width and wheel baseline, extending upward only
+        entry?.tall ? "absolute bottom-0 left-0 h-[129.717%] object-bottom" : "h-full",
+        sprite && side === "right" && "scale-x-[-1]",
+      )}
     />
   );
 }

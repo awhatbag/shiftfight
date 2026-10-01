@@ -23,20 +23,22 @@ export type PatientBedSprite = {
   id: string;
   gender: "f" | "m" | "nb";
   asset: { url: string };
+  /** canvas 1264×1100 (extra headroom for IV poles etc.) vs the standard 1264×848 */
+  tall?: boolean;
 };
 
 export const PATIENT_BED_SPRITES: PatientBedSprite[] = [
   { id: "f_plain_01", gender: "f", asset: patientFPlain01 },
-  { id: "f_posh-hat_01", gender: "f", asset: patientFPoshHat01 },
-  { id: "f_sleeping_01", gender: "f", asset: patientFSleeping01 },
-  { id: "f_worried_01", gender: "f", asset: patientFWorried01 },
-  { id: "m_child_pillowfort", gender: "m", asset: patientMChildPillowfort },
-  { id: "m_monocle_elderly", gender: "m", asset: patientMMonocleElderly },
-  { id: "m_sleeping_01", gender: "m", asset: patientMSleeping01 },
-  { id: "m_vomiting_01", gender: "m", asset: patientMVomiting01 },
-  { id: "nb_plain_01", gender: "nb", asset: patientNbPlain01 },
-  { id: "nb_plain_02", gender: "nb", asset: patientNbPlain02 },
-  { id: "nb_plain_03", gender: "nb", asset: patientNbPlain03 },
+  { id: "f_posh-hat_01", gender: "f", asset: patientFPoshHat01, tall: true },
+  { id: "f_sleeping_01", gender: "f", asset: patientFSleeping01, tall: true },
+  { id: "f_worried_01", gender: "f", asset: patientFWorried01, tall: true },
+  { id: "m_child_pillowfort", gender: "m", asset: patientMChildPillowfort, tall: true },
+  { id: "m_monocle_elderly", gender: "m", asset: patientMMonocleElderly, tall: true },
+  { id: "m_sleeping_01", gender: "m", asset: patientMSleeping01, tall: true },
+  { id: "m_vomiting_01", gender: "m", asset: patientMVomiting01, tall: true },
+  { id: "nb_plain_01", gender: "nb", asset: patientNbPlain01, tall: true },
+  { id: "nb_plain_02", gender: "nb", asset: patientNbPlain02, tall: true },
+  { id: "nb_plain_03", gender: "nb", asset: patientNbPlain03, tall: true },
 ];
 
 /** roster name → preferred sprite gender (undefined = any) */
