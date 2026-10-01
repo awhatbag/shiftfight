@@ -182,9 +182,9 @@ export function WardScreen({
   const beds: BedState[] = Array.from({ length: MAX_BEDS }, (_, i) => ({
     id: i,
     name: shiftNames[i] ?? `Bay ${i + 1}`,
-    sprite: bedSprites[i] ?? null,
     locked: i >= activeBeds,
   }));
+
 
 
 
