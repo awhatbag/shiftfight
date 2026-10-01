@@ -173,14 +173,19 @@ export function WardScreen({
   /** every bed the player owns is a live bed — purchased beds unlock immediately */
   const activeBeds = Math.max(1, bedCount);
 
-  /** fresh, non-repeating patient names every shift */
-  const shiftNames = useMemo(() => shuffledPatientNames(MAX_BEDS), []);
+  /** roster locked in when the shift started; fallback shuffle for safety */
+  const shiftNames = useMemo(
+    () => (patientNames.length ? patientNames : shuffledPatientNames(MAX_BEDS)),
+    [patientNames],
+  );
 
   const beds: BedState[] = Array.from({ length: MAX_BEDS }, (_, i) => ({
     id: i,
     name: shiftNames[i] ?? `Bay ${i + 1}`,
+    sprite: bedSprites[i] ?? null,
     locked: i >= activeBeds,
   }));
+
 
 
   /* ---------------- phases ---------------- */
