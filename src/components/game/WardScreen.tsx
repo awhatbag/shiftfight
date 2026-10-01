@@ -112,7 +112,9 @@ export type ShiftStats = {
 
 export function WardScreen({
   level,
+  patientNames = [],
   upgrades,
+
   bedCount,
   staffBonus,
   staff,
