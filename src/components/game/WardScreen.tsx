@@ -179,10 +179,16 @@ export function WardScreen({
     [patientNames],
   );
 
+  // The first supplied patient bed follows a female patient in the shift roster.
+  const patientBedId = shiftNames.findIndex((name, i) =>
+    i < activeBeds && /^(Ms|Mrs|Lady|Dame|Duchess) /.test(name),
+  );
+
   const beds: BedState[] = Array.from({ length: MAX_BEDS }, (_, i) => ({
     id: i,
     name: shiftNames[i] ?? `Bay ${i + 1}`,
     locked: i >= activeBeds,
+    patientSprite: i === (patientBedId < 0 ? 0 : patientBedId),
   }));
 
 

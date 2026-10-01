@@ -2,21 +2,23 @@ import { cn } from "@/lib/utils";
 import type { EventDef } from "@/game/config";
 import leftSideBedAsset from "@/assets/left-side-bed.png.asset.json";
 import rightSideBedAsset from "@/assets/right-side-bed.png.asset.json";
+import plainPatientBedAsset from "@/assets/patient_f_plain_01.png.asset.json";
 
 export type BedState = {
   id: number;
   name: string;
   locked: boolean;
+  patientSprite?: boolean;
 };
 
-function BedSprite({ side }: { side: "left" | "right" }) {
+function BedSprite({ side, patientSprite }: { side: "left" | "right"; patientSprite?: boolean }) {
   return (
     <img
-      src={side === "left" ? leftSideBedAsset.url : rightSideBedAsset.url}
+      src={patientSprite ? plainPatientBedAsset.url : side === "left" ? leftSideBedAsset.url : rightSideBedAsset.url}
       alt=""
       aria-hidden="true"
       draggable={false}
-      className="pointer-events-none h-full w-full object-contain"
+      className={cn("pointer-events-none h-full w-full object-contain", patientSprite && side === "right" && "scale-x-[-1]")}
     />
   );
 }
@@ -59,7 +61,7 @@ export function Bed({
       )}
     >
       <div className="pointer-events-none absolute inset-0">
-        <BedSprite side={bed.id % 2 === 0 ? "left" : "right"} />
+        <BedSprite side={bed.id % 2 === 0 ? "left" : "right"} patientSprite={!bed.locked && !!bed.patientSprite} />
       </div>
 
       {bed.locked ? (
