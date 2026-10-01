@@ -114,8 +114,8 @@ export function WardScreen({
   level,
   patientNames = [],
   upgrades,
-
   bedCount,
+
   staffBonus,
   staff,
   character,
