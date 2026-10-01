@@ -19,3 +19,6 @@
 - [x] Refactor WardScreen into focused modules without changing gameplay.
 - [x] Clock in with an existing save now prompts Continue saved shift (opens save slots) or Start a new shift; Continue save button removed from the title screen.
 - [x] Use the supplied east-west collision map for randomly selected avocado collisions and stepped rolling animation.
+- [x] Patient names now change every shift with anti-repeat rotation (no patient repeats in consecutive shifts).
+- [ ] Patient bed graphics change per shift — awaiting the uploaded `patient_[gender]_[style]_[name-or-variant].png` sprites to wire into the bed roster.
+
