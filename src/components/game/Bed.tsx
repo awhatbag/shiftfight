@@ -61,7 +61,7 @@ export function Bed({
       )}
     >
       <div className="pointer-events-none absolute inset-0">
-        <BedSprite side={bed.id % 2 === 0 ? "left" : "right"} patientSprite={!bed.locked && bed.patientSprite} />
+        <BedSprite side={bed.id % 2 === 0 ? "left" : "right"} patientSprite={!bed.locked && !!bed.patientSprite} />
       </div>
 
       {bed.locked ? (
