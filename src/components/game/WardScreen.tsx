@@ -134,7 +134,10 @@ export function WardScreen({
   mods = NO_EFFECTS,
 }: {
   level: number;
+  /** roster locked in when the shift started — empty falls back to a fresh shuffle */
+  patientNames?: string[];
   upgrades: Upgrades;
+
   bedCount: number;
   staffBonus: number;
   staff: string[];
