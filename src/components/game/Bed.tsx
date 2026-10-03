@@ -111,6 +111,18 @@ export function Bed({
               stable
             </div>
           )}
+          <div
+            className={cn(
+              "pointer-events-none absolute -bottom-4 z-[35] flex max-w-[92%] items-center gap-1 rounded-md border border-[#f59e0b]/80 bg-[#0b1736]/95 px-1.5 py-0.5 shadow-md",
+              bed.id % 2 === 0 ? "left-0.5" : "right-0.5",
+            )}
+          >
+            <span className="shrink-0 font-display text-[9px] font-black text-[#f59e0b]">B{bed.id + 1}</span>
+            <span className="shrink-0 text-[9px] font-black text-[#f59e0b]/70">·</span>
+            <span className="min-w-0 font-display text-[10px] font-extrabold uppercase leading-tight tracking-tight text-white line-clamp-2 break-words">
+              {bed.name}
+            </span>
+          </div>
         </>
       )}
       {flash && (
