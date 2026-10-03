@@ -81,12 +81,11 @@ export function Bed({
         </div>
       ) : (
         <>
-          <div className="relative z-10 flex items-center justify-between gap-1">
-            <span className="font-display truncate text-[11px] font-extrabold uppercase tracking-wide">
+          <div className="relative z-10 flex min-w-0 items-center gap-1 self-start rounded-md border border-gold/70 bg-foreground/85 px-1.5 py-0.5 text-background shadow-md">
+            <span className="shrink-0 font-display text-[9px] font-black text-gold">B{bed.id + 1}</span>
+            <span className="shrink-0 text-[9px] font-black text-gold/70">·</span>
+            <span className="min-w-0 font-display text-[10px] font-extrabold uppercase leading-tight tracking-tight line-clamp-2 break-words">
               {bed.name}
-            </span>
-            <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 font-display text-[9px] font-bold">
-              B{bed.id + 1}
             </span>
           </div>
 
