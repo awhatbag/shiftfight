@@ -23,3 +23,4 @@
 - [x] Place the first supplied patient bed at an unlocked bed each shift, matching existing bed dimensions and preserving bed layers, positions, and shadows.
 - [ ] Add remaining patient bed variants when supplied, so graphics can rotate between different patients across shifts.
 
+- [x] Restyle the 3-2-1 / Time's Up shift-end countdown in red, smooth detailed pixel-art style (no racing flags).

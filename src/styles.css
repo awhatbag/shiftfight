@@ -466,3 +466,29 @@
   100% { transform: scale(0.6) rotate(-15deg); opacity: 0; }
 }
 
+
+/* End-of-shift countdown: red smooth hi-bit pixel lettering (stepped ramp + selective dark outline) */
+.pixel-count {
+  --pc-hi: oklch(0.86 0.12 30);
+  --pc-mid: oklch(0.6 0.24 27);
+  --pc-low: oklch(0.42 0.18 25);
+  --pc-line: oklch(0.22 0.08 22);
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--pc-mid);
+  background: linear-gradient(to bottom, var(--pc-hi) 0 22%, oklch(0.72 0.2 28) 22% 44%, var(--pc-mid) 44% 70%, var(--pc-low) 70% 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter:
+    drop-shadow(2px 0 0 var(--pc-line)) drop-shadow(-2px 0 0 var(--pc-line))
+    drop-shadow(0 2px 0 var(--pc-line)) drop-shadow(0 -2px 0 var(--pc-line))
+    drop-shadow(3px 4px 0 oklch(0.15 0.05 22 / 0.85));
+}
+.animate-count-in { animation: count-in 0.32s steps(4, end); }
+@keyframes count-in {
+  0% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}

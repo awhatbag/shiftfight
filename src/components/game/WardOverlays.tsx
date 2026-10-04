@@ -25,7 +25,7 @@ export function CatastropheConclusion({ result, tally }: { result: { outcome: Ca
 }
 
 export function ReadyCue({ cue }: { cue: string }) { return <div className="absolute inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm"><p key={cue} className="font-display animate-pop text-center text-5xl font-black uppercase leading-none text-primary">{cue}</p></div>; }
-export function EndCountdown({ count }: { count: number }) { return <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center"><div className="text-center"><p className="font-display text-xl font-black uppercase tracking-widest text-primary drop-shadow-[0_2px_0_var(--color-background)]">Shift finishes in</p><p key={count} className="font-display animate-pop text-[7rem] font-black leading-none text-primary drop-shadow-[0_4px_0_var(--color-background)]">{count}</p></div></div>; }
+export function EndCountdown({ count }: { count: number | "up" }) { return <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center"><div className="text-center">{count !== "up" && <p className="pixel-count text-2xl tracking-widest">Shift finishes in</p>}<p key={count} className={cn("pixel-count animate-count-in", count === "up" ? "text-6xl" : "text-[8rem]")}>{count === "up" ? "Time's up!" : count}</p></div></div>; }
 
 export function TutorialOverlay({ step, onNext }: { step: 0 | 2; onNext: () => void }) {
   const first = step === 0;
