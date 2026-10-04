@@ -237,6 +237,7 @@ function TopBar({
         </button>
       )}
       <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+        {phase === "shop" && onContinue && (
           <button
             onClick={onContinue}
             className="chunky chunky-press flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-destructive px-3 font-display text-sm font-black uppercase text-destructive-foreground shadow-[0_4px_0_rgb(0,0,0,0.35)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.85)] ring-2 ring-white/60"
