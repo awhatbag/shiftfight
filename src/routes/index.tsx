@@ -248,6 +248,7 @@ function TopBar({
             <span className="min-w-0 truncate">{nextTitle.title}</span>
             <span className="shrink-0 text-base">▶</span>
           </button>
+        )}
         <button
           onClick={onMenu}
           aria-label="Open menu"
