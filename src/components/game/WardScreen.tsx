@@ -654,7 +654,7 @@ export function WardScreen({
 
   useEffect(() => {
     if (phase !== "ending") return undefined;
-    const t = window.setTimeout(() => finish(stats.current.collapsed), 450);
+    const t = window.setTimeout(() => finish(stats.current.collapsed), stats.current.collapsed ? 450 : 1100);
     return () => window.clearTimeout(t);
   }, [phase, finish]);
 
