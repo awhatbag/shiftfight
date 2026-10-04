@@ -113,7 +113,7 @@ export function Bed({
           )}
           <div
             className={cn(
-              "pointer-events-none absolute -bottom-4 z-[35] flex max-w-[92%] items-center gap-1 rounded-md border border-[#f59e0b]/80 bg-[#0b1736]/95 px-1.5 py-0.5 shadow-md",
+              "pointer-events-none absolute -bottom-4 z-[35] flex max-w-[92%] items-center gap-1 rounded-md border border-[#f59e0b]/80 bg-[#163b8c]/95 px-1.5 py-0.5 shadow-md",
               bed.id % 2 === 0 ? "left-0.5" : "right-0.5",
             )}
           >
