@@ -654,7 +654,7 @@ export function WardScreen({
 
   useEffect(() => {
     if (phase !== "ending") return undefined;
-    const t = window.setTimeout(() => finish(stats.current.collapsed), 450);
+    const t = window.setTimeout(() => finish(stats.current.collapsed), stats.current.collapsed ? 450 : 1100);
     return () => window.clearTimeout(t);
   }, [phase, finish]);
 
@@ -1261,6 +1261,7 @@ export function WardScreen({
         {tutorial && phase === "play" && tutStep === 0 && <TutorialOverlay step={0} onNext={() => setTutStep(1)} />}
         {tutorial && phase === "play" && tutStep === 2 && <TutorialOverlay step={2} onNext={() => setTutStep(3)} />}
         {endCountValue !== null && <EndCountdown count={endCountValue} />}
+        {phase === "ending" && !stats.current.collapsed && <EndCountdown count="up" />}
         {miniOffer && <MiniOfferOverlay offer={miniOffer} onSkip={() => setMiniOffer(null)} onStart={startMini} />}
         {manualPause && <PauseOverlay line={pauseLine} onResume={() => setManualPause(false)} />}
         {settingsOpen && (
