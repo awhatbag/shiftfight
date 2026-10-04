@@ -133,8 +133,8 @@ const DELTA_BY_STARS: Record<number, number> = {
   5: 6,
   4: 3,
   3: 0,
-  2: -5,
-  1: -10,
+  2: -14,
+  1: -25,
 };
 
 function pick<T>(arr: T[]): T {
@@ -158,12 +158,13 @@ export function reviewShift(s: ReviewInput, jobSecurity: number): ShiftReview {
   else if (ratio >= 0.5) stars = 3;
   else if (ratio >= 0.3) stars = 2;
   else stars = 1;
-  /** a ward that collapsed can never be praised */
-  if (s.collapsed) stars = Math.min(stars, 2);
+  /** a ward that collapsed is an automatic disaster */
+  if (s.collapsed) stars = 1;
 
   let delta = DELTA_BY_STARS[stars] ?? 0;
-  /** one bad moment shouldn't sink you; sustained chaos should */
-  if (stars <= 2 && s.mistakes <= 1 && !s.collapsed) delta = Math.round(delta / 2);
+  if (s.collapsed) delta -= 10;
+  /** every slip the DON witnesses in person stings on top of the review */
+  if (s.donAnnoyed) delta -= s.donAnnoyed * 4;
   if (s.donVisited && stars >= 4) delta += 2;
   /** a catastrophic event matters, without deciding the whole game */
   const catastropheDelta =
@@ -184,7 +185,7 @@ export function reviewShift(s: ReviewInput, jobSecurity: number): ShiftReview {
   if (s.miniFailed) notes.push({ label: `${s.miniFailed} bonus rounds fumbled`, pts: -1 });
   if (s.miniAbandoned) notes.push({ label: `${s.miniAbandoned} bonus rounds bailed on`, pts: -2 });
   if (s.collapsed) notes.push({ label: "The ward fell over", pts: -1 });
-  if (s.donAnnoyed) notes.push({ label: "The DON saw things", pts: -1 });
+  if (s.donAnnoyed) notes.push({ label: `The DON saw ${s.donAnnoyed} slip-up${s.donAnnoyed === 1 ? "" : "s"}`, pts: -2 });
   if (s.catastrophe === "positive") notes.push({ label: "Catastrophe contained", pts: 2 });
   else if (s.catastrophe === "neutral") notes.push({ label: "Catastrophe survived", pts: 1 });
   else if (s.catastrophe === "negative") notes.push({ label: "Catastrophe went badly", pts: -2 });
@@ -228,7 +229,7 @@ export function firingReason(s: ReviewInput): string {
 /** chance (0..1) of the DON turning up during a shift — worse security, more visits */
 export function donVisitChance(jobSecurity: number): number {
   const js = clampSecurity(jobSecurity);
-  return Math.min(0.55, 0.1 + (100 - js) / 220);
+  return Math.min(0.8, 0.4 + (100 - js) / 250);
 }
 
 export const DON_VISIT_MS = 25000;
