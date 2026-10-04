@@ -623,6 +623,27 @@ export function WardScreen({
     setPhase("ending");
   }, [phase, elapsed]);
 
+  /* guaranteed bonus rounds at set points in the shift (waits until the nurse is free) */
+  const miniMilestones = useRef(0);
+  function offerMini() {
+    if (mini || miniOffer || avocadoPhaseRef.current) return;
+    const n = stats.current.miniGames;
+    const lvl = Math.min(9, Math.floor(n / 2) + Math.floor(level / 3));
+    setMiniOffer({
+      kind: randomMiniGameKey(lastMini.current),
+      bonus: Math.round((120 + lvl * 40 + level * 15) * mods.miniMult),
+      lvl,
+    });
+  }
+  useEffect(() => {
+    if (phase !== "play" || mini || miniOffer || avocadoPhaseRef.current || atBed !== null) return;
+    const marks = [0.3, 0.65];
+    const next = marks[miniMilestones.current];
+    if (next === undefined || elapsed < SHIFT_MS * next || SHIFT_MS - elapsed < 8000) return;
+    miniMilestones.current++;
+    offerMini();
+  });
+
   useEffect(() => {
     if (stability <= 0 && phase === "play") {
       stats.current.collapsed = true;
@@ -1065,16 +1086,7 @@ export function WardScreen({
       say(isTop ? "GREAT CALL!" : "PATIENT STABLE", `+${gain}${speedBonus ? ` (⚡+${speedBonus})` : ""} · ${ev.def.win}`, true);
       if (isTop && newCombo >= 2) donSay("good");
       streak.current++;
-      const gap = streak.current <= 8 ? 4 : 5;
-      if (streak.current % gap === 0) {
-        const n = stats.current.miniGames;
-        const lvl = Math.min(9, Math.floor(n / 2) + Math.floor(level / 3));
-        setMiniOffer({
-          kind: randomMiniGameKey(lastMini.current),
-          bonus: Math.round((120 + lvl * 40 + level * 15) * mods.miniMult),
-          lvl,
-        });
-      }
+      if (streak.current % 2 === 0) offerMini();
     } else {
       const base = 14 * ev.def.severity;
       const raw = Math.round(
@@ -1082,7 +1094,8 @@ export function WardScreen({
       );
       stats.current.points = Math.max(0, stats.current.points + raw);
       setCombo(0);
-      streak.current = 0;
+      /* "sort of worked" keeps the bonus-round streak; only mistakes reset it */
+      if (mult <= 0) streak.current = 0;
       if (mult > 0) {
         playGood();
         stats.current.xp += 2;
