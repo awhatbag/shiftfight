@@ -343,12 +343,22 @@ export function WardScreen({
   const eventsRef = useRef<ActiveEvent[]>([]);
   eventsRef.current = events;
 
+  /* reading a patient issue at the bedside slows the ward to ~30% until a response is chosen */
+  const readingEvent = atBed !== null && selected === atBed ? events.find((e) => e.bed === atBed) : undefined;
   const rate =
     manualPause || settingsOpen || phase !== "play" || miniOffer || tutPause || avocadoPhase === "intro" || avocadoPhase === "conclusion"
       ? 0
       : mini
         ? 1 / 3
-        : 1;
+        : readingEvent
+          ? 0.3
+          : 1;
+  /* real-time moment the current issue became readable, for the speed bonus */
+  const readStart = useRef<{ id: number; at: number } | null>(null);
+  useEffect(() => {
+    if (readingEvent && readStart.current?.id !== readingEvent.id) readStart.current = { id: readingEvent.id, at: performance.now() };
+    if (!readingEvent) readStart.current = null;
+  }, [readingEvent]);
   const rateRef = useRef(rate);
   rateRef.current = rate;
 
