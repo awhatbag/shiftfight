@@ -703,8 +703,8 @@ export function WardScreen({
           cfg.timeMult *
           (1 - heat * 0.18),
       };
-      // the bell only ever rings because this patient is ringing it
-      if (def.callBell) playCallBell();
+      // every new patient call rings the bell
+      playCallBell();
       setEvents((c) => [...c, ev]);
     };
     const id = window.setInterval(() => spawnOne(false), 1200);

@@ -24,7 +24,7 @@ export const MUSIC_TRACKS: Record<MusicKey, TrackDef> = {
   /** character customisation screen */
   savePoint: { url: savePointTrack.url, volume: 0.55 },
   /** ward gameplay */
-  ward: { url: wardTrack.url, volume: 0.55 },
+  ward: { url: wardTrack.url, volume: 0.4 },
   /** shop screen */
   shop: { url: shopTrack.url, volume: 0.55 },
 };
@@ -63,6 +63,41 @@ export function setMusicEnabled(on: boolean) {
     }
   }
   listeners.forEach((l) => l(on));
+}
+
+const VOL_KEY = "shift-fight-music-volume";
+let musicVolume = (() => {
+  if (typeof window === "undefined") return 1;
+  const v = Number(window.localStorage.getItem(VOL_KEY));
+  return Number.isFinite(v) && window.localStorage.getItem(VOL_KEY) !== null ? Math.max(0, Math.min(1, v)) : 1;
+})();
+const volListeners = new Set<(v: number) => void>();
+
+export function getMusicVolume() {
+  return musicVolume;
+}
+
+export function subscribeMusicVolume(fn: (v: number) => void) {
+  volListeners.add(fn);
+  return () => volListeners.delete(fn);
+}
+
+/** User music volume (0–1). Scales every track; mute still wins. */
+export function setMusicVolume(v: number) {
+  musicVolume = Math.max(0, Math.min(1, v));
+  try {
+    window.localStorage.setItem(VOL_KEY, String(musicVolume));
+  } catch {
+    /* ignore */
+  }
+  for (const [key, p] of players) {
+    if (p.target <= 0) continue;
+    p.target = MUSIC_TRACKS[key].volume * musicVolume;
+    if (p.fade) clearInterval(p.fade);
+    p.fade = null;
+    if (musicOn) p.el.volume = p.target;
+  }
+  volListeners.forEach((l) => l(musicVolume));
 }
 
 export function toggleMusic() {
@@ -121,15 +156,15 @@ export function playMusic(key: MusicKey) {
     el.loop = true;
     el.preload = "auto";
     el.volume = 0;
-    p = { el, fade: null, target: def.volume };
+    p = { el, fade: null, target: def.volume * musicVolume };
     players.set(key, p);
   }
-  p.target = def.volume;
+  p.target = def.volume * musicVolume;
   if (!musicOn) return;
   const player = p;
   void player.el
     .play()
-    .then(() => fadeTo(player, def.volume))
+    .then(() => fadeTo(player, player.target))
     .catch(() => armAutoplay(key));
 }
 
