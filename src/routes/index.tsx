@@ -1,3 +1,4 @@
+import { MusicVolumeSlider } from "@/components/game/MusicVolumeSlider";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
@@ -884,6 +885,7 @@ function Game() {
                   🎵 Music {musicOn ? "ON" : "OFF"}
                 </button>
               </div>
+              <MusicVolumeSlider />
             </div>
             <button
               onClick={toggleHaptics}
