@@ -71,8 +71,11 @@ function tone(
 
 /** Classic two-tone ding-dong nurse call bell. Noticeable, not obnoxious. */
 export function playCallBell() {
-  tone(988, 0, 0.5, 0.12);
-  tone(784, 0.22, 0.75, 0.11);
+  // bright chime with overtones so it cuts through the ward music
+  tone(988, 0, 0.55, 0.32, "triangle");
+  tone(1976, 0, 0.3, 0.08);
+  tone(784, 0.22, 0.8, 0.3, "triangle");
+  tone(1568, 0.22, 0.35, 0.07);
   buzz(20);
 }
 
