@@ -7,6 +7,7 @@ import type { CatastropheDef, CatastropheOutcome, CatastropheTally } from "@/gam
 import type { ShiftObjective } from "@/game/objectives";
 import { miniGameByKey } from "@/game/minigames";
 import { cn } from "@/lib/utils";
+import type { RewardCallout } from "./wardTypes";
 
 export function DonBubble({ line }: { line: string }) {
   return <div className="pointer-events-none absolute left-1/2 top-[2%] z-[45] flex -translate-x-1/2 flex-col items-center" aria-label="The DON is on the ward"><div className="animate-pop max-w-[220px] rounded-2xl border-2 border-border bg-card px-2.5 py-1 text-center shadow-lg"><p className="font-display text-[11px] font-black uppercase leading-tight">{line}</p></div><span className="animate-bob mt-0.5 grid h-11 w-11 place-items-center rounded-full border-2 border-alarm bg-card text-2xl shadow-lg ring-4 ring-alarm/30">🧑‍💼</span><span className="font-display rounded-full bg-alarm px-1.5 text-[8px] font-black uppercase text-alarm-foreground">DON</span></div>;
@@ -27,6 +28,10 @@ export function CatastropheConclusion({ result, tally }: { result: { outcome: Ca
 
 export function ReadyCue({ cue }: { cue: string }) { return <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center px-3"><p key={cue} className="pixel-count animate-count-in text-center text-6xl">{cue}</p></div>; }
 export function EndCountdown({ count }: { count: number | "up" }) { return <div className="pointer-events-none absolute inset-0 z-50 grid place-items-center"><div className="text-center">{count !== "up" && <p className="pixel-count text-2xl tracking-widest">Shift finishes in</p>}<p key={count} className={cn("pixel-count animate-count-in", count === "up" ? "text-6xl" : "text-[8rem]")}>{count === "up" ? "Time's up!" : count}</p></div></div>; }
+
+export function RewardCalloutOverlay({ callout }: { callout: RewardCallout }) {
+  return <div className="pointer-events-none absolute inset-x-0 top-[17%] z-40 flex justify-center px-4" aria-live="polite"><div key={callout.id} className={cn("reward-callout text-center", callout.kind === "combo" && "reward-callout-combo")}><p className="pixel-count text-4xl leading-none">{callout.title}</p>{callout.kind === "combo" && <div className="reward-sparks" aria-hidden="true">✦ ✦ ✦</div>}</div></div>;
+}
 
 export function TutorialOverlay({ step, onNext }: { step: 0 | 2; onNext: () => void }) {
   const first = step === 0;

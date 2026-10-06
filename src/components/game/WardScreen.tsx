@@ -5,13 +5,13 @@ import { pickPatientSprites } from "@/game/patientBeds";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
-import type { ActiveEvent, Banner, CatastrophePhase, RollingHazard, StaffRuntime } from "./wardTypes";
+import type { ActiveEvent, Banner, CatastrophePhase, RewardCallout, RollingHazard, StaffRuntime } from "./wardTypes";
 import { loadEastWestCollisionMap, eastWestCollisionAt } from "@/game/eastWestCollision";
 import { rollingHazardPosition } from "./rollingHazardMotion";
 import { WardHud } from "./WardHud";
 import { WardScene } from "./WardScene";
 import { PatientActionPanel } from "./PatientActionPanel";
-import { CatastropheConclusion, CatastropheIntro, DonBubble, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
+import { CatastropheConclusion, CatastropheIntro, DonBubble, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, RewardCalloutOverlay, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import { NO_EFFECTS, type Effects } from "@/game/gear";
@@ -47,6 +47,7 @@ import {
   type EventDef,
   type Quirk,
   type Upgrades,
+  nurseRank,
 } from "@/game/config";
 import {
   emptyCounters,
@@ -130,6 +131,7 @@ export function WardScreen({
   onSave,
   onQuit,
   jobSecurity = 100,
+  totalXp = 0,
   tutorial = false,
   onTutorialDone,
   mods = NO_EFFECTS,
@@ -156,6 +158,8 @@ export function WardScreen({
   onQuit?: () => void;
   /** persistent job security — drives DON visit odds and the final warning */
   jobSecurity?: number;
+  /** cumulative XP, used only for the compact existing-rank display */
+  totalXp?: number;
   /** show the first-shift walkthrough */
   tutorial?: boolean;
   onTutorialDone?: () => void;
@@ -208,6 +212,7 @@ export function WardScreen({
   const [selected, setSelected] = useState<number | null>(null);
   const [flash, setFlash] = useState<Record<number, "good" | "bad" | null>>({});
   const [banner, setBanner] = useState<Banner | null>(null);
+  const [rewardCallout, setRewardCallout] = useState<RewardCallout | null>(null);
   const [combo, setCombo] = useState(0);
   const [stability, setStability] = useState(100);
   /** first-shift walkthrough: 0 intro card · 1 "tap a bay" hint · 2 scoring card · -1 done */
@@ -285,6 +290,7 @@ export function WardScreen({
   const uid = useRef(1);
   const ended = useRef(false);
   const bannerId = useRef(1);
+  const rewardCalloutId = useRef(1);
   const [, force] = useState(0);
 
   /* ---------------- the DON's ward visit ---------------- */
@@ -400,6 +406,12 @@ export function WardScreen({
     const id = bannerId.current++;
     setBanner({ id, title, sub, good });
     window.setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 1500);
+  }, []);
+
+  const celebrate = useCallback((title: string, kind: RewardCallout["kind"]) => {
+    const id = rewardCalloutId.current++;
+    setRewardCallout({ id, title, kind });
+    window.setTimeout(() => setRewardCallout((current) => current?.id === id ? null : current), 1150);
   }, []);
 
   /* Catastrophe timers live outside React effect cleanup so that a phase
@@ -1084,6 +1096,22 @@ export function WardScreen({
       if (ev.def.callBell) stats.current.callBells++;
       setStability((s) => Math.min(100, s + 3));
       say(isTop ? "GREAT CALL!" : "PATIENT STABLE", `+${gain}${speedBonus ? ` (⚡+${speedBonus})` : ""} · ${ev.def.win}`, true);
+      if (newCombo === 3) {
+        celebrate("COMBO x3!", "combo");
+        buzz(18);
+      } else if (newCombo === 5) {
+        celebrate("COMBO x5!", "combo");
+        buzz(28);
+      } else if (newCombo > 5 && newCombo % 3 === 0) {
+        celebrate("ON FIRE!", "combo");
+        buzz(35);
+      } else if (speedBonus > 0 && Math.random() < 0.55) {
+        celebrate("QUICK THINKING!", "quick");
+      } else if (isTop && ev.def.severity === 3 && Math.random() < 0.6) {
+        celebrate("PERFECT TRIAGE!", "perfect");
+      } else if (ev.def.severity === 1 && Math.random() < 0.2) {
+        celebrate(Math.random() < 0.5 ? "NICE, NURSE!" : "NONSENSE NEUTRALISED!", "funny");
+      }
       if (isTop && newCombo >= 2) donSay("good");
       streak.current++;
       if (streak.current % 2 === 0) offerMini();
@@ -1184,6 +1212,8 @@ export function WardScreen({
         objectives={objectives}
         counters={counters.current}
         jobSecurity={jobSecurity}
+        nurseLevel={nurseRank(totalXp).level}
+        nurseProgress={nurseRank(totalXp).progress}
         paused={manualPause}
         onTogglePause={() => {
           setManualPause((paused) => {
@@ -1242,6 +1272,7 @@ export function WardScreen({
             </div>
           </div>
         )}
+        {rewardCallout && <RewardCalloutOverlay callout={rewardCallout} />}
 
         {don && phase === "play" && !mini && !settingsOpen && !manualPause && (
           <DonBubble line={don.line} />

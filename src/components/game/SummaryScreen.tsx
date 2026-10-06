@@ -1,6 +1,10 @@
 import { RATINGS } from "@/game/config";
+import { useEffect, useMemo, useState } from "react";
 import { DON_MOOD_META, type ShiftReview } from "@/game/don";
 import { JobSecurityBar } from "./JobSecurityBar";
+import { NurseLevelTab } from "./NurseLevelTab";
+import { notableAchievement, type RewardPresentation } from "@/game/progressionRewards";
+import { buzz, playLevelComplete } from "@/lib/sfx";
 import type { ShiftStats } from "./WardScreen";
 
 export function SummaryScreen({
@@ -8,14 +12,40 @@ export function SummaryScreen({
   totalPoints,
   totalXp,
   review,
+  reward,
   onNext,
 }: {
   stats: ShiftStats;
   totalPoints: number;
   totalXp: number;
   review?: ShiftReview | null;
+  reward: RewardPresentation;
   onNext: () => void;
 }) {
+  const [stage, setStage] = useState(0);
+  const [shownXp, setShownXp] = useState(reward.beforeXp);
+  const levelledUp = reward.afterRank.level > reward.beforeRank.level;
+  useEffect(() => {
+    const timers = [
+      window.setTimeout(() => setStage(1), 380),
+      window.setTimeout(() => setStage(2), 900),
+      window.setTimeout(() => setStage(3), 1450),
+      window.setTimeout(() => setStage(4), 2050),
+      window.setTimeout(() => setShownXp(reward.afterXp), 2250),
+      window.setTimeout(() => {
+        if (levelledUp) {
+          setStage(5);
+          playLevelComplete();
+          buzz(45);
+        } else setStage(7);
+      }, 3150),
+      window.setTimeout(() => setStage(levelledUp && reward.unlocks.length ? 6 : 7), 5150),
+      window.setTimeout(() => setStage(7), 6900),
+    ];
+    return () => timers.forEach(window.clearTimeout);
+  }, [levelledUp, reward.afterXp, reward.unlocks.length]);
+  const shownRank = useMemo(() => stage >= 5 ? reward.afterRank : reward.beforeRank, [reward.afterRank, reward.beforeRank, stage]);
+  const achievement = notableAchievement(stats);
   const rating = RATINGS.find((r) => stats.points >= r.min) ?? RATINGS[RATINGS.length - 1];
   if (!rating) return null;
   const rows = [
@@ -30,14 +60,33 @@ export function SummaryScreen({
   ];
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
-      <div className="animate-pop rounded-3xl bg-[image:var(--gradient-gold)] p-4 text-center text-gold-foreground shadow-[var(--shadow-card)]">
+    <div className="relative flex h-full flex-col gap-3 overflow-y-auto p-4">
+      <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-2">
+      <div className="animate-pop rounded-2xl bg-[image:var(--gradient-gold)] p-4 text-center text-gold-foreground shadow-[var(--shadow-card)]">
         <p className="font-display text-xs font-bold uppercase tracking-widest">
           {stats.collapsed ? "Ward went sideways" : "Shift complete"}
         </p>
         <h2 className="font-display text-3xl font-black leading-tight">{rating.title}</h2>
         <p className="text-xs font-semibold">{rating.line}</p>
       </div>
+      <NurseLevelTab level={shownRank.level} progress={shownRank.progress} />
+      </div>
+
+      <div className="reward-summary-band border-y-2 border-border py-3 text-center">
+        <p className="pixel-count text-4xl">Shift complete!</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className={stage >= 1 ? "reward-reveal" : "opacity-0"}><p className="font-display text-2xl font-black">+{stats.points} ⭐</p><p className="text-[10px] uppercase text-muted-foreground">Points earned</p></div>
+          <div className={stage >= 2 ? "reward-reveal" : "opacity-0"}><p className="font-display text-2xl font-black">+{reward.xpEarned} ✨</p><p className="text-[10px] uppercase text-muted-foreground">XP earned</p></div>
+          <div className={stage >= 3 ? "reward-reveal" : "opacity-0"}><p className="font-display text-2xl font-black">x{stats.maxCombo} 🔥</p><p className="text-[10px] uppercase text-muted-foreground">Best combo</p></div>
+          <div className={stage >= 4 ? "reward-reveal" : "opacity-0"}><p className="font-display text-2xl font-black">{stats.objectives.filter((o) => o.done).length}/{stats.objectives.length} ✅</p><p className="text-[10px] uppercase text-muted-foreground">Challenges</p></div>
+        </div>
+        <div className="mt-3 h-3 overflow-hidden rounded-full bg-muted" aria-label={`${shownXp} total XP`}><div className="h-full rounded-full bg-calm transition-[width] duration-1000 ease-out" style={{ width: `${shownRank.progress * 100}%` }} /></div>
+        <p className="mt-1 font-display text-[11px] font-black uppercase">{shownXp} XP · {shownRank.title}</p>
+        {achievement && stage >= 4 && <p className="reward-reveal mt-2 text-xs font-bold text-calm-foreground">{achievement}</p>}
+      </div>
+
+      {stage === 5 && <div className="pointer-events-none fixed inset-0 z-[90] overflow-hidden" aria-live="assertive"><div className="level-up-flight"><div className="reward-flare" /><p className="pixel-count text-center text-6xl">Level up!</p><p className="pixel-count mt-2 text-center text-3xl">Nurse Lv {reward.afterRank.level}</p><p className="mt-2 text-center font-display text-sm font-black uppercase text-primary-foreground">{reward.afterRank.title}</p></div></div>}
+      {stage === 6 && reward.unlocks.length > 0 && <div className="pointer-events-auto fixed inset-0 z-[90] grid place-items-center bg-background/85 p-5 backdrop-blur-sm"><div className="reward-unlock w-full max-w-sm border-y-4 border-gold bg-card py-5 text-center shadow-2xl"><p className="pixel-count text-5xl">New unlock!</p><div className="mt-4 space-y-1 px-4">{reward.unlocks.map((unlock) => <p key={unlock} className="font-display text-base font-black uppercase">{unlock}</p>)}</div><button onClick={() => setStage(7)} className="chunky chunky-press mt-4 rounded-2xl bg-primary px-6 py-3 font-display text-base font-black uppercase text-primary-foreground">Nice! ▶</button></div></div>}
 
       <div className="grid grid-cols-2 gap-2">
         {[
@@ -166,7 +215,8 @@ export function SummaryScreen({
 
       <button
         onClick={onNext}
-        className="chunky chunky-press mt-auto w-full rounded-2xl bg-primary py-4 font-display text-lg font-black uppercase text-primary-foreground"
+        disabled={stage < 7}
+        className="chunky chunky-press mt-auto w-full rounded-2xl bg-primary py-4 font-display text-lg font-black uppercase text-primary-foreground disabled:opacity-40"
       >
         Go to the shop →
       </button>

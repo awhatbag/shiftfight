@@ -14,3 +14,5 @@ East-to-west catastrophe hazards sample their stepped sprite centre against the 
 Patient action button order is shuffled once when each ActiveEvent is created, including catastrophe problems; keeping it on the event prevents reshuffling during renders or bed switches while preserving action-specific styling and outcomes.
 
 Patient bed artwork is registered in src/game/patientBeds.ts and rendered within the existing Bed sprite at its existing WardScene slot and stacking layer; every sprite keeps the common bed width and wheel baseline (taller canvases only add headroom and are bottom-anchored) so new beds drop in without changing ward geometry or floor shadows.
+
+Reward presentation derives rank changes and unlocks from the existing XP, shift-level, and shop registries; it never owns or recalculates progression state.

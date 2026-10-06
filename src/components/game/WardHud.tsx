@@ -1,13 +1,15 @@
 import { cn } from "@/lib/utils";
 import { objectiveProgress, type ShiftCounters, type ShiftObjective } from "@/game/objectives";
 import { FINAL_WARNING_AT } from "@/game/don";
+import { JobSecurityBar } from "./JobSecurityBar";
+import { NurseLevelTab } from "./NurseLevelTab";
 
 export function WardHud({
   secondsLeft, shiftLeft, stability, points, combo, objectives, counters,
-  jobSecurity, paused, onTogglePause, onOpenSettings,
+  jobSecurity, nurseLevel, nurseProgress, paused, onTogglePause, onOpenSettings,
 }: {
   secondsLeft: number; shiftLeft: number; stability: number; points: number; combo: number;
-  objectives: ShiftObjective[]; counters: ShiftCounters; jobSecurity: number; paused: boolean;
+  objectives: ShiftObjective[]; counters: ShiftCounters; jobSecurity: number; nurseLevel: number; nurseProgress: number; paused: boolean;
   onTogglePause: () => void; onOpenSettings: () => void;
 }) {
   const lowTime = secondsLeft <= 15;
@@ -38,6 +40,10 @@ export function WardHud({
         <span className="font-display grid place-items-center rounded-2xl border-2 border-border bg-card px-2 text-sm font-black">⭐{points}</span>
         <span className={cn("font-display grid place-items-center rounded-2xl border-2 border-border px-2 text-sm font-black", combo > 2 ? "animate-throb bg-gold text-gold-foreground" : "bg-card")}>🔥x{combo}</span>
       </div>
+      <div className="grid grid-cols-[minmax(0,1fr)_74px] gap-2">
+        <JobSecurityBar value={jobSecurity} compact />
+        <NurseLevelTab level={nurseLevel} progress={nurseProgress} compact />
+      </div>
       <div className="flex items-stretch gap-1.5 overflow-hidden">
         {objectives.map((objective) => {
           const progress = Math.min(objective.target, objectiveProgress(objective.key, { ...counters, points }));
@@ -46,7 +52,7 @@ export function WardHud({
           </span>;
         })}
       </div>
-      {jobSecurity > 0 && jobSecurity < FINAL_WARNING_AT && <p className="font-display animate-throb rounded-xl bg-alarm px-2 py-1 text-center text-[11px] font-black uppercase tracking-wider text-alarm-foreground">⚠️ Final warning · job security {jobSecurity}%</p>}
+      {jobSecurity > 0 && jobSecurity < FINAL_WARNING_AT && <p className="font-display animate-throb rounded-xl bg-alarm px-2 py-1 text-center text-[11px] font-black uppercase tracking-wider text-alarm-foreground">⚠️ Final warning</p>}
     </div>
   );
 }

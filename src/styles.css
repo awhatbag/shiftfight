@@ -492,3 +492,37 @@
   0% { transform: scale(1.6); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+.reward-callout { animation: reward-callout 1.15s steps(7, end) both; }
+.reward-callout-combo { animation-name: reward-callout-combo; }
+.reward-sparks { color: var(--gold); font-size: 1.1rem; animation: reward-sparks 0.8s steps(5, end) both; }
+.reward-reveal { animation: reward-reveal 0.38s steps(5, end) both; }
+.reward-summary-band { background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--gold) 18%, transparent), transparent); }
+.level-up-flight {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  width: min(92vw, 420px);
+  transform: translateX(-50%);
+  animation: level-up-flight 2s cubic-bezier(.22,.8,.28,1) both;
+}
+.reward-flare {
+  position: absolute;
+  inset: -45%;
+  z-index: -1;
+  background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--gold) 65%, transparent) 0 4deg, transparent 4deg 16deg);
+  animation: reward-flare 0.8s steps(8, end) infinite;
+}
+.reward-unlock { animation: reward-unlock 0.48s steps(6, end) both; }
+
+@keyframes reward-callout { 0% { opacity: 0; transform: translateY(18px) scale(.65); } 28% { opacity: 1; transform: translateY(0) scale(1.08); } 72% { opacity: 1; transform: translateY(-4px) scale(1); } 100% { opacity: 0; transform: translateY(-24px) scale(.9); } }
+@keyframes reward-callout-combo { 0% { opacity: 0; transform: scale(.3) rotate(-4deg); } 32% { opacity: 1; transform: scale(1.22) rotate(2deg); } 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.8) translateY(-18px); } }
+@keyframes reward-sparks { 0% { opacity: 0; letter-spacing: 0; transform: scale(.5); } 40% { opacity: 1; letter-spacing: .7rem; transform: scale(1.2); } 100% { opacity: 0; letter-spacing: 1.2rem; transform: scale(.7); } }
+@keyframes reward-reveal { 0% { opacity: 0; transform: translateY(10px) scale(.8); } 65% { opacity: 1; transform: translateY(-2px) scale(1.08); } 100% { opacity: 1; transform: none; } }
+@keyframes level-up-flight { 0% { opacity: 0; transform: translate(-50%, 110%) scale(.65); } 18% { opacity: 1; transform: translate(-50%, 0) scale(1.08); } 65% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(25%, -72vh) scale(.18); } }
+@keyframes reward-flare { to { transform: rotate(45deg); } }
+@keyframes reward-unlock { 0% { opacity: 0; transform: scale(.6); } 70% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .reward-callout, .reward-callout-combo, .reward-sparks, .reward-reveal, .level-up-flight, .reward-flare, .reward-unlock { animation-duration: 1ms; animation-iteration-count: 1; }
+}
