@@ -35,6 +35,7 @@ import {
   toggleEquipped,
 } from "@/game/gear";
 import { bedUpgradeEffects } from "@/game/bedUpgrades";
+import { unlocksBetween, type RewardPresentation } from "@/game/progressionRewards";
 import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
 import { shiftTitle } from "@/game/shifts";
 import {
@@ -306,6 +307,7 @@ function Game() {
   const [equippedGear, setEquippedGear] = useState<string[]>([]);
   const [bedUpgrades, setBedUpgrades] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
+  const [lastReward, setLastReward] = useState<RewardPresentation | null>(null);
   const [review, setReview] = useState<ShiftReview | null>(null);
   const [jobSecurity, setJobSecurity] = useState(JOB_SECURITY_START);
   const [runKey, setRunKey] = useState(0);
@@ -518,6 +520,8 @@ function Game() {
     setLast(s);
     const nextPoints = points + s.points;
     const nextXp = xp + Math.round(s.xp * mods.xpMult);
+    const beforeRank = nurseRank(xp);
+    const afterRank = nurseRank(nextXp);
     setPoints(nextPoints);
     setXp(nextXp);
     let nextLevel = level;
@@ -531,6 +535,14 @@ function Game() {
       setHighestLevel(nextHighest);
       setWardProgress(nextWardProgress);
     }
+    setLastReward({
+      beforeXp: xp,
+      afterXp: nextXp,
+      xpEarned: nextXp - xp,
+      beforeRank,
+      afterRank,
+      unlocks: unlocksBetween(xp, nextXp, level, nextLevel),
+    });
     /** the DON reviews the shift using the stats the game already tracks */
     const r = reviewShift(
       {
@@ -787,16 +799,18 @@ function Game() {
             onSave={saveProgress}
             onQuit={() => setPhase("intro")}
             jobSecurity={jobSecurity}
+            totalXp={xp}
             tutorial={!tutorialDone}
             onTutorialDone={completeTutorial}
           />
         )}
-        {phase === "summary" && last && (
+        {phase === "summary" && last && lastReward && (
           <SummaryScreen
             stats={last}
             totalPoints={points}
             totalXp={xp}
             review={review}
+            reward={lastReward}
             onNext={() => setPhase(review?.fired ? "fired" : "shop")}
           />
         )}
