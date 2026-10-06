@@ -24,3 +24,4 @@
 - [ ] Add remaining patient bed variants when supplied, so graphics can rotate between different patients across shifts.
 
 - [x] Restyle the 3-2-1 / Time's Up shift-end countdown in red, smooth detailed pixel-art style (no racing flags).
+- [ ] Add the approved progression/reward layer: ward level tab, combo feedback, staged summary, level-up travel, and real unlock reveals.
