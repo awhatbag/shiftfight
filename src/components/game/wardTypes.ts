@@ -12,6 +12,12 @@ export type ActiveEvent = {
 
 export type Banner = { id: number; title: string; sub: string; good: boolean };
 
+export type RewardCallout = {
+  id: number;
+  title: string;
+  kind: "combo" | "quick" | "perfect" | "funny";
+};
+
 export type CatastrophePhase = null | "intro" | "active" | "conclusion";
 
 export type RollingHazard = {
