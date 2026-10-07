@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { playBad, playGood, playPop } from "@/lib/sfx";
 import { FICTIONAL_MEDS } from "@/game/config";
+import { PixelSyringe, PixelVial } from "./ivPixelArt";
 
 type Props = {
   level: number;
@@ -167,7 +168,7 @@ export function IVMixGame({ level, paused, onDone }: Props) {
         </p>
       </div>
 
-      <div className="h-3.5 overflow-hidden rounded-full bg-muted">
+      <div className="h-4 overflow-hidden rounded-sm border-2 border-foreground/60 bg-muted">
         <div
           className={cn(
             "h-full rounded-full transition-[width] duration-75 ease-linear",
@@ -177,7 +178,7 @@ export function IVMixGame({ level, paused, onDone }: Props) {
         />
       </div>
 
-      <div className="flex items-center gap-2 rounded-2xl border-2 border-border bg-card px-3 py-2">
+      <div className="flex items-center gap-2 rounded-md border-[3px] border-foreground/70 bg-card px-3 py-2 shadow-[var(--shadow-pop)]">
         <span className="text-2xl">{stage === "shake" || stage === "done" ? "🫨" : "💉"}</span>
         <p className="font-display flex-1 text-sm font-black uppercase">
           {stage === "shake"
@@ -205,50 +206,17 @@ export function IVMixGame({ level, paused, onDone }: Props) {
         }}
         onPointerUp={release}
         onPointerCancel={release}
-        className="relative flex-1 touch-none overflow-hidden rounded-3xl border-4 border-border bg-floor"
+        className="relative flex-1 touch-none overflow-hidden border-4 border-foreground/70 pixel-tray"
       >
-        {/* ---- big glass vial ---- */}
+        {/* ---- 32-bit pixel glass vial ---- */}
         <div
           className={cn("absolute left-1/2 -translate-x-1/2", stage === "shake" && "animate-throb")}
           style={{ top: "38%" }}
         >
-          {/* crimp cap + rubber stopper (the port) */}
-          <div className="relative z-10 mx-auto h-6 w-20 rounded-t-md border border-foreground/30 bg-gradient-to-b from-muted to-foreground/20 shadow-sm">
-            {/* rubber stopper visible through the cap opening */}
-            <div
-              className={cn(
-                "absolute left-1/2 top-1 h-3 w-10 -translate-x-1/2 rounded-sm border transition-colors",
-                near ? "border-calm bg-calm/60" : "border-foreground/30 bg-foreground/20",
-              )}
-            />
-          </div>
-          {/* neck */}
-          <div className="mx-auto h-3 w-16 border-x border-foreground/25 bg-gradient-to-b from-card to-muted" />
-          {/* body */}
-          <div className="relative mx-auto h-44 w-32 overflow-hidden rounded-b-3xl rounded-t-sm border border-foreground/25 bg-gradient-to-br from-card via-muted/40 to-muted shadow-lg">
-            {/* glass highlight */}
-            <div className="absolute left-2 top-2 h-[85%] w-4 rounded-full bg-white/40" />
-            {/* liquid */}
-            <div
-              className="absolute inset-x-1.5 bottom-1.5 rounded-b-2xl transition-all duration-150"
-              style={{
-                height: "62%",
-                background:
-                  stage === "shake" || stage === "done"
-                    ? `oklch(${0.8 - (mix / shakeNeeded) * 0.1} ${0.06 + (mix / shakeNeeded) * 0.14} ${
-                        200 + (mix / shakeNeeded) * 120
-                      })`
-                    : "oklch(0.9 0.03 210)",
-                opacity: 0.85,
-              }}
-            />
-            {/* label */}
-            <div className="absolute left-1/2 top-[12%] w-28 -translate-x-1/2 rounded border border-foreground/20 bg-card/95 px-2 py-1.5 text-center shadow-sm">
-              <p className="font-display text-sm font-black uppercase leading-tight tracking-wide">
-                {drugName}
-              </p>
-              <p className="text-[10px] font-semibold text-muted-foreground">500mg · Shake well</p>
-            </div>
+          <PixelVial near={near} mix={stage === "shake" || stage === "done" ? mix / shakeNeeded : -1} />
+          <div className="absolute left-1/2 top-[96px] w-[104px] -translate-x-1/2 border-2 border-foreground/70 bg-card px-1.5 py-1 text-center">
+            <p className="font-display text-sm font-black uppercase leading-tight tracking-wide">{drugName}</p>
+            <p className="font-display text-[10px] font-bold uppercase text-muted-foreground">500mg · Shake well</p>
           </div>
         </div>
 
@@ -257,7 +225,7 @@ export function IVMixGame({ level, paused, onDone }: Props) {
           <>
             <span
               className={cn(
-                "pointer-events-none absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-dashed",
+                "pointer-events-none absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2 border-4 [border-style:dashed]",
                 near ? "animate-pulse border-calm" : "border-primary",
               )}
               style={{ left: `${port.x * 100}%`, top: `${port.y * 100}%` }}
@@ -311,39 +279,13 @@ export function IVMixGame({ level, paused, onDone }: Props) {
                 : { left: `${pos.x * 100}%`, top: `${pos.y * 100}%` }
             }
           >
-            <div className="flex flex-col items-center drop-shadow-md">
-              {/* plunger thumb rest */}
-              <div className="h-2.5 w-12 rounded-sm border border-foreground/40 bg-gradient-to-b from-muted to-foreground/25" />
-              {/* plunger rod */}
-              <div className="h-6 w-2.5 bg-foreground/35" />
-              {/* rubber plunger head */}
-              <div className="h-2 w-8 rounded-sm bg-foreground/50" />
-              {/* barrel */}
-              <div className="relative h-20 w-9 overflow-hidden rounded-b-sm border-2 border-foreground/40 bg-white/50">
-                {/* med liquid inside */}
-                <div className="absolute inset-x-0.5 bottom-0.5 top-[30%] bg-primary/40" />
-                {/* measurement marks */}
-                {[20, 40, 60, 80].map((t) => (
-                  <span
-                    key={t}
-                    className="absolute right-0.5 h-px w-2 bg-foreground/50"
-                    style={{ top: `${t}%` }}
-                  />
-                ))}
-                {/* glass shine */}
-                <div className="absolute left-1 top-1 h-[90%] w-1.5 rounded-full bg-white/60" />
-              </div>
-              {/* hub */}
-              <div className="h-3 w-3.5 border-x-2 border-b-2 border-foreground/40 bg-muted" />
-              {/* needle */}
-              <div className="h-14 w-[3px] rounded-b-full bg-gradient-to-b from-foreground/60 to-foreground/30" />
-            </div>
+            <PixelSyringe />
           </div>
         )}
 
         {(stage === "insert" || stage === "shake") && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <div className="font-display animate-pop rounded-2xl border-4 border-calm bg-background/95 px-6 py-4 text-center shadow-2xl">
+            <div className="font-display animate-pop border-4 border-foreground/80 bg-background px-6 py-4 text-center shadow-[6px_6px_0_0_var(--foreground)]">
               <p className="text-3xl font-black uppercase text-calm">NOW SHAKE!</p>
               <p className="mt-1 text-sm font-bold uppercase text-foreground">
                 Shake phone or swipe fast
@@ -354,7 +296,7 @@ export function IVMixGame({ level, paused, onDone }: Props) {
 
         {stage === "done" && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <p className="font-display animate-pop rounded-2xl bg-calm px-5 py-3 text-2xl font-black uppercase text-calm-foreground">
+            <p className="font-display animate-pop border-4 border-foreground/80 bg-calm px-5 py-3 shadow-[6px_6px_0_0_var(--foreground)] text-2xl font-black uppercase text-calm-foreground">
               Mixed! ✨
             </p>
           </div>
@@ -365,9 +307,9 @@ export function IVMixGame({ level, paused, onDone }: Props) {
             <p className="font-display mb-1 text-center text-sm font-black uppercase">
               Shake or swipe!
             </p>
-            <div className="h-4 overflow-hidden rounded-full bg-muted">
+            <div className="h-5 overflow-hidden border-2 border-foreground/70 bg-muted">
               <div
-                className="h-full rounded-full bg-gold transition-[width] duration-100"
+                className="h-full bg-gold transition-[width] duration-100"
                 style={{ width: `${mixPct}%` }}
               />
             </div>
