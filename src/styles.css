@@ -536,3 +536,12 @@
 @media (prefers-reduced-motion: reduce) {
   .reward-callout, .reward-callout-combo, .reward-sparks, .reward-reveal, .level-up-flight, .reward-flare, .reward-unlock { animation-duration: 1ms; animation-iteration-count: 1; }
 }
+
+/* IV mix prep tray: stepped steel pixel texture */
+.pixel-tray {
+  background-color: var(--muted);
+  background-image:
+    repeating-linear-gradient(0deg, color-mix(in oklab, var(--foreground) 6%, transparent) 0 4px, transparent 4px 16px),
+    repeating-linear-gradient(90deg, color-mix(in oklab, var(--background) 30%, transparent) 0 4px, transparent 4px 24px);
+  image-rendering: pixelated;
+}
