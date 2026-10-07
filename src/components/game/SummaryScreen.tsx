@@ -1,4 +1,4 @@
-import { RATINGS } from "@/game/config";
+import { nurseRank, RATINGS } from "@/game/config";
 import { useEffect, useMemo, useState } from "react";
 import { DON_MOOD_META, type ShiftReview } from "@/game/don";
 import { JobSecurityBar } from "./JobSecurityBar";
@@ -31,7 +31,6 @@ export function SummaryScreen({
       window.setTimeout(() => setStage(2), 900),
       window.setTimeout(() => setStage(3), 1450),
       window.setTimeout(() => setStage(4), 2050),
-      window.setTimeout(() => setShownXp(reward.afterXp), 2250),
       window.setTimeout(() => {
         if (levelledUp) {
           setStage(5);
@@ -44,7 +43,21 @@ export function SummaryScreen({
     ];
     return () => timers.forEach(window.clearTimeout);
   }, [levelledUp, reward.afterXp, reward.unlocks.length]);
-  const shownRank = useMemo(() => stage >= 5 ? reward.afterRank : reward.beforeRank, [reward.afterRank, reward.beforeRank, stage]);
+  useEffect(() => {
+    if (stage < 4) return undefined;
+    const started = performance.now();
+    const duration = 900;
+    let frame = 0;
+    const animate = (now: number) => {
+      const progress = Math.min(1, (now - started) / duration);
+      const eased = 1 - (1 - progress) ** 3;
+      setShownXp(Math.round(reward.beforeXp + (reward.afterXp - reward.beforeXp) * eased));
+      if (progress < 1) frame = window.requestAnimationFrame(animate);
+    };
+    frame = window.requestAnimationFrame(animate);
+    return () => window.cancelAnimationFrame(frame);
+  }, [reward.afterXp, reward.beforeXp, stage]);
+  const shownRank = useMemo(() => nurseRank(shownXp), [shownXp]);
   const achievement = notableAchievement(stats);
   const rating = RATINGS.find((r) => stats.points >= r.min) ?? RATINGS[RATINGS.length - 1];
   if (!rating) return null;
