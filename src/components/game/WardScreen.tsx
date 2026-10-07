@@ -566,15 +566,17 @@ export function WardScreen({
     stats.current.catastrophe = outcome;
     setAvocadoResult({ outcome, ...def.conclusion(outcome) });
     setAvocadoPhase("conclusion");
-    /* the closing card always clears itself and hands the ward back */
-    scheduleAvocado(() => {
-      setAvocadoPhase(null);
-      setAvocados([]);
-      setAvocadoResult(null);
-      setAvocadoDevRequested(null);
-      avocadoTally.current = emptyTally();
-    }, 4_000);
-  }, [tick, avocadoPhase, scheduleAvocado]);
+    /* the closing card waits for the player's "Continue shift" tap */
+  }, [tick, avocadoPhase]);
+
+  const finishCatastrophe = useCallback(() => {
+    playForwardClick();
+    setAvocadoPhase(null);
+    setAvocados([]);
+    setAvocadoResult(null);
+    setAvocadoDevRequested(null);
+    avocadoTally.current = emptyTally();
+  }, []);
 
   /** re-check the shift objectives and pay out any that just completed */
   const checkObjectives = useCallback(() => {
@@ -1286,7 +1288,7 @@ export function WardScreen({
           <CatastropheIntro catastrophe={catastrophe} buttonLabel={avocadoIntroLabel} onStart={() => { playForwardClick(); startAvocadoAvalanche(); }} />
         )}
         {avocadoPhase === "conclusion" && avocadoResult && (
-          <CatastropheConclusion result={avocadoResult} tally={avocadoTally.current} />
+          <CatastropheConclusion result={avocadoResult} tally={avocadoTally.current} onContinue={finishCatastrophe} />
         )}
         {phase === "ready" && !briefing && <ReadyCue cue={cue} />}
         {tutorial && phase === "play" && tutStep === 0 && <TutorialOverlay step={0} onNext={() => setTutStep(1)} />}
