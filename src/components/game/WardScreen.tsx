@@ -1219,7 +1219,7 @@ export function WardScreen({
   return (
     <div
       className={cn(
-        "relative flex h-full w-full flex-col bg-[image:var(--gradient-sky)]",
+        "relative flex h-full w-full flex-col bg-background",
         (manualPause || settingsOpen) && "game-frozen",
       )}
     >
@@ -1244,7 +1244,7 @@ export function WardScreen({
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      <div ref={wardRef} className={`ward-viewport relative flex-1 select-none overflow-hidden bg-ward-deep${avocadoPhase === "wave" ? " earthquake-shake" : ""}`}>
+      <div ref={wardRef} className={`ward-viewport terrazzo relative flex-1 select-none overflow-hidden${avocadoPhase === "wave" ? " earthquake-shake" : ""}`}>
       <WardScene
         level={cfg.level}
         levelName={cfg.name}

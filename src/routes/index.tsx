@@ -715,7 +715,7 @@ function Game() {
 
 
   return (
-    <main className="flex min-h-dvh justify-center bg-ward-deep">
+    <main className="terrazzo flex min-h-dvh justify-center">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
         <AdBanner />
         {phase !== "dev" && phase !== "shift" && (
