@@ -342,8 +342,17 @@ export function MandatoryTrainingGame({ level, paused, onDone }: MiniGameProps) 
       </div>
 
       {/* 32-bit pixel CRT terminal — fills the play area */}
-      <div className="pixel-terminal relative flex min-h-0 flex-1 flex-col p-3 pb-1">
-        <div className="pixel-screen training-crt relative min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col items-center">
+      <div className="pixel-terminal beige-pc relative flex min-h-0 w-full flex-1 flex-col p-2.5 pb-0">
+        <div className="pixel-screen training-crt crt-glass relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="retro-titlebar flex h-6 shrink-0 items-center gap-1.5 px-1.5 text-[11px] font-black">
+            <span className="min-w-0 flex-1 truncate">💾 MedTrain 95 · Compliance Suite</span>
+            {["_", "□", "×"].map((c) => <span key={c} className="retro-winbtn grid h-4 w-4 place-items-center text-[10px] leading-none">{c}</span>)}
+          </div>
+          <div className="retro-menubar flex h-5 shrink-0 gap-3 px-2 text-[11px] font-bold">
+            <span><u>F</u>ile</span><span><u>M</u>odules</span><span><u>P</u>anic</span><span><u>H</u>elp</span>
+          </div>
+          <div className="relative min-h-0 flex-1">
           {hasDistractions && (
             <div className="pointer-events-none absolute right-2 top-2 z-20 flex gap-1">
               <span className="h-3 w-3 bg-alarm" />
@@ -426,18 +435,21 @@ export function MandatoryTrainingGame({ level, paused, onDone }: MiniGameProps) 
               </div>
             </div>
           ) : null}
+          </div>
         </div>
 
-        <div className="flex h-8 items-center justify-between px-1 text-xs font-black text-[var(--training-label)]">
-          <span className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 bg-calm shadow-[0_0_6px_var(--calm)]" />
-            WARDMASTER 486
-          </span>
-          <span className="hidden gap-[3px] sm:flex">
-            {Array.from({ length: 8 }, (_, i) => <span key={i} className="h-3 w-1 bg-[var(--training-slot)]" />)}
-          </span>
-          <span>{mistakes ? `${mistakes} MISCLICK${mistakes === 1 ? "" : "S"}` : "READY"}</span>
+        {/* beige hardware chin: badge, floppy drive, dials, power */}
+        <div className="flex h-9 shrink-0 items-center gap-2 px-1 text-[10px] font-black text-[var(--training-label)]">
+          <span className="truncate">WARDMASTER 486</span>
+          <span className="pc-floppy relative h-2.5 flex-1"><span className="absolute -top-0.5 right-1 h-1 w-2 bg-[var(--training-slot)]" /></span>
+          <span className="pc-dial h-3 w-3" /><span className="pc-dial h-3 w-3" />
+          <span className="truncate">{mistakes ? `${mistakes} ERR` : "OK"}</span>
+          <span className="h-2 w-2 bg-calm shadow-[0_0_6px_var(--calm)]" />
+          <span className="pixel-btn h-5 w-5 bg-[var(--training-key)]" aria-hidden="true" />
         </div>
+      </div>
+      <div className="beige-pc h-2 w-14 shrink-0 border-x-4 border-[var(--training-bezel)]" />
+      <div className="beige-pc h-2.5 w-36 shrink-0 border-4 border-t-0 border-[var(--training-bezel)]" />
       </div>
 
       <div className="flex items-center justify-between px-1 text-sm font-bold text-muted-foreground">
