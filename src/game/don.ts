@@ -84,6 +84,8 @@ export type ReviewInput = {
   donAnnoyed: number;
   /** result of a catastrophic event, when one ran this shift */
   catastrophe?: "positive" | "neutral" | "negative" | null;
+  /** ward health left at the final whistle (0-100) */
+  finalStability?: number;
 };
 
 export type ShiftReview = {
@@ -158,6 +160,12 @@ export function reviewShift(s: ReviewInput, jobSecurity: number): ShiftReview {
   else if (ratio >= 0.5) stars = 3;
   else if (ratio >= 0.3) stars = 2;
   else stars = 1;
+  /** ward health at the whistle nudges the rating */
+  const fs = s.finalStability;
+  if (typeof fs === "number" && !s.collapsed) {
+    if (fs >= 80) stars = Math.min(5, stars + 1);
+    else if (fs < 25) stars = Math.max(1, stars - 1);
+  }
   /** a ward that collapsed is an automatic disaster */
   if (s.collapsed) stars = 1;
 
@@ -185,6 +193,8 @@ export function reviewShift(s: ReviewInput, jobSecurity: number): ShiftReview {
   if (s.miniFailed) notes.push({ label: `${s.miniFailed} bonus rounds fumbled`, pts: -1 });
   if (s.miniAbandoned) notes.push({ label: `${s.miniAbandoned} bonus rounds bailed on`, pts: -2 });
   if (s.collapsed) notes.push({ label: "The ward fell over", pts: -1 });
+  else if (typeof s.finalStability === "number" && s.finalStability >= 80) notes.push({ label: `Ward health held at ${Math.round(s.finalStability)}%`, pts: 1 });
+  else if (typeof s.finalStability === "number" && s.finalStability < 25) notes.push({ label: `Ward health limped in at ${Math.round(s.finalStability)}%`, pts: -1 });
   if (s.donAnnoyed) notes.push({ label: `The DON saw ${s.donAnnoyed} slip-up${s.donAnnoyed === 1 ? "" : "s"}`, pts: -2 });
   if (s.catastrophe === "positive") notes.push({ label: "Catastrophe contained", pts: 2 });
   else if (s.catastrophe === "neutral") notes.push({ label: "Catastrophe survived", pts: 1 });
