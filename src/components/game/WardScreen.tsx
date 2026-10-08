@@ -5,6 +5,7 @@ import { pickPatientSprites } from "@/game/patientBeds";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
+import avocadoWaveAsset from "@/assets/avocado-wave.png.asset.json";
 import type { ActiveEvent, Banner, CatastrophePhase, RewardCallout, RollingHazard, StaffRuntime } from "./wardTypes";
 import { loadEastWestCollisionMap, eastWestCollisionAt } from "@/game/eastWestCollision";
 import { rollingHazardPosition } from "./rollingHazardMotion";
@@ -352,7 +353,7 @@ export function WardScreen({
   /* reading a patient issue at the bedside slows the ward to ~30% until a response is chosen */
   const readingEvent = atBed !== null && selected === atBed ? events.find((e) => e.bed === atBed) : undefined;
   const rate =
-    manualPause || settingsOpen || phase !== "play" || miniOffer || tutPause || avocadoPhase === "intro" || avocadoPhase === "conclusion"
+    manualPause || settingsOpen || phase !== "play" || miniOffer || tutPause || avocadoPhase === "intro" || avocadoPhase === "wave" || avocadoPhase === "conclusion"
       ? 0
       : mini
         ? 1 / 3
@@ -468,7 +469,7 @@ export function WardScreen({
 
   /* the announcement stays up until the player dismisses it */
   const startAvocadoAvalanche = useCallback(() => {
-    if (avocadoPhaseRef.current !== "intro") return;
+    if (avocadoPhaseRef.current !== "wave") return;
     setAvocadoPhase("active");
     suspendedEvents.current = eventsRef.current;
     avocadoTally.current = emptyTally();
@@ -478,6 +479,18 @@ export function WardScreen({
     playCallBell();
     buzz(35);
   }, [activeBeds, makeAvocadoEvent]);
+
+  /* after the intro: paused earthquake while the avocado wave sweeps past */
+  const startAvocadoWave = useCallback(() => {
+    if (avocadoPhaseRef.current !== "intro") return;
+    setAvocadoPhase("wave");
+    buzz([40, 60, 40, 80, 50, 90, 40]);
+  }, []);
+  useEffect(() => {
+    if (avocadoPhase !== "wave") return undefined;
+    const id = window.setTimeout(startAvocadoAvalanche, 3200);
+    return () => window.clearTimeout(id);
+  }, [avocadoPhase, startAvocadoAvalanche]);
 
   /* Automatic availability follows each catastrophe's level and minimum
      remaining time. Dev Mode can invoke any registered catastrophe directly. */
@@ -1226,7 +1239,7 @@ export function WardScreen({
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      <div ref={wardRef} className="ward-viewport relative flex-1 select-none overflow-hidden bg-ward-deep">
+      <div ref={wardRef} className={`ward-viewport relative flex-1 select-none overflow-hidden bg-ward-deep${avocadoPhase === "wave" ? " earthquake-shake" : ""}`}>
       <WardScene
         level={cfg.level}
         levelName={cfg.name}
@@ -1285,7 +1298,12 @@ export function WardScreen({
           <ShiftBriefing level={cfg.level} name={cfg.name} title={story.title} lead={story.lead} objectives={objectives} onStart={() => setBriefing(false)} />
         )}
         {avocadoPhase === "intro" && (
-          <CatastropheIntro catastrophe={catastrophe} buttonLabel={avocadoIntroLabel} onStart={() => { playForwardClick(); startAvocadoAvalanche(); }} />
+          <CatastropheIntro catastrophe={catastrophe} buttonLabel={avocadoIntroLabel} onStart={() => { playForwardClick(); startAvocadoWave(); }} />
+        )}
+        {avocadoPhase === "wave" && (
+          <div className="pointer-events-auto absolute inset-0 z-[90] overflow-hidden" aria-label="A wave of avocados sweeps across the ward">
+            <img src={avocadoWaveAsset.url} alt="" className="avocado-wave absolute bottom-0 h-auto max-w-none [image-rendering:pixelated]" />
+          </div>
         )}
         {avocadoPhase === "conclusion" && avocadoResult && (
           <CatastropheConclusion result={avocadoResult} tally={avocadoTally.current} onContinue={finishCatastrophe} />
