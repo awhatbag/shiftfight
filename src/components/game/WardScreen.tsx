@@ -101,6 +101,8 @@ export type ShiftStats = {
   steps: number;
   quirks: Quirk[];
   collapsed: boolean;
+  /** ward health (0-100) left at the final whistle; feeds the DON review */
+  finalStability?: number | undefined;
   objectives: ShiftObjective[];
   /** job security / DON inputs — reuse of the existing shift tracking */
   miniFailed: number;
@@ -216,6 +218,8 @@ export function WardScreen({
   const [rewardCallout, setRewardCallout] = useState<RewardCallout | null>(null);
   const [combo, setCombo] = useState(0);
   const [stability, setStability] = useState(100);
+  const stabilityRef = useRef(100);
+  stabilityRef.current = stability;
   /** first-shift walkthrough: 0 intro card · 1 "tap a bay" hint · 2 scoring card · -1 done */
   const [tutStep, setTutStep] = useState(tutorial ? 0 : -1);
   const tutPause = tutorial && (tutStep === 0 || tutStep === 2);
@@ -620,6 +624,7 @@ export function WardScreen({
       if (ended.current) return;
       ended.current = true;
       stats.current.collapsed = collapsed;
+      stats.current.finalStability = collapsed ? 0 : stabilityRef.current;
       stats.current.quirks = rollQuirks(3);
       stats.current.points = Math.max(
         0,

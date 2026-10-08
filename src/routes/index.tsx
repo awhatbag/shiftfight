@@ -558,6 +558,7 @@ function Game() {
         donVisited: s.donVisited,
         donAnnoyed: s.donAnnoyed,
         catastrophe: s.catastrophe ?? null,
+        finalStability: s.finalStability,
       },
       jobSecurity,
     );

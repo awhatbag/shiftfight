@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import { objectiveProgress, type ShiftCounters, type ShiftObjective } from "@/game/objectives";
 import { FINAL_WARNING_AT } from "@/game/don";
-import { JobSecurityBar } from "./JobSecurityBar";
 import { NurseLevelTab } from "./NurseLevelTab";
 
 export function WardHud({
@@ -37,12 +36,9 @@ export function WardHud({
           <span className="text-xl leading-none">❤️</span>
           <div className="min-w-0 flex-1"><div className="h-3 overflow-hidden rounded-full bg-muted"><div className={cn("h-full rounded-full transition-all duration-200", stability > 55 ? "bg-calm" : stability > 25 ? "bg-gold" : "bg-alarm")} style={{ width: `${stability}%` }} /></div></div>
         </div>
+        <NurseLevelTab level={nurseLevel} progress={nurseProgress} compact />
         <span className="font-display grid place-items-center rounded-2xl border-2 border-border bg-card px-2 text-sm font-black">⭐{points}</span>
         <span className={cn("font-display grid place-items-center rounded-2xl border-2 border-border px-2 text-sm font-black", combo > 2 ? "animate-throb bg-gold text-gold-foreground" : "bg-card")}>🔥x{combo}</span>
-      </div>
-      <div className="grid grid-cols-[minmax(0,1fr)_74px] gap-2">
-        <JobSecurityBar value={jobSecurity} compact />
-        <NurseLevelTab level={nurseLevel} progress={nurseProgress} compact />
       </div>
       <div className="flex items-stretch gap-1.5 overflow-hidden">
         {objectives.map((objective) => {
