@@ -18,7 +18,7 @@ export type RewardCallout = {
   kind: "combo" | "quick" | "perfect" | "funny";
 };
 
-export type CatastrophePhase = null | "intro" | "active" | "conclusion";
+export type CatastrophePhase = null | "intro" | "wave" | "active" | "conclusion";
 
 export type RollingHazard = {
   id: number;
