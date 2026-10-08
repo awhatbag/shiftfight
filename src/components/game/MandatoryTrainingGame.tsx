@@ -316,194 +316,133 @@ export function MandatoryTrainingGame({ level, paused, onDone }: MiniGameProps) 
   const compact = level >= 6;
   const hasDistractions = level >= 4;
 
+  const choices = slide && slide.kind === "question"
+    ? slide.correctFirst
+      ? [{ label: slide.correct, correct: true }, { label: slide.wrong, correct: false }]
+      : [{ label: slide.wrong, correct: false }, { label: slide.correct, correct: true }]
+    : [];
+
   return (
-    <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-2 overflow-hidden bg-background/98 p-3 pb-[104px]">
-      <div className="flex items-end justify-between gap-3">
+    <div className="absolute inset-0 z-30 flex animate-slide-up flex-col gap-2 overflow-hidden bg-background/98 p-2 pb-[104px]">
+      <div className="flex items-end justify-between gap-3 px-1">
         <div className="min-w-0">
-          <p className="font-display text-[10px] font-bold uppercase tracking-widest text-primary">
+          <p className="font-display text-xs font-bold uppercase tracking-widest text-primary">
             Mini-game · Level {level + 1}
           </p>
-          <h2 className="font-display truncate text-2xl font-black leading-none">
-            MANDATORY TRAINING
-          </h2>
+          <h2 className="font-display truncate text-3xl font-black leading-none">MANDATORY TRAINING</h2>
         </div>
-        <p className="font-display shrink-0 text-lg font-black tabular-nums">
-          {formatTime(elapsed)}
-        </p>
+        <p className="font-display shrink-0 text-xl font-black tabular-nums">{formatTime(elapsed)}</p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="h-3 flex-1 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-calm transition-[width] duration-100"
-            style={{ width: `${progress}%` }}
-          />
+      <div className="flex items-center gap-2 px-1">
+        <div className="h-4 flex-1 overflow-hidden rounded-sm border-2 border-foreground/70 bg-muted">
+          <div className="h-full bg-calm transition-[width] duration-100" style={{ width: `${progress}%` }} />
         </div>
-        <span className="font-display w-10 text-right text-xs font-black tabular-nums">
-          {progress}%
-        </span>
+        <span className="font-display w-12 text-right text-sm font-black tabular-nums">{progress}%</span>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 flex-col justify-center overflow-hidden rounded-2xl bg-[var(--training-desk)] px-2 py-2 shadow-inner">
-        <div className="mx-auto flex w-full max-w-[560px] items-center justify-center gap-1.5">
-          <div className="relative flex min-w-0 flex-1 flex-col items-center justify-center">
-            <div className="relative flex aspect-[4/3] w-full flex-col rounded-[18px] border-[7px] border-[var(--training-plastic-edge)] bg-[var(--training-plastic)] p-2 shadow-[inset_0_0_0_3px_var(--training-plastic-highlight),0_7px_0_var(--training-plastic-shadow)]">
-              <div className="absolute left-3 top-1.5 h-1.5 w-1.5 rounded-full bg-calm shadow-[0_0_6px_var(--calm)]" />
-              <div className="training-crt relative min-h-0 flex-1 overflow-hidden rounded-[14px] border-4 border-[var(--training-bezel)] bg-[var(--training-screen)] shadow-[inset_0_0_22px_var(--training-screen-shadow)]">
-                {hasDistractions && (
-                  <div className="pointer-events-none absolute right-2 top-2 z-20 flex gap-1 opacity-70">
-                    <span className="h-2 w-2 rounded-full bg-alarm" />
-                    <span className="h-2 w-2 rounded-full bg-gold" />
-                    <span className="h-2 w-2 rounded-full bg-calm" />
+      {/* 32-bit pixel CRT terminal — fills the play area */}
+      <div className="pixel-terminal relative flex min-h-0 flex-1 flex-col p-3 pb-1">
+        <div className="pixel-screen training-crt relative min-h-0 flex-1 overflow-hidden">
+          {hasDistractions && (
+            <div className="pointer-events-none absolute right-2 top-2 z-20 flex gap-1">
+              <span className="h-3 w-3 bg-alarm" />
+              <span className="h-3 w-3 bg-gold" />
+              <span className="h-3 w-3 bg-calm" />
+            </div>
+          )}
+
+          {complete ? (
+            <div className="training-slide training-slide-complete absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+              <span className="text-6xl">🏆</span>
+              <p className="mt-2 text-sm font-black uppercase tracking-widest text-primary">Module status</p>
+              <h3 className="pixel-count text-4xl leading-none">Training complete!</h3>
+              <p className="mt-3 text-base font-bold">Congratulations. You are now officially trained.</p>
+              <p className="font-display mt-3 border-[3px] border-foreground/70 bg-calm px-4 py-2 text-2xl font-black tabular-nums text-calm-foreground">
+                {formatTime(elapsedRef.current)}
+              </p>
+              <p className="mt-2 text-xs font-bold text-muted-foreground">Knowledge retained: absolutely none.</p>
+            </div>
+          ) : slide ? (
+            <div
+              key={index}
+              className={cn(
+                "training-slide absolute inset-0 flex flex-col p-4 transition duration-100",
+                changing && "translate-x-3 opacity-0",
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="inline-block border-2 border-primary px-1.5 text-xs font-black uppercase tracking-widest text-primary">
+                    {slide.eyebrow}
+                  </p>
+                  <h3 className={cn("font-display mt-2 font-black leading-[0.95] text-foreground", compact ? "text-2xl" : "text-3xl")}>
+                    {slide.title}
+                  </h3>
+                </div>
+                <span className="grid h-14 w-14 shrink-0 place-items-center border-[3px] border-foreground/70 bg-secondary text-3xl shadow-[3px_3px_0_0_var(--foreground)]">
+                  {slide.icon}
+                </span>
+              </div>
+
+              <div className="my-3 h-1.5 w-16 bg-primary" />
+              <p className={cn("font-semibold leading-snug text-muted-foreground", compact ? "text-base" : "text-lg")}>
+                {slide.body}
+              </p>
+
+              {hasDistractions && index % 3 === 2 && (
+                <div className="pointer-events-none mt-3 flex h-14 items-end gap-1 border-2 border-foreground/40 bg-secondary/70 px-2 py-1">
+                  {[45, 72, 38, 88, 61, 94].map((height, bar) => (
+                    <span key={bar} className="flex-1 bg-primary/70" style={{ height: `${height}%` }} />
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-auto pt-3">
+                {slide.kind === "continue" ? (
+                  <button
+                    onClick={advance}
+                    className="pixel-btn w-full bg-primary py-4 font-display text-2xl font-black uppercase text-primary-foreground"
+                  >
+                    {slide.action} ▶
+                  </button>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {choices.map((choice) => (
+                      <button
+                        key={choice.label}
+                        onClick={() => answer(choice.label, choice.correct)}
+                        className={cn(
+                          "pixel-btn min-h-20 px-2 py-3 font-display text-base font-black uppercase leading-tight",
+                          choice.correct ? "bg-calm text-calm-foreground" : "bg-alarm text-alarm-foreground",
+                          wrongChoice === choice.label && "animate-shake",
+                        )}
+                      >
+                        {choice.correct ? "🟢" : "🔴"} {choice.label}
+                      </button>
+                    ))}
                   </div>
                 )}
-
-                {complete ? (
-                  <div className="training-slide training-slide-complete absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                    <span className="text-4xl">🏆</span>
-                    <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-primary">
-                      Module status
-                    </p>
-                    <h3 className="font-display text-2xl font-black uppercase leading-none">
-                      Training complete!
-                    </h3>
-                    <p className="mt-2 text-xs font-bold">
-                      Congratulations. You are now officially trained.
-                    </p>
-                    <p className="font-display mt-3 rounded-lg bg-calm px-3 py-1.5 text-lg font-black tabular-nums text-calm-foreground">
-                      {formatTime(elapsedRef.current)}
-                    </p>
-                    <p className="mt-2 text-[9px] font-bold text-muted-foreground">
-                      Knowledge retained: absolutely none.
-                    </p>
-                  </div>
-                ) : slide ? (
-                  <div
-                    key={index}
-                    className={cn(
-                      "training-slide absolute inset-0 flex flex-col p-3 transition duration-100",
-                      changing && "translate-x-3 opacity-0",
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-primary">
-                          {slide.eyebrow}
-                        </p>
-                        <h3
-                          className={cn(
-                            "font-display mt-0.5 font-black leading-[0.95] text-foreground",
-                            compact ? "text-base" : "text-lg",
-                          )}
-                        >
-                          {slide.title}
-                        </h3>
-                      </div>
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary text-xl">
-                        {slide.icon}
-                      </span>
-                    </div>
-
-                    <div className="my-2 h-1 w-12 rounded-full bg-primary" />
-                    <p className={cn("font-semibold leading-tight text-muted-foreground", compact ? "text-[10px]" : "text-xs")}>
-                      {slide.body}
-                    </p>
-
-                    {hasDistractions && index % 3 === 2 && (
-                      <div className="pointer-events-none mt-2 flex h-8 items-end gap-1 rounded-lg bg-secondary/70 px-2 py-1">
-                        {[45, 72, 38, 88, 61, 94].map((height, bar) => (
-                          <span
-                            key={bar}
-                            className="flex-1 rounded-t-sm bg-primary/60"
-                            style={{ height: `${height}%` }}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="mt-auto pt-2">
-                      {slide.kind === "continue" ? (
-                        <button
-                          onClick={advance}
-                          className={cn(
-                            "chunky chunky-press w-full rounded-lg bg-primary font-display font-black uppercase text-primary-foreground",
-                            compact ? "py-2 text-sm" : "py-3 text-base",
-                          )}
-                        >
-                          {slide.action} ▶
-                        </button>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-2">
-                          {(
-                            slide.correctFirst
-                              ? [
-                                  { label: slide.correct, correct: true },
-                                  { label: slide.wrong, correct: false },
-                                ]
-                              : [
-                                  { label: slide.wrong, correct: false },
-                                  { label: slide.correct, correct: true },
-                                ]
-                          ).map((choice) => (
-                            <button
-                              key={choice.label}
-                              onClick={() => answer(choice.label, choice.correct)}
-                              className={cn(
-                                "chunky chunky-press min-h-12 rounded-lg px-1.5 font-display font-black uppercase leading-tight",
-                                compact ? "py-2 text-[10px]" : "py-3 text-xs",
-                                choice.correct
-                                  ? "bg-calm text-calm-foreground"
-                                  : "bg-alarm text-alarm-foreground",
-                                wrongChoice === choice.label && "animate-shake",
-                              )}
-                            >
-                              {choice.correct ? "🟢" : "🔴"} {choice.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="flex h-5 items-center justify-between px-1 pt-1 text-[7px] font-black text-[var(--training-label)]">
-                <span>WARDMASTER 486</span>
-                <span>{mistakes ? `${mistakes} MISCLICK${mistakes === 1 ? "" : "S"}` : "READY"}</span>
               </div>
             </div>
-
-            <div className="h-3 w-20 bg-[var(--training-plastic-edge)]" />
-            <div className="h-2 w-32 rounded-t-md bg-[var(--training-plastic)] shadow-md" />
-          </div>
-
-          <div className="flex h-[68%] w-12 shrink-0 flex-col rounded-md border-4 border-[var(--training-plastic-edge)] bg-[var(--training-plastic)] px-1 py-2 shadow-[3px_5px_0_var(--training-plastic-shadow)]">
-            <div className="mx-auto h-1.5 w-7 rounded-sm bg-[var(--training-slot)]" />
-            <div className="mx-auto mt-2 h-1 w-6 rounded-sm bg-[var(--training-slot)]" />
-            <div className="mt-auto space-y-1">
-              <span className="mx-auto block h-1.5 w-1.5 rounded-full bg-calm" />
-              <span className="mx-auto block h-3 w-3 rounded-full border-2 border-[var(--training-plastic-shadow)]" />
-            </div>
-          </div>
+          ) : null}
         </div>
 
-        <div className="mx-auto mt-2 flex w-[90%] max-w-[500px] items-end gap-2">
-          <div className="training-keyboard grid h-12 flex-1 grid-cols-12 gap-[2px] rounded-lg border-4 border-[var(--training-plastic-edge)] bg-[var(--training-plastic)] p-1.5 shadow-[0_4px_0_var(--training-plastic-shadow)]">
-            {Array.from({ length: 36 }, (_, key) => (
-              <span key={key} className="rounded-[1px] bg-[var(--training-key)] shadow-[0_1px_0_var(--training-key-shadow)]" />
-            ))}
-          </div>
-          <div className="h-10 w-7 rounded-[50%_50%_42%_42%] border-4 border-[var(--training-plastic-edge)] bg-[var(--training-plastic)] shadow-[2px_3px_0_var(--training-plastic-shadow)]">
-            <span className="mx-auto mt-1 block h-3 w-px bg-[var(--training-plastic-shadow)]" />
-          </div>
+        <div className="flex h-8 items-center justify-between px-1 text-xs font-black text-[var(--training-label)]">
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 bg-calm shadow-[0_0_6px_var(--calm)]" />
+            WARDMASTER 486
+          </span>
+          <span className="hidden gap-[3px] sm:flex">
+            {Array.from({ length: 8 }, (_, i) => <span key={i} className="h-3 w-1 bg-[var(--training-slot)]" />)}
+          </span>
+          <span>{mistakes ? `${mistakes} MISCLICK${mistakes === 1 ? "" : "S"}` : "READY"}</span>
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground">
-        <span>Training progress: {complete ? slides.length : index}/{slides.length}</span>
-        <span className={cn(remaining < 5000 && "font-black text-alarm")}>
-          Time left: {formatTime(remaining)}
-        </span>
+      <div className="flex items-center justify-between px-1 text-sm font-bold text-muted-foreground">
+        <span>Progress: {complete ? slides.length : index}/{slides.length}</span>
+        <span className={cn(remaining < 5000 && "font-black text-alarm")}>Time left: {formatTime(remaining)}</span>
       </div>
     </div>
   );
