@@ -97,6 +97,11 @@
   --gold-foreground: oklch(0.3 0.08 70);
 
   --gradient-sky: linear-gradient(180deg, oklch(0.95 0.04 205), oklch(0.88 0.06 215));
+
+  /* Hospital terrazzo framing around the ward */
+  --terrazzo-base: oklch(0.62 0.015 250);
+  --terrazzo-speck-dark: oklch(0.28 0.02 250);
+  --terrazzo-speck-light: oklch(0.82 0.02 250);
   --gradient-gold: linear-gradient(135deg, oklch(0.88 0.15 95), oklch(0.76 0.17 60));
   --gradient-alarm: linear-gradient(135deg, oklch(0.7 0.2 35), oklch(0.6 0.23 15));
   --gradient-calm: linear-gradient(135deg, oklch(0.78 0.15 165), oklch(0.64 0.15 195));
@@ -334,6 +339,17 @@
   height: max(100cqh, calc(100cqw * 1123 / 890));
   transform: translate(-50%, -50%);
   overflow: hidden;
+}
+
+/* Speckled hospital terrazzo: cement grey with dark + light aggregate flecks */
+.terrazzo {
+  background-color: var(--terrazzo-base);
+  background-image:
+    radial-gradient(circle at 25% 30%, var(--terrazzo-speck-dark) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 70% 65%, var(--terrazzo-speck-dark) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 45% 80%, var(--terrazzo-speck-light) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 85% 15%, var(--terrazzo-speck-light) 0 1px, transparent 1.6px);
+  background-size: 23px 21px, 29px 27px, 31px 33px, 37px 35px;
 }
 
 @utility chunky {
