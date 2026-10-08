@@ -102,7 +102,7 @@ export type ShiftStats = {
   quirks: Quirk[];
   collapsed: boolean;
   /** ward health (0-100) left at the final whistle; feeds the DON review */
-  finalStability?: number;
+  finalStability?: number | undefined;
   objectives: ShiftObjective[];
   /** job security / DON inputs — reuse of the existing shift tracking */
   miniFailed: number;

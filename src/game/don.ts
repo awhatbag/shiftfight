@@ -85,7 +85,7 @@ export type ReviewInput = {
   /** result of a catastrophic event, when one ran this shift */
   catastrophe?: "positive" | "neutral" | "negative" | null;
   /** ward health left at the final whistle (0-100) */
-  finalStability?: number;
+  finalStability?: number | undefined;
 };
 
 export type ShiftReview = {
