@@ -12,22 +12,49 @@
 import titleTrack from "@/assets/shift-fight-title.mp3.asset.json";
 import savePointTrack from "@/assets/save-point.mp3.asset.json";
 import wardTrack from "@/assets/pixel-triage.mp3.asset.json";
+import coinOpTrack from "@/assets/Coin_Op_Daydream.mp3.asset.json";
+import picnicTrack from "@/assets/Pixel_Picnic.mp3.asset.json";
+import crtTrack from "@/assets/CRT_Controller_2.mp3.asset.json";
 import shopTrack from "@/assets/level-select-shop.mp3.asset.json";
 
 export type MusicKey = "title" | "savePoint" | "ward" | "shop";
 
 type TrackDef = { url: string; volume: number };
 
+/** Ward shift playlist: one song per shift, looped; each new shift moves to the next song. */
+export const WARD_PLAYLIST = [wardTrack.url, coinOpTrack.url, picnicTrack.url, crtTrack.url];
+const WARD_IDX_KEY = "shift-fight-ward-song";
+
 export const MUSIC_TRACKS: Record<MusicKey, TrackDef> = {
   /** replace src/assets/shift-fight-title.mp3.asset.json to swap this music */
   title: { url: titleTrack.url, volume: 0.55 },
   /** character customisation screen */
   savePoint: { url: savePointTrack.url, volume: 0.55 },
-  /** ward gameplay */
+  /** ward gameplay — url is swapped per shift by nextWardSong() */
   ward: { url: wardTrack.url, volume: 0.4 },
   /** shop screen */
   shop: { url: shopTrack.url, volume: 0.55 },
 };
+
+/** Advance to the next ward song. Call once when a new shift starts. */
+export function nextWardSong() {
+  if (typeof window === "undefined") return;
+  let idx = -1;
+  try {
+    const raw = window.localStorage.getItem(WARD_IDX_KEY);
+    if (raw !== null) idx = Number(raw);
+  } catch {
+    /* ignore */
+  }
+  if (!Number.isInteger(idx) || idx < -1) idx = -1;
+  const next = (idx + 1) % WARD_PLAYLIST.length;
+  try {
+    window.localStorage.setItem(WARD_IDX_KEY, String(next));
+  } catch {
+    /* ignore */
+  }
+  MUSIC_TRACKS.ward.url = WARD_PLAYLIST[next]!;
+}
 
 const FADE_MS = 450;
 const STEP_MS = 40;
@@ -39,6 +66,7 @@ type Playing = {
   el: HTMLAudioElement;
   fade: ReturnType<typeof setInterval> | null;
   target: number;
+  url: string;
 };
 
 const players = new Map<MusicKey, Playing>();
@@ -151,12 +179,18 @@ export function playMusic(key: MusicKey) {
   if (typeof window === "undefined") return;
   const def = MUSIC_TRACKS[key];
   let p = players.get(key);
+  if (p && p.url !== def.url) {
+    if (p.fade) clearInterval(p.fade);
+    p.el.pause();
+    players.delete(key);
+    p = undefined;
+  }
   if (!p) {
     const el = new Audio(def.url);
     el.loop = true;
     el.preload = "auto";
     el.volume = 0;
-    p = { el, fade: null, target: def.volume * musicVolume };
+    p = { el, fade: null, target: def.volume * musicVolume, url: def.url };
     players.set(key, p);
   }
   p.target = def.volume * musicVolume;
