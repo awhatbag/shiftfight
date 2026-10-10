@@ -65,7 +65,6 @@ import {
 } from "@/game/don";
 import {
   CATASTROPHES,
-  catastrophesForLevel,
   emptyTally,
   isCatastropheEvent,
   type CatastropheDef,
@@ -111,6 +110,9 @@ export type ShiftStats = {
   donAnnoyed: number;
   /** outcome of a catastrophic event, when one ran this shift */
   catastrophe?: CatastropheOutcome | null;
+  /** which catastrophe ran and whether the scheduler or Dev Mode started it */
+  catastropheId?: string | undefined;
+  catastropheSource?: "auto" | "dev" | undefined;
 };
 
 
@@ -136,6 +138,7 @@ export function WardScreen({
   totalXp = 0,
   tutorial = false,
   onTutorialDone,
+  scheduledCatastropheId = null,
   mods = NO_EFFECTS,
 }: {
   level: number;
@@ -165,6 +168,8 @@ export function WardScreen({
   /** show the first-shift walkthrough */
   tutorial?: boolean;
   onTutorialDone?: () => void;
+  /** chosen by the shared scheduler at shift start; null = ordinary shift */
+  scheduledCatastropheId?: string | null;
   /** combined gear / bed-upgrade / staff effects for this shift */
   mods?: Effects;
 }) {
@@ -500,15 +505,20 @@ export function WardScreen({
   useEffect(() => {
     if (phase !== "play" || avocadoStarted.current) return;
     const requested = CATASTROPHES.find((c) => c.id === avocadoDevRequested);
-    const auto = catastrophesForLevel(level).find(
+    const auto = CATASTROPHES.filter((c) => c.id === scheduledCatastropheId).find(
       (c) => SHIFT_MS - gameT.current >= c.minRemainingMs && gameT.current >= avocadoTriggerT.current,
     );
     const def = requested ?? auto;
     if (def) {
+      const wasIdle = !avocadoStarted.current;
       beginAvocadoAvalanche(def);
+      if (wasIdle && avocadoStarted.current) {
+        stats.current.catastropheId = def.id;
+        stats.current.catastropheSource = requested ? "dev" : "auto";
+      }
       setAvocadoDevRequested(null);
     }
-  }, [tick, level, phase, avocadoDevRequested, beginAvocadoAvalanche]);
+  }, [tick, level, phase, avocadoDevRequested, beginAvocadoAvalanche, scheduledCatastropheId]);
 
   useEffect(() => {
     const offs = CATASTROPHES.map((c) => onDevCommand(c.devCommand, () => setAvocadoDevRequested(c.id)));
