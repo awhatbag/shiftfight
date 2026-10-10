@@ -1,4 +1,5 @@
 import { MusicVolumeSlider } from "@/components/game/MusicVolumeSlider";
+import { advanceSchedule, newSchedule, normalizeSchedule, pickCatastrophe, type CatastropheSchedule } from "@/game/catastrophes";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
@@ -415,6 +416,7 @@ function Game() {
       bedUpgrades,
       highestLevel,
       wardProgress,
+      catastropheSchedule,
       character,
     };
   }
