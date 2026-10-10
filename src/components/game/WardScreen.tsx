@@ -26,7 +26,7 @@ import {
   playWhistle,
   primeAudio,
 } from "@/lib/sfx";
-import { isMusicOn, playMusic, setMusicEnabled, stopMusic, subscribeMusic, toggleMusic } from "@/lib/music";
+import { isMusicOn, nextWardSong, playMusic, setMusicEnabled, stopMusic, subscribeMusic, toggleMusic } from "@/lib/music";
 import {
   EVENTS,
   shuffledPatientNames,
@@ -406,6 +406,7 @@ export function WardScreen({
       setPhase("play");
       setCue("");
       /* the shift song only starts once the opening bells have rung out */
+      nextWardSong();
       playMusic("ward");
     }, 2500);
     return () => [t1, t2, t3].forEach(window.clearTimeout);
