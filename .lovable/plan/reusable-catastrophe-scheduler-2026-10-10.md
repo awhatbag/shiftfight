@@ -3,15 +3,19 @@
 Avocado Avalanche's gameplay stays exactly as it is. Only the decision about *when* a catastrophe happens moves into one shared scheduler.
 
 ## How it will work for the player
+
 - A new game starts with no gap, so the first catastrophe that suits the current level (Avocado Avalanche on Level 3) shows up on that shift, just like it does now.
 - After any catastrophe, the game picks a random gap of 2 to 6 ordinary shifts. The catastrophe shift doesn't count toward the gap.
+- Do not introduce a catastrophe on level 1 or 2.
 - Each catastrophe happens once before any of them repeats. When all have happened, the cycle resets and starts again, with no limit.
 - If the gap has run out but no catastrophe suits the current level, the shift plays normally and the game checks again next shift. Nothing is marked as done until it actually happens.
 - Only one catastrophe runs at a time. Each one still won't start too late in a shift (each keeps its own "time left" minimum, 40s for the avalanche).
 - Saved games keep their place in the cycle. A brand-new game resets it.
+- Catastrophes are selected randomly from the available catastrophe events.
 - Dev Mode triggers still work at any level and never change the normal schedule.
 
 ## Technical details
+
 - `src/game/catastrophes.ts`: add a general eligibility check per entry: `levels?: number[]` or `minLevel` plus `available: boolean`. Avocado keeps `level: 3` as its rule. Add pure scheduler functions with an injectable RNG:
   - `type CatastropheSchedule = { shiftsUntilNext: number; completed: string[] }`
   - `newSchedule()` → `{ shiftsUntilNext: 0, completed: [] }`
