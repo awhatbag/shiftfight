@@ -33,6 +33,8 @@ export type CatastropheDef = {
   devLabel: string;
   /** automatic trigger: only on this level, once per shift */
   level: number;
+  /** false keeps a registered catastrophe out of automatic scheduling */
+  available?: boolean;
   minRemainingMs: number;
   durationMs: number;
   /** pause before a patient receives their next temporary problem */
@@ -81,3 +83,75 @@ export const isCatastropheEvent = (event: EventDef) =>
 /** catastrophes that may trigger automatically on this level */
 export const catastrophesForLevel = (level: number) =>
   CATASTROPHES.filter((c) => c.level === level);
+
+/* ---------------- shared scheduler ----------------
+   Pure functions: the scheduler only knows ids, eligibility and the rotation.
+   Each catastrophe's gameplay and duration stay inside its own definition. */
+
+/** no catastrophe ever auto-triggers below this level */
+export const CATASTROPHE_MIN_LEVEL = 3;
+export const CATASTROPHE_GAP_MIN = 2;
+export const CATASTROPHE_GAP_MAX = 6;
+
+export type SchedulableCatastrophe = {
+  id: string;
+  level?: number;
+  available?: boolean;
+};
+
+export type CatastropheSchedule = {
+  /** ordinary shifts still to play before the next catastrophe may run */
+  shiftsUntilNext: number;
+  /** ids already run in the current rotation */
+  completed: string[];
+};
+
+export const newSchedule = (): CatastropheSchedule => ({ shiftsUntilNext: 0, completed: [] });
+
+export const isEligible = (c: SchedulableCatastrophe, level: number) =>
+  c.available !== false &&
+  level >= CATASTROPHE_MIN_LEVEL &&
+  (c.level === undefined || c.level === level);
+
+/** id of the catastrophe for this shift, or null if none should run */
+export function pickCatastrophe(
+  schedule: CatastropheSchedule,
+  level: number,
+  rng: () => number = Math.random,
+  registry: SchedulableCatastrophe[] = CATASTROPHES,
+): string | null {
+  if (schedule.shiftsUntilNext > 0) return null;
+  const pool = registry.filter((c) => isEligible(c, level) && !schedule.completed.includes(c.id));
+  if (!pool.length) return null;
+  return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))]!.id;
+}
+
+/** call once per finished shift; occurredId only for an automatic catastrophe that actually ran */
+export function advanceSchedule(
+  schedule: CatastropheSchedule,
+  occurredId: string | null,
+  rng: () => number = Math.random,
+  registry: SchedulableCatastrophe[] = CATASTROPHES,
+): CatastropheSchedule {
+  if (occurredId) {
+    let completed = schedule.completed.includes(occurredId)
+      ? schedule.completed
+      : [...schedule.completed, occurredId];
+    const ids = registry.filter((c) => c.available !== false).map((c) => c.id);
+    if (ids.every((id) => completed.includes(id))) completed = [];
+    const span = CATASTROPHE_GAP_MAX - CATASTROPHE_GAP_MIN + 1;
+    const gap = CATASTROPHE_GAP_MIN + Math.min(span - 1, Math.floor(rng() * span));
+    return { shiftsUntilNext: gap, completed };
+  }
+  return { ...schedule, shiftsUntilNext: Math.max(0, schedule.shiftsUntilNext - 1) };
+}
+
+/** tolerate older saves or damaged data */
+export function normalizeSchedule(s: unknown): CatastropheSchedule {
+  const v = s as Partial<CatastropheSchedule> | null | undefined;
+  if (!v || typeof v.shiftsUntilNext !== "number" || !Array.isArray(v.completed)) return newSchedule();
+  return {
+    shiftsUntilNext: Math.max(0, Math.min(CATASTROPHE_GAP_MAX, Math.floor(v.shiftsUntilNext))),
+    completed: v.completed.filter((id): id is string => typeof id === "string"),
+  };
+}

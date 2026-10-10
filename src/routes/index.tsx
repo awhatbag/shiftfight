@@ -1,4 +1,5 @@
 import { MusicVolumeSlider } from "@/components/game/MusicVolumeSlider";
+import { advanceSchedule, newSchedule, normalizeSchedule, pickCatastrophe, type CatastropheSchedule } from "@/game/catastrophes";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
@@ -105,6 +106,8 @@ type SaveData = {
   wardProgress?: WardProgress;
   /** character identity + cosmetics (separate from gameplay equipment) */
   character?: PlayerCharacter;
+  /** shared catastrophe rotation; older saves start a fresh schedule */
+  catastropheSchedule?: CatastropheSchedule;
 };
 
 const SLOTS_KEY = "shift-fight-saves";
@@ -311,6 +314,8 @@ function Game() {
   const [review, setReview] = useState<ShiftReview | null>(null);
   const [jobSecurity, setJobSecurity] = useState(JOB_SECURITY_START);
   const [runKey, setRunKey] = useState(0);
+  const [catastropheSchedule, setCatastropheSchedule] = useState<CatastropheSchedule>(newSchedule);
+  const [scheduledCatastropheId, setScheduledCatastropheId] = useState<string | null>(null);
   /** roster locked in the moment a shift starts, so it never re-rolls mid-shift */
   const [shiftPatientNames, setShiftPatientNames] = useState<string[]>([]);
 
@@ -411,6 +416,7 @@ function Game() {
       bedUpgrades,
       highestLevel,
       wardProgress,
+      catastropheSchedule,
       character,
     };
   }
@@ -467,6 +473,7 @@ function Game() {
     setBedUpgrades(d.bedUpgrades ?? []);
     setHighestLevel(d.highestLevel ?? d.level ?? 1);
     setWardProgress(d.wardProgress ?? {});
+    setCatastropheSchedule(normalizeSchedule(d.catastropheSchedule));
     setJobSecurity(d.jobSecurity ?? JOB_SECURITY_START);
     if (d.character) {
       const c = normalizeCharacter(d.character);
@@ -564,6 +571,13 @@ function Game() {
     );
     setReview(r);
     setJobSecurity(r.after);
+    /* only an automatic catastrophe that actually started counts; Dev Mode runs are ordinary */
+    const occurred =
+      s.catastropheSource === "auto" && s.catastropheId === scheduledCatastropheId ? s.catastropheId : null;
+    const nextSchedule = occurred || !scheduledCatastropheId
+      ? advanceSchedule(catastropheSchedule, occurred)
+      : catastropheSchedule;
+    setCatastropheSchedule(nextSchedule);
     autoSaveData({
       points: nextPoints,
       xp: nextXp,
@@ -578,6 +592,7 @@ function Game() {
       highestLevel: nextHighest,
       wardProgress: nextWardProgress,
       character,
+      catastropheSchedule: nextSchedule,
     });
     setPhase("summary");
   }
@@ -662,6 +677,7 @@ function Game() {
       setLevel(1);
       setHighestLevel(1);
       setWardProgress({});
+      setCatastropheSchedule(newSchedule());
       setUpgrades({ speed: 0, response: 0, equipment: 0 });
       setStaff([]);
       setGear([]);
@@ -707,6 +723,7 @@ function Game() {
 
   function play() {
 
+    setScheduledCatastropheId(pickCatastrophe(catastropheSchedule, level));
     setRunKey((k) => k + 1);
     setShiftPatientNames(shuffledPatientNames(MAX_BEDS));
     setPhase("shift");
@@ -803,6 +820,7 @@ function Game() {
             totalXp={xp}
             tutorial={!tutorialDone}
             onTutorialDone={completeTutorial}
+            scheduledCatastropheId={scheduledCatastropheId}
           />
         )}
         {phase === "summary" && last && lastReward && (
