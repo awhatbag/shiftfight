@@ -5,7 +5,6 @@ import { pickPatientSprites } from "@/game/patientBeds";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
-import avocadoWaveAsset from "@/assets/avocado-wave.png.asset.json";
 import type { ActiveEvent, Banner, CatastrophePhase, RewardCallout, RollingHazard, StaffRuntime } from "./wardTypes";
 import { loadEastWestCollisionMap, eastWestCollisionAt } from "@/game/eastWestCollision";
 import { rollingHazardPosition } from "./rollingHazardMotion";
@@ -484,7 +483,7 @@ export function WardScreen({
     buzz(35);
   }, [activeBeds, makeAvocadoEvent]);
 
-  /* after the intro: paused earthquake while the avocado wave sweeps past */
+  /* after the intro: paused earthquake rumble before the avalanche begins */
   const startAvocadoWave = useCallback(() => {
     if (avocadoPhaseRef.current !== "intro") return;
     setAvocadoPhase("wave");
@@ -1304,11 +1303,6 @@ export function WardScreen({
         )}
         {avocadoPhase === "intro" && (
           <CatastropheIntro catastrophe={catastrophe} buttonLabel={avocadoIntroLabel} onStart={() => { playForwardClick(); startAvocadoWave(); }} />
-        )}
-        {avocadoPhase === "wave" && (
-          <div className="pointer-events-auto absolute inset-0 z-[90] overflow-hidden" aria-label="A wave of avocados sweeps across the ward">
-            <img src={avocadoWaveAsset.url} alt="" className="avocado-wave absolute bottom-0 h-auto max-w-none [image-rendering:pixelated]" />
-          </div>
         )}
         {avocadoPhase === "conclusion" && avocadoResult && (
           <CatastropheConclusion result={avocadoResult} tally={avocadoTally.current} onContinue={finishCatastrophe} />
