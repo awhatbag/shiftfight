@@ -857,6 +857,14 @@ export function WardScreen({
       setAtBed(null);
       journey.current = routeTo(dest, nurseRef.current);
       journeyBed.current = bed;
+      if (!journey.current.length) {
+        // already at the destination — arrive immediately instead of a phantom walk
+        journeyBed.current = null;
+        setNurseAction("idle");
+        setWalking(false);
+        setAtBed(bed);
+        return;
+      }
       lastMoveT.current = gameT.current;
       setWalking(true);
     },
@@ -1038,6 +1046,8 @@ export function WardScreen({
     buzz(10);
     if (tutStep === 1) setTutStep(2);
     setSelected(bed);
+    // nurse already standing at this bed — open the problem straight away, no phantom walk
+    if (atBed === bed) return;
     walkTo(BED_ARRIVAL[bed] ?? BED_SLOTS[bed]!, bed);
 
 
