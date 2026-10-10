@@ -666,8 +666,11 @@ export function WardScreen({
 
   /* guaranteed bonus rounds at set points in the shift (waits until the nurse is free) */
   const miniMilestones = useRef(0);
+  /** shift time when the last bonus round ended or was skipped (20s cooldown) */
+  const lastMiniEnd = useRef<number | null>(null);
   function offerMini() {
     if (mini || miniOffer || avocadoPhaseRef.current) return;
+    if (lastMiniEnd.current !== null && elapsed - lastMiniEnd.current < 20000) return;
     const n = stats.current.miniGames;
     const lvl = Math.min(9, Math.floor(n / 2) + Math.floor(level / 3));
     setMiniOffer({
@@ -1153,7 +1156,7 @@ export function WardScreen({
       }
       if (isTop && newCombo >= 2) donSay("good");
       streak.current++;
-      if (streak.current % 2 === 0) offerMini();
+      if (streak.current % 5 === 0) offerMini();
     } else {
       const base = 14 * ev.def.severity;
       const raw = Math.round(
@@ -1201,6 +1204,7 @@ export function WardScreen({
   }
 
   function miniDone(score: number, perfect: boolean) {
+    lastMiniEnd.current = elapsed;
     const bonus = Math.round(score * 0.4 * payMult(upgrades, staffBonus) * mods.miniMult);
     /** a low score means the bonus round ran out before it was finished */
     const flunked = !perfect && score < 60;
@@ -1332,7 +1336,7 @@ export function WardScreen({
         {tutorial && phase === "play" && tutStep === 2 && <TutorialOverlay step={2} onNext={() => setTutStep(3)} />}
         {endCountValue !== null && <EndCountdown count={endCountValue} />}
         {phase === "ending" && !stats.current.collapsed && <EndCountdown count="up" />}
-        {miniOffer && <MiniOfferOverlay offer={miniOffer} onSkip={() => setMiniOffer(null)} onStart={startMini} />}
+        {miniOffer && <MiniOfferOverlay offer={miniOffer} onSkip={() => { lastMiniEnd.current = elapsed; setMiniOffer(null); }} onStart={startMini} />}
         {manualPause && <PauseOverlay line={pauseLine} onResume={() => setManualPause(false)} />}
         {settingsOpen && (
           <SettingsOverlay
