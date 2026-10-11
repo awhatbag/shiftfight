@@ -13,6 +13,7 @@ import { WardScene } from "./WardScene";
 import { PatientActionPanel } from "./PatientActionPanel";
 import { CatastropheConclusion, CatastropheIntro, DonBubble, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, RewardCalloutOverlay, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
+import { MiniGameIntro } from "./MiniGameIntro";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
 import { NO_EFFECTS, type Effects } from "@/game/gear";
 import { shiftTitle } from "@/game/shifts";
@@ -257,7 +258,7 @@ export function WardScreen({
     bonus: number;
     lvl: number;
   }>(null);
-  const [mini, setMini] = useState<null | { kind: string; lvl: number }>(null);
+  const [mini, setMini] = useState<null | { kind: string; lvl: number; ready: boolean }>(null);
 
   /* nurse */
   const wardRef = useRef<HTMLDivElement | null>(null);
@@ -1200,7 +1201,7 @@ export function WardScreen({
     if (!miniOffer) return;
     stats.current.miniGames++;
     lastMini.current = miniOffer.kind;
-    setMini({ kind: miniOffer.kind, lvl: miniOffer.lvl });
+    setMini({ kind: miniOffer.kind, lvl: miniOffer.lvl, ready: false });
     setMiniOffer(null);
   }
 
@@ -1373,7 +1374,11 @@ export function WardScreen({
       {mini && (
         <>
           {(() => {
-            const Game = miniGameByKey(mini.kind).component;
+            const def = miniGameByKey(mini.kind);
+            if (!mini.ready) {
+              return <MiniGameIntro game={def} onStart={() => setMini({ ...mini, ready: true })} />;
+            }
+            const Game = def.component;
             return (
               <Game level={mini.lvl} paused={manualPause || settingsOpen} onDone={miniDone} />
             );

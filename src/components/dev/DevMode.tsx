@@ -2,6 +2,7 @@ import { CATASTROPHES } from "@/game/catastrophes";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { MINI_GAMES } from "@/game/minigames";
+import { MiniGameIntro } from "@/components/game/MiniGameIntro";
 import { emitDevCommand, subscribeDevInfo, type DevInfo } from "@/game/dev";
 import { MAX_BEDS, MAX_LEVEL, STAFF, UPGRADE_INFO, type Upgrades } from "@/game/config";
 import { DON_MOOD_META, moodFor, securityBand } from "@/game/don";
@@ -752,14 +753,19 @@ export function DevMode({ api, onClose }: { api: DevApi; onClose: () => void }) 
 
   useEffect(() => subscribeDevInfo(setInfo), []);
 
-  const ui: DevUi = { launchMini: (k) => setMini(k), info };
+  const [miniReady, setMiniReady] = useState(false);
+  const ui: DevUi = { launchMini: (k) => { setMiniReady(false); setMini(k); }, info };
   const active = MINI_GAMES.find((g) => g.key === mini);
   const Game = active?.component;
 
-  if (Game) {
+  if (Game && active) {
     return (
       <div className="relative h-full w-full">
-        <Game level={miniLevel} paused={false} onDone={() => setMini(null)} />
+        {miniReady ? (
+          <Game level={miniLevel} paused={false} onDone={() => setMini(null)} />
+        ) : (
+          <MiniGameIntro game={active} onStart={() => setMiniReady(true)} />
+        )}
         <div className="absolute inset-x-0 bottom-0 z-[60] flex items-center gap-2 border-t-2 border-border bg-card px-3 pb-4 pt-3">
           <span className="font-display text-xs font-black uppercase">Dev · lvl</span>
           <input
