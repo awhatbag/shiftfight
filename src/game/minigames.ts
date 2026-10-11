@@ -18,6 +18,10 @@ export type MiniGameDef = {
   key: string;
   name: string;
   blurb: string;
+  /** "How to play" card content, shown every time the game opens */
+  icon: string;
+  goal: string;
+  steps: string[];
   component: ComponentType<MiniGameProps>;
 };
 
@@ -31,42 +35,89 @@ export const MINI_GAMES: MiniGameDef[] = [
     key: "med",
     name: "Med Trolley Dash",
     blurb: "Tap the fictional meds in chart order.",
+    icon: "💊",
+    goal: "Get every med on the chart into the cup, in order.",
+    steps: [
+      "Check NEXT ON CHART at the top.",
+      "Tap the matching pill to flick it into the cup.",
+      "Wrong pills cost you — beat the clock.",
+    ],
     component: MedMatchGame,
   },
   {
     key: "cannula",
     name: "Cannula Challenge",
-    blurb: "Hit the blue vein, avoid the red artery.",
+    blurb: "Hit the vein, avoid the artery.",
+    icon: "💉",
+    goal: "Land 3 clean cannulas in a vein.",
+    steps: [
+      "Watch the needle slide along the arm.",
+      "Tap TAP TO STICK when it's over a blue vein.",
+      "Miss the red arteries — they count as a fail.",
+    ],
     component: CannulaGame,
   },
   {
     key: "vomit",
     name: "Sick Bowl Sprint",
     blurb: "Wipe the mess off the screen before time runs out.",
+    icon: "🤢",
+    goal: "Wipe the screen clean before the time runs out.",
+    steps: [
+      "Rub your finger all over the splatter.",
+      "Keep wiping until the meter is nearly full.",
+    ],
     component: VomitGame,
   },
   {
     key: "wee",
     name: "Catch The Wee!",
     blurb: "Slide the bottle under the stream and fill it up.",
+    icon: "🧪",
+    goal: "Fill the specimen bottle to the top.",
+    steps: [
+      "Drag the bottle left and right.",
+      "Keep it under the stream as it wanders.",
+      "It gets faster and trickier at higher levels.",
+    ],
     component: WeeGame,
   },
   {
     key: "ivmix",
     name: "Mix The IV Meds",
     blurb: "Line up the syringe, then shake to mix.",
+    icon: "🧴",
+    goal: "Draw up and mix the IV medicine.",
+    steps: [
+      "Drag the syringe so the needle meets the vial's rubber top.",
+      "Then shake your phone (or swipe fast) to mix it.",
+    ],
     component: IVMixGame,
   },
   {
     key: "suture",
     name: "Wound Suturing",
     blurb: "Drag the needle across the wound to close it.",
+    icon: "🪡",
+    goal: "Stitch the wound closed, neatly.",
+    steps: [
+      "Start at the marked stitch point.",
+      "Drag the needle across the wound along the guide.",
+      "Stay on the line for tidy stitches.",
+    ],
     component: SutureGame,
   },
   {
     key: "training",
     name: "Mandatory Training",
     blurb: "Complete your training quickly. Nobody actually expects you to read it.",
+    icon: "📋",
+    goal: "Get through your mandatory training before time's up.",
+    steps: [
+      "Tap through the slides.",
+      "Answer the quiz questions correctly.",
+      "Nobody expects you to read it all.",
+    ],
     component: MandatoryTrainingGame,
   },
 ];

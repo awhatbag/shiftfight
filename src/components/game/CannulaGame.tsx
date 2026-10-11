@@ -208,10 +208,8 @@ async function rasterise(svg: string, w: number, h: number): Promise<HTMLCanvasE
 }
 
 export function CannulaGame({ level, paused, onDone }: Props) {
-  const [intro, setIntro] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.localStorage.getItem("shift-cannula-seen") !== "yes";
-  });
+  /* the shared How to Play card now replaces this game's own intro */
+  const [intro, setIntro] = useState(false);
   const [round, setRound] = useState(0);
   const [pos, setPos] = useState(0);
   const dir = useRef(1);
