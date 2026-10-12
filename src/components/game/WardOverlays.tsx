@@ -6,6 +6,7 @@ import donAngryAsset from "@/assets/DON_avocado_fail.jpg.asset.json";
 import type { CatastropheDef, CatastropheOutcome, CatastropheTally } from "@/game/catastrophes";
 import type { ShiftObjective } from "@/game/objectives";
 import { miniGameByKey } from "@/game/minigames";
+import { MiniGameIntro } from "./MiniGameIntro";
 import { cn } from "@/lib/utils";
 import type { RewardCallout } from "./wardTypes";
 
@@ -39,8 +40,7 @@ export function TutorialOverlay({ step, onNext }: { step: 0 | 2; onNext: () => v
 }
 
 export function MiniOfferOverlay({ offer, onSkip, onStart }: { offer: { kind: string; bonus: number; lvl: number }; onSkip: () => void; onStart: () => void }) {
-  const game = miniGameByKey(offer.kind);
-  return <div className="pointer-events-auto absolute inset-0 z-50 grid place-items-center bg-background/85 p-5 backdrop-blur-sm"><div className="animate-pop w-full rounded-3xl border-4 border-border bg-card p-4 text-center shadow-2xl"><p className="font-display text-[11px] font-black uppercase tracking-widest text-primary">Bonus round available</p><h3 className="font-display text-2xl font-black uppercase leading-none">{game.name}</h3><p className="mt-1 text-sm font-bold">{game.blurb}</p><p className="font-display mt-2 rounded-2xl bg-[image:var(--gradient-gold)] py-2 text-xl font-black text-gold-foreground">Reward: up to +{offer.bonus} ⭐</p><p className="font-display mt-1 text-sm font-black uppercase text-calm-foreground">+ 12 ✨ XP for finishing it</p><p className="mt-2 text-[11px] text-muted-foreground">A small bonus on top of your shift — finish it for the full reward. The ward keeps ticking at 1/3 speed and you can abandon any time.</p><div className="mt-3 grid grid-cols-2 gap-2"><button onClick={onSkip} className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-lg font-black uppercase text-secondary-foreground">Skip</button><button onClick={onStart} className="chunky chunky-press rounded-2xl bg-primary py-3 font-display text-lg font-black uppercase text-primary-foreground">Start ▶</button></div></div></div>;
+  return <MiniGameIntro game={miniGameByKey(offer.kind)} reward={offer.bonus} onSkip={onSkip} onStart={onStart} className="pointer-events-auto z-50" />;
 }
 
 export function PauseOverlay({ line, onResume }: { line: string; onResume: () => void }) { return <div className="pointer-events-auto absolute inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-background/85 px-6 text-center backdrop-blur-sm"><p className="font-display text-4xl font-black uppercase">Paused</p><p className="text-sm font-semibold text-muted-foreground">{line}</p><button onClick={onResume} className="chunky chunky-press rounded-2xl bg-primary px-8 py-4 font-display text-xl font-black uppercase text-primary-foreground">Resume ▶</button></div>; }
