@@ -1201,7 +1201,8 @@ export function WardScreen({
     if (!miniOffer) return;
     stats.current.miniGames++;
     lastMini.current = miniOffer.kind;
-    setMini({ kind: miniOffer.kind, lvl: miniOffer.lvl, ready: false });
+    /* the offer card already shows the how-to-play info, so start straight away */
+    setMini({ kind: miniOffer.kind, lvl: miniOffer.lvl, ready: true });
     setMiniOffer(null);
   }
 
