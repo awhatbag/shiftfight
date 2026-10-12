@@ -23,8 +23,8 @@ export const SHIFT_TITLES: Record<number, ShiftTitle> = {
     lead: "A quiet bay, mostly bells. Mostly.",
   },
   3: {
-    title: "Jelly Wars: Red vs Orange",
-    lead: "The kitchen sent orange. The ward wanted red. You are the diplomat.",
+    title: "The Unscheduled Delivery",
+    lead: "Forty crates of fresh produce arrived at the loading dock. Nobody signed for them. Why are they rolling?",
   },
   4: {
     title: "The Pump That Would Not Stop",
