@@ -25,7 +25,7 @@ export function DonFrame({ row, col, className = "" }: { row: number; col: numbe
 }
 
 export function DonPortrait({ pose, className }: { pose: DonPose; className?: string }) {
-  return <DonFrame row={4} col={POSE_COL[pose]} className={className} />;
+  return <DonFrame row={4} col={POSE_COL[pose]} className={className ?? ""} />;
 }
 
 const ENTRY: Point = { x: 0.5, y: 0.94 };
