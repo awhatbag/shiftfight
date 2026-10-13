@@ -10,8 +10,9 @@ import { loadEastWestCollisionMap, eastWestCollisionAt } from "@/game/eastWestCo
 import { rollingHazardPosition } from "./rollingHazardMotion";
 import { WardHud } from "./WardHud";
 import { WardScene } from "./WardScene";
+import type { DonPose } from "./DonSprite";
 import { PatientActionPanel } from "./PatientActionPanel";
-import { CatastropheConclusion, CatastropheIntro, DonBubble, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, RewardCalloutOverlay, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
+import { CatastropheConclusion, CatastropheIntro, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, RewardCalloutOverlay, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { MiniGameIntro } from "./MiniGameIntro";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
@@ -304,7 +305,11 @@ export function WardScreen({
   const [, force] = useState(0);
 
   /* ---------------- the DON's ward visit ---------------- */
-  const [don, setDon] = useState<null | { line: string }>(null);
+  const [don, setDonRaw] = useState<null | { line: string; pose: DonPose; key: number }>(null);
+  const donKey = useRef(0);
+  const setDon = useCallback((v: null | { line: string; pose?: DonPose } | ((d: { line: string; pose: DonPose; key: number } | null) => { line: string; pose?: DonPose } | null)) => {
+    setDonRaw((d) => { const n = typeof v === "function" ? v(d) : v; return n ? { line: n.line, pose: n.pose ?? "smug", key: ++donKey.current } : null; });
+  }, []);
   const donOn = useRef(false);
   donOn.current = !!don;
   const donScheduled = useRef(false);
@@ -313,8 +318,10 @@ export function WardScreen({
   const donSay = useCallback((kind: keyof typeof DON_QUIPS, annoyed = false) => {
     if (!donOn.current) return;
     if (annoyed) stats.current.donAnnoyed++;
-    setDon({ line: pickDonQuip(kind, donUsed.current) });
-  }, []);
+    const poses: Record<keyof typeof DON_QUIPS, DonPose[]> = { good: ["happy", "smug", "triumphant", "ecstatic"], struggling: ["stressed"], miniFail: ["disappointed", "angry"], overdue: ["point", "angry"], idle: ["smug"] };
+    const opts = poses[kind];
+    setDon({ line: pickDonQuip(kind, donUsed.current), pose: opts[Math.floor(Math.random() * opts.length)] ?? "smug" });
+  }, [setDon]);
 
   /* ---------------- shift objectives ---------------- */
   const [briefing, setBriefing] = useState(true);
@@ -812,7 +819,7 @@ export function WardScreen({
     const delay = 10000 + Math.random() * 22000;
     const t1 = window.setTimeout(() => {
       stats.current.donVisited = true;
-      setDon({ line: DON_LINES.arrive });
+      setDon({ line: DON_LINES.arrive, pose: "point" });
       playCallBell();
       buzz(30);
       say(DON_LINES.arrive, DON_LINES.arriveSub, false);
@@ -838,7 +845,7 @@ export function WardScreen({
     let settle = 0;
     const off = onDevCommand("donVisit", () => {
       stats.current.donVisited = true;
-      setDon({ line: DON_LINES.arrive });
+      setDon({ line: DON_LINES.arrive, pose: "point" });
       playCallBell();
       buzz(30);
       say(DON_LINES.arrive, DON_LINES.arriveSub, false);
@@ -1272,6 +1279,7 @@ export function WardScreen({
 
       <div ref={wardRef} className={`ward-viewport terrazzo relative flex-1 select-none overflow-hidden${avocadoPhase === "wave" ? " earthquake-shake" : ""}`}>
       <WardScene
+        don={don && phase === "play" ? don : null}
         level={cfg.level}
         levelName={cfg.name}
         beds={beds}
@@ -1319,10 +1327,6 @@ export function WardScreen({
           </div>
         )}
         {rewardCallout && <RewardCalloutOverlay callout={rewardCallout} />}
-
-        {don && phase === "play" && !mini && !settingsOpen && !manualPause && (
-          <DonBubble line={don.line} />
-        )}
 
 
         {briefing && (
