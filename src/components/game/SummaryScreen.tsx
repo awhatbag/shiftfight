@@ -1,3 +1,4 @@
+import { DonPortrait } from "./DonSprite";
 import { nurseRank, RATINGS } from "@/game/config";
 import { useEffect, useMemo, useState } from "react";
 import { DON_MOOD_META, type ShiftReview } from "@/game/don";
@@ -136,7 +137,7 @@ export function SummaryScreen({
             The DON's assessment
           </p>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">{DON_MOOD_META[review.mood].face}</span>
+            <DonPortrait pose={review.stars >= 5 ? "ecstatic" : review.stars === 4 ? "triumphant" : review.stars === 3 ? "smug" : review.stars === 2 ? "stressed" : "disappointed"} className="h-16 shrink-0" />
             <div className="min-w-0">
               <p className="font-display text-lg font-black leading-none">
                 {"⭐".repeat(review.stars)}
