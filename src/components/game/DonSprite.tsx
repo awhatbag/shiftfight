@@ -28,7 +28,7 @@ export function DonPortrait({ pose, className }: { pose: DonPose; className?: st
   return <DonFrame row={4} col={POSE_COL[pose]} className={className ?? ""} />;
 }
 
-const ENTRY: Point = { x: 0.5, y: 0.94 };
+const ENTRY: Point = { x: 0.5, y: 0.08 }; // top double doors behind the nurses' station
 const SPEED = 0.11; // ward units per second
 const PAUSE_MS = 2600;
 
@@ -61,7 +61,8 @@ export function DonSprite({ line, pose, poseKey }: { line: string; pose: DonPose
       if (now < pauseUntil.current) { setMoving(false); return; }
       if (!path.current.length) {
         const bay = BED_ARRIVAL[Math.floor(Math.random() * BED_ARRIVAL.length)] ?? ENTRY;
-        path.current = routeTo({ x: 0.5, y: bay.y }, posRef.current).filter((p) => p.y > 0.3);
+        const fromDoor = posRef.current.y < 0.3;
+        path.current = routeTo({ x: 0.5, y: bay.y }, posRef.current).filter((p) => fromDoor || p.y > 0.3);
         if (!path.current.length) path.current = [{ x: 0.5, y: 0.6 }];
       }
       const target = path.current[0]!;
