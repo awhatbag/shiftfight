@@ -1,7 +1,7 @@
 import { DonPortrait } from "./DonSprite";
 import { nurseRank, RATINGS } from "@/game/config";
 import { useEffect, useMemo, useState } from "react";
-import { DON_MOOD_META, type ShiftReview } from "@/game/don";
+import { type ShiftReview } from "@/game/don";
 import { JobSecurityBar } from "./JobSecurityBar";
 import { NurseLevelTab } from "./NurseLevelTab";
 import { notableAchievement, type RewardPresentation } from "@/game/progressionRewards";

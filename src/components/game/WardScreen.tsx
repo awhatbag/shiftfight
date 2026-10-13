@@ -12,7 +12,7 @@ import { WardHud } from "./WardHud";
 import { WardScene } from "./WardScene";
 import type { DonPose } from "./DonSprite";
 import { PatientActionPanel } from "./PatientActionPanel";
-import { CatastropheConclusion, CatastropheIntro, DonBubble, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, RewardCalloutOverlay, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
+import { CatastropheConclusion, CatastropheIntro, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, RewardCalloutOverlay, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
 import { miniGameByKey, randomMiniGameKey } from "@/game/minigames";
 import { MiniGameIntro } from "./MiniGameIntro";
 import { onDevCommand, reportDevInfo } from "@/game/dev";
