@@ -33,7 +33,7 @@ const SPEED = 0.11; // ward units per second
 const PAUSE_MS = 2600;
 
 /** The DON patrols the ward on her own, inspecting random bays and posing on reactions. */
-export function DonSprite({ line, pose, poseKey }: { line: string; pose: DonPose; poseKey: number }) {
+export function DonSprite({ line, pose, poseKey, leaving = false, onExit }: { line: string; pose: DonPose; poseKey: number; leaving?: boolean; onExit: () => void }) {
   const [pos, setPos] = useState<Point>(ENTRY);
   const [dir, setDir] = useState(0);
   const [frame, setFrame] = useState(0);
@@ -42,14 +42,27 @@ export function DonSprite({ line, pose, poseKey }: { line: string; pose: DonPose
   const path = useRef<Point[]>([]);
   const posRef = useRef(ENTRY);
   const pauseUntil = useRef(0);
+  const leavingRef = useRef(leaving);
+  const onExitRef = useRef(onExit);
+  onExitRef.current = onExit;
+
+  useEffect(() => {
+    leavingRef.current = leaving;
+    if (!leaving) return;
+    path.current = routeTo(ENTRY, posRef.current);
+    pauseUntil.current = 0;
+    setPosing(false);
+    setMoving(true);
+  }, [leaving]);
 
   // react with a pose whenever the DON says something new
   useEffect(() => {
+    if (leaving) return;
     setPosing(true);
     pauseUntil.current = Math.max(pauseUntil.current, performance.now() + PAUSE_MS);
     const t = window.setTimeout(() => setPosing(false), PAUSE_MS);
     return () => window.clearTimeout(t);
-  }, [poseKey]);
+  }, [poseKey, leaving]);
 
   useEffect(() => {
     let last = performance.now();
@@ -60,12 +73,14 @@ export function DonSprite({ line, pose, poseKey }: { line: string; pose: DonPose
       last = now;
       if (now < pauseUntil.current) { setMoving(false); return; }
       if (!path.current.length) {
+        if (leavingRef.current) { onExitRef.current(); return; }
         const bay = BED_ARRIVAL[Math.floor(Math.random() * BED_ARRIVAL.length)] ?? ENTRY;
         const fromDoor = posRef.current.y < 0.3;
         path.current = routeTo({ x: 0.5, y: bay.y }, posRef.current).filter((p) => fromDoor || p.y > 0.3);
         if (!path.current.length) path.current = [{ x: 0.5, y: 0.6 }];
       }
-      const target = path.current[0]!;
+      const target = path.current[0];
+      if (!target) return;
       const p = posRef.current;
       const dx = target.x - p.x;
       const dy = target.y - p.y;
@@ -75,7 +90,7 @@ export function DonSprite({ line, pose, poseKey }: { line: string; pose: DonPose
       if (d <= step) {
         next = target;
         path.current.shift();
-        if (!path.current.length) pauseUntil.current = now + PAUSE_MS;
+        if (!path.current.length && !leavingRef.current) pauseUntil.current = now + PAUSE_MS;
       } else next = { x: p.x + (dx / d) * step, y: p.y + (dy / d) * step };
       posRef.current = next;
       setPos(next);

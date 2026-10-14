@@ -305,13 +305,19 @@ export function WardScreen({
   const [, force] = useState(0);
 
   /* ---------------- the DON's ward visit ---------------- */
-  const [don, setDonRaw] = useState<null | { line: string; pose: DonPose; key: number }>(null);
+  const [don, setDonRaw] = useState<null | { line: string; pose: DonPose; key: number; leaving?: boolean }>(null);
   const donKey = useRef(0);
   const setDon = useCallback((v: null | { line: string; pose?: DonPose } | ((d: { line: string; pose: DonPose; key: number } | null) => { line: string; pose?: DonPose } | null)) => {
     setDonRaw((d) => { const n = typeof v === "function" ? v(d) : v; return n ? { line: n.line, pose: n.pose ?? "smug", key: ++donKey.current } : null; });
   }, []);
   const donOn = useRef(false);
-  donOn.current = !!don;
+  donOn.current = !!don && !don.leaving;
+  const leaveDon = useCallback(() => {
+    setDonRaw((d) => d ? { ...d, leaving: true, line: stats.current.donAnnoyed ? DON_LINES.leaveBad : DON_LINES.leaveOk } : null);
+  }, []);
+  const finishDonExit = useCallback(() => {
+    setDonRaw((d) => d?.leaving ? null : d);
+  }, []);
   const donScheduled = useRef(false);
   /** quips already used this shift, so he never repeats himself */
   const donUsed = useRef<Set<string>>(new Set());
@@ -826,7 +832,7 @@ export function WardScreen({
       window.setTimeout(() => setDon((d) => (d ? { line: pickDonQuip("idle", donUsed.current) } : d)), 2600);
     }, delay);
     const t2 = window.setTimeout(() => {
-      setDon(null);
+      leaveDon();
       say(
         "THE DON LEAVES",
         stats.current.donAnnoyed ? DON_LINES.leaveBad : DON_LINES.leaveOk,
@@ -837,7 +843,7 @@ export function WardScreen({
       window.clearTimeout(t1);
       window.clearTimeout(t2);
     };
-  }, [phase, jobSecurity, say]);
+  }, [phase, jobSecurity, say, leaveDon]);
 
   /* dev tools: summon the DON on demand */
   useEffect(() => {
@@ -853,7 +859,7 @@ export function WardScreen({
       window.clearTimeout(leave);
       settle = window.setTimeout(() => setDon((d) => (d ? { line: pickDonQuip("idle", donUsed.current) } : d)), 2600);
       leave = window.setTimeout(() => {
-        setDon(null);
+        leaveDon();
         say(
           "THE DON LEAVES",
           stats.current.donAnnoyed ? DON_LINES.leaveBad : DON_LINES.leaveOk,
@@ -866,7 +872,7 @@ export function WardScreen({
       window.clearTimeout(settle);
       window.clearTimeout(leave);
     };
-  }, [say]);
+  }, [say, leaveDon]);
 
   const selectedEvent = events.find((e) => e.bed === selected);
   const nurseHereBed = atBed;
@@ -1280,6 +1286,7 @@ export function WardScreen({
       <div ref={wardRef} className={`ward-viewport terrazzo relative flex-1 select-none overflow-hidden${avocadoPhase === "wave" ? " earthquake-shake" : ""}`}>
       <WardScene
         don={don && phase === "play" ? don : null}
+        onDonExit={finishDonExit}
         level={cfg.level}
         levelName={cfg.name}
         beds={beds}
