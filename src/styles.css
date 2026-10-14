@@ -148,6 +148,15 @@
   max-height: none;
 }
 .nurse-run { animation: nurse-bob .22s steps(2, end) infinite; }
+/* seated staff bob gently behind the nurses' station so they look busy */
+.desk-bob { animation: desk-bob 1.8s steps(1, end) infinite; }
+@keyframes desk-bob {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-2px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(1px); }
+}
+@media (prefers-reduced-motion: reduce) { .desk-bob { animation: none !important; } }
 
 @keyframes nurse-bob {
   0%, 100% { transform: translateY(0); }
