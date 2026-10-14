@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import donSheet from "@/assets/don-ward-sprites.png.asset.json";
 import { BED_ARRIVAL, routeTo, type Point } from "@/game/wardNav";
+import { DOOR_OPEN_MS, doorPhase, holdDoor, releaseDoor } from "@/game/wardDoor";
 
 /** Supplied DON sheet: 10 cols × 5 rows. Rows 0-3 walk down/up/right/left, row 4 = poses. */
 export type DonPose = "happy" | "point" | "angry" | "smug" | "triumphant" | "stressed" | "disappointed" | "ecstatic";
@@ -45,6 +46,17 @@ export function DonSprite({ line, pose, poseKey, leaving = false, onExit }: { li
   const leavingRef = useRef(leaving);
   const onExitRef = useRef(onExit);
   onExitRef.current = onExit;
+  const doorId = useRef(Symbol("don"));
+  const [visible, setVisible] = useState(false);
+  const visibleRef = useRef(false);
+  const exited = useRef(false);
+
+  // door opens first, then she steps out; release once she is clear of the doorway
+  useEffect(() => {
+    const id = doorId.current;
+    holdDoor(id);
+    return () => releaseDoor(id);
+  }, []);
 
   useEffect(() => {
     leavingRef.current = leaving;
@@ -71,9 +83,22 @@ export function DonSprite({ line, pose, poseKey, leaving = false, onExit }: { li
       const now = performance.now();
       const dt = Math.min(0.2, (now - last) / 1000);
       last = now;
+      if (exited.current) return;
+      if (!visibleRef.current) {
+        if (doorPhase() !== "open") return;
+        visibleRef.current = true; setVisible(true);
+      }
+      const nearDoor = posRef.current.y < 0.2;
+      if (leavingRef.current && nearDoor) holdDoor(doorId.current);
+      else if (!nearDoor) releaseDoor(doorId.current);
       if (now < pauseUntil.current) { setMoving(false); return; }
       if (!path.current.length) {
-        if (leavingRef.current) { onExitRef.current(); return; }
+        if (leavingRef.current) {
+          if (doorPhase() !== "open") return; // wait for the doors to open before stepping through
+          exited.current = true; setVisible(false); releaseDoor(doorId.current);
+          window.setTimeout(() => onExitRef.current(), DOOR_OPEN_MS + 50);
+          return;
+        }
         const bay = BED_ARRIVAL[Math.floor(Math.random() * BED_ARRIVAL.length)] ?? ENTRY;
         const fromDoor = posRef.current.y < 0.3;
         path.current = routeTo({ x: 0.5, y: bay.y }, posRef.current).filter((p) => fromDoor || p.y > 0.3);
@@ -106,7 +131,7 @@ export function DonSprite({ line, pose, poseKey, leaving = false, onExit }: { li
   const col = posing ? POSE_COL[pose] : moving ? frame : POSE_COL.smug;
   return (
     <div
-      className="pointer-events-none absolute h-[92px]"
+      className={`pointer-events-none absolute h-[92px] ${visible ? "" : "invisible"}`}
       style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%`, transform: "translate(-50%,-82%)", zIndex: Math.round(pos.y * 100) + 1 }}
       role="img"
       aria-label="The DON"
