@@ -5,6 +5,9 @@ import { pickPatientSprites } from "@/game/patientBeds";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
+import { doorPhase, holdDoor, releaseDoor } from "@/game/wardDoor";
+
+const STAFF_DOOR: Point = { x: 0.5, y: 0.08 }; // top double doors
 import type { ActiveEvent, Banner, CatastrophePhase, RewardCallout, RollingHazard, StaffRuntime } from "./wardTypes";
 import { loadEastWestCollisionMap, eastWestCollisionAt } from "@/game/eastWestCollision";
 import { rollingHazardPosition } from "./rollingHazardMotion";
@@ -1028,6 +1031,7 @@ export function WardScreen({
           rt.goingHome = false;
           continue;
         }
+        rt.attendUntil = undefined;
         const evId = rt.eventId;
         rt.eventId = null;
         rt.cooldownUntil = now + b.cooldownMs;
