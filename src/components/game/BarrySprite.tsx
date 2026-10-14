@@ -3,9 +3,9 @@ import barrySheet from "@/assets/barry-ward-sprites.png.asset.json";
 import barrySitting from "@/assets/barry-sitting.png.asset.json";
 import type { Point } from "@/game/wardNav";
 
-/** Supplied Barry sheet (cleaned): 10 cols × 5 rows of 136×184. Rows 0-3 walk down/left/right/up, row 4 attend. */
-const CELL_W = 136;
-const CELL_H = 184;
+/** Supplied Barry sheet (cleaned): 10 cols × 5 rows of 117×191, full cap preserved. Rows 0-3 walk down/left/right/up, row 4 attend. */
+const CELL_W = 117;
+const CELL_H = 191;
 /* attend row: pair 1-2, pair 3-4, then 7, 8, 9 individually (5-6 unused, 10 static idle) */
 const ATTEND_SEQ = [0, 1, 0, 1, 2, 3, 2, 3, 6, 6, 7, 7, 8, 8];
 const IDLE_COL = 9;
