@@ -37,17 +37,15 @@ export const GATES = [
   { y: 0.735, side: "left" as const, lane: 0.61, box: { left: 0.3146, top: 0.6608, width: 0.1629, height: 0.1630 } },
 ];
 
+/** Bedside standing spots, taken from the green arrows on the supplied v2 staff path map. */
 export const BED_ARRIVAL: Point[] = [
-  { x: 0.24, y: 0.33 }, { x: 0.79, y: 0.33 },
-  { x: 0.23, y: 0.6 }, { x: 0.79, y: 0.5 },
-  { x: 0.24, y: 0.77 }, { x: 0.76, y: 0.75 },
-  { x: 0.24, y: 0.92 }, { x: 0.76, y: 0.92 },
+  { x: 0.236, y: 0.315 }, { x: 0.787, y: 0.315 },
+  { x: 0.234, y: 0.62 }, { x: 0.785, y: 0.465 },
+  { x: 0.243, y: 0.76 }, { x: 0.76, y: 0.76 },
+  { x: 0.238, y: 0.92 }, { x: 0.763, y: 0.92 },
 ];
 
-const LANE_Y = [0.33, 0.46, 0.628, 0.7875, 0.94];
-const LANE_X = [0.24, 0.5, 0.79];
-const DESK_TOP_Y = 0.14;
-const SIDE_X = [0.16, 0.84];
+const DESK_TOP_Y = 0.13;
 type NavNode = { p: Point; edges: number[] };
 const NAV: NavNode[] = [];
 
@@ -59,30 +57,43 @@ function navLink(a: number, b: number) {
   NAV[a]?.edges.push(b);
   NAV[b]?.edges.push(a);
 }
+function navChain(...ids: number[]) {
+  for (let i = 1; i < ids.length; i++) navLink(ids[i - 1] ?? 0, ids[i] ?? 0);
+}
 
-const laneNode: number[][] = LANE_Y.map((y) => LANE_X.map((x) => navAdd({ x, y })));
-LANE_Y.forEach((_, r) => {
-  navLink(laneNode[r]?.[0] ?? 0, laneNode[r]?.[1] ?? 0);
-  navLink(laneNode[r]?.[1] ?? 0, laneNode[r]?.[2] ?? 0);
-  if (r > 0) navLink(laneNode[r - 1]?.[1] ?? 0, laneNode[r]?.[1] ?? 0);
-});
-
-const deskTopL = navAdd({ x: SIDE_X[0] ?? 0.16, y: DESK_TOP_Y });
-const deskTopR = navAdd({ x: SIDE_X[1] ?? 0.84, y: DESK_TOP_Y });
+/* Staff walkways traced from the supplied v2 ward path map (red strokes). */
+// Top loop around the back of the nurses' station, fed by the double doors.
+const deskTopL = navAdd({ x: 0.24, y: DESK_TOP_Y });
 const deskTopC = navAdd({ x: 0.5, y: DESK_TOP_Y });
-const outL = navAdd({ x: SIDE_X[0] ?? 0.16, y: LANE_Y[0] ?? 0.33 });
-const outR = navAdd({ x: SIDE_X[1] ?? 0.84, y: LANE_Y[0] ?? 0.33 });
-navLink(deskTopL, deskTopC); navLink(deskTopC, deskTopR);
-navLink(deskTopL, outL); navLink(deskTopR, outR);
-navLink(outL, laneNode[0]?.[0] ?? 0); navLink(outR, laneNode[0]?.[2] ?? 0);
-
-BED_ARRIVAL.forEach((p, i) => {
-  const id = navAdd(p);
-  const lane = [0, 0, 2, 1, 3, 3, 4, 4][i] ?? 0;
-  const col = i % 2 === 0 ? 0 : 2;
-  const anchor = laneNode[lane]?.[col] ?? 0;
-  if (anchor !== id) navLink(id, anchor);
-});
+const deskTopR = navAdd({ x: 0.74, y: DESK_TOP_Y });
+const door = navAdd({ x: 0.44, y: 0.08 });
+const sideL = navAdd({ x: 0.21, y: 0.21 });
+const sideR = navAdd({ x: 0.79, y: 0.21 });
+navChain(deskTopL, deskTopC, deskTopR);
+navLink(door, deskTopC);
+// Front lane below the desk, serving the top bays.
+const frontL = navAdd(BED_ARRIVAL[0] ?? { x: 0.236, y: 0.315 });
+const frontC = navAdd({ x: 0.485, y: 0.32 });
+const frontC2 = navAdd({ x: 0.55, y: 0.32 });
+const frontR = navAdd(BED_ARRIVAL[1] ?? { x: 0.787, y: 0.315 });
+navChain(deskTopL, sideL, frontL, frontC, frontC2, frontR, sideR, deskTopR);
+// Right branch down past the first curtain to bay 4.
+const rightBranch = navAdd({ x: 0.56, y: 0.465 });
+const bed3 = navAdd(BED_ARRIVAL[3] ?? { x: 0.785, y: 0.465 });
+// Central spine.
+const spine1 = navAdd({ x: 0.485, y: 0.465 });
+const spine2 = navAdd({ x: 0.485, y: 0.62 });
+const spine3 = navAdd({ x: 0.5, y: 0.76 });
+const spine4 = navAdd({ x: 0.52, y: 0.92 });
+navChain(frontC2, rightBranch, bed3);
+navChain(frontC, spine1, spine2, spine3, spine4);
+navLink(spine1, rightBranch);
+// Side lanes to the remaining bays.
+navLink(spine2, navAdd(BED_ARRIVAL[2] ?? { x: 0.234, y: 0.62 }));
+navLink(spine3, navAdd(BED_ARRIVAL[4] ?? { x: 0.243, y: 0.76 }));
+navLink(spine3, navAdd(BED_ARRIVAL[5] ?? { x: 0.76, y: 0.76 }));
+navLink(spine4, navAdd(BED_ARRIVAL[6] ?? { x: 0.238, y: 0.92 }));
+navLink(spine4, navAdd(BED_ARRIVAL[7] ?? { x: 0.763, y: 0.92 }));
 
 function dist(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
