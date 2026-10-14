@@ -9,6 +9,7 @@ import {
 } from "@/game/config";
 import { GEAR_CATEGORIES, GEAR_ITEMS } from "@/game/gear";
 import { BED_UPGRADES } from "@/game/bedUpgrades";
+import { StaffPortrait } from "./StaffPortrait";
 
 export function UpgradeScreen({
   points,
@@ -278,8 +279,8 @@ export function UpgradeScreen({
                 can ? "chunky chunky-press" : "opacity-60",
               )}
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-xl">
-                {s.icon}
+              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-accent text-xl">
+                <StaffPortrait staffKey={s.key} fallback={s.icon} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-display truncate text-sm font-black uppercase">{s.name}</p>
