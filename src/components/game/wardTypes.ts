@@ -41,4 +41,8 @@ export type StaffRuntime = {
   goingHome: boolean;
   cooldownUntil: number;
   lastT: number;
+  /** game time at which a newly-arrived staff member walks in through the top doors */
+  enterAt?: number | undefined;
+  /** game time until which the staff member attends the patient at the bedside */
+  attendUntil?: number | undefined;
 };

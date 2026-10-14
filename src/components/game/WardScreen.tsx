@@ -5,6 +5,9 @@ import { pickPatientSprites } from "@/game/patientBeds";
 import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
+import { doorPhase, holdDoor, releaseDoor } from "@/game/wardDoor";
+
+const STAFF_DOOR: Point = { x: 0.5, y: 0.08 }; // top double doors
 import type { ActiveEvent, Banner, CatastrophePhase, RewardCallout, RollingHazard, StaffRuntime } from "./wardTypes";
 import { loadEastWestCollisionMap, eastWestCollisionAt } from "@/game/eastWestCollision";
 import { rollingHazardPosition } from "./rollingHazardMotion";
@@ -354,19 +357,25 @@ export function WardScreen({
     [staff],
   );
 
+  /* hired staff walk in through the top double doors 2s after the shift starts, then sit at the station */
+  const staffDoorIds = useRef<Record<string, symbol>>({});
   useEffect(() => {
     for (const k of staff) {
-      staffRt.current[k] ??= {
-        path: [],
-        eventId: null,
-        goingHome: false,
-        cooldownUntil: 0,
-        lastT: 0,
-      };
-      staffPosRef.current[k] ??= staffHome(k);
+      if (!staffRt.current[k]) {
+        staffRt.current[k] = {
+          path: routeTo(staffHome(k), STAFF_DOOR),
+          eventId: null,
+          goingHome: true,
+          cooldownUntil: 0,
+          lastT: 0,
+          enterAt: gameT.current + 2000,
+        };
+        staffPosRef.current[k] = STAFF_DOOR;
+      }
     }
     setStaffPos({ ...staffPosRef.current });
   }, [staff, staffHome]);
+  useEffect(() => () => { for (const id of Object.values(staffDoorIds.current)) releaseDoor(id); }, []);
 
 
   const eventsRef = useRef<ActiveEvent[]>([]);
@@ -975,7 +984,27 @@ export function WardScreen({
         dispatchStaff(key, target);
       }
 
-      if (!rt.path.length) continue;
+      if (rt.enterAt !== undefined) {
+        if (now < rt.enterAt) { rt.lastT = now; continue; }
+        const id = (staffDoorIds.current[key] ??= Symbol(key));
+        holdDoor(id);
+        if (doorPhase() !== "open") { rt.lastT = now; continue; }
+        rt.enterAt = undefined;
+        moved = true;
+      }
+      const doorId = staffDoorIds.current[key];
+      if (doorId && (staffPosRef.current[key]?.y ?? 1) > 0.2) releaseDoor(doorId);
+
+      if (rt.attendUntil !== undefined) {
+        if (now < rt.attendUntil) { rt.lastT = now; continue; }
+      } else if (!rt.path.length && rt.eventId !== null) {
+        // just reached the bedside: attend the patient briefly before resolving
+        rt.attendUntil = now + 1600;
+        rt.lastT = now;
+        moved = true;
+        continue;
+      }
+      if (!rt.path.length && rt.attendUntil === undefined) continue;
       let remaining = (now - rt.lastT) / (msPerUnit(upgrades) * 1.3);
       rt.lastT = now;
       let cur = staffPosRef.current[key] ?? staffHome(key);
@@ -1002,6 +1031,7 @@ export function WardScreen({
           rt.goingHome = false;
           continue;
         }
+        rt.attendUntil = undefined;
         const evId = rt.eventId;
         rt.eventId = null;
         rt.cooldownUntil = now + b.cooldownMs;
