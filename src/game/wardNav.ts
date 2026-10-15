@@ -141,7 +141,19 @@ function navPath(a: number, b: number): Point[] {
 }
 const pFallback: Point = { x: 0.5, y: 0.5 };
 
+/** Top double doors (centre of the painted doorway) and the spot straight in front of them, clear of the frame. */
+export const DOOR_POINT: Point = { x: 0.44, y: 0.08 };
+const DOOR_CLEAR: Point = { x: 0.44, y: 0.16 };
+const inDoorway = (p: Point) => p.y < 0.11 && Math.abs(p.x - DOOR_POINT.x) < 0.08;
+
+/** Anyone using the top doors walks straight through them before/after joining the walkways. */
 export function routeTo(dest: Point, from: Point): Point[] {
+  if (inDoorway(from) && !inDoorway(dest)) return [{ x: DOOR_POINT.x, y: from.y }, DOOR_CLEAR, ...routeOnFloor(dest, DOOR_CLEAR)];
+  if (inDoorway(dest) && !inDoorway(from)) return [...routeOnFloor(DOOR_CLEAR, from), DOOR_CLEAR, dest];
+  return routeOnFloor(dest, from);
+}
+
+function routeOnFloor(dest: Point, from: Point): Point[] {
   const atStation = (point: Point) => point.y < 0.3;
   const points: Point[] = [];
   const startNode = atStation(from)
