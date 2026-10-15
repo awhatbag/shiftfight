@@ -119,7 +119,7 @@ export function Bed({
           >
             <span className="shrink-0 font-display text-[9px] font-black text-[#f59e0b]">B{bed.id + 1}</span>
             <span className="shrink-0 text-[9px] font-black text-[#f59e0b]/70">·</span>
-            <span className="min-w-0 font-display text-[10px] font-extrabold uppercase leading-tight tracking-tight text-white line-clamp-2 break-words">
+            <span className="min-w-0 font-display text-[10px] font-extrabold uppercase leading-[1.05] tracking-tight text-white line-clamp-2 break-words">
               {bed.name}
             </span>
           </div>
