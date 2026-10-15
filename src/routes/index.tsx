@@ -749,7 +749,6 @@ function Game() {
             onToggleHaptics={toggleHaptics}
             saveNote={saveNote}
             onPlay={() => (hasSave ? setClockInPrompt(true) : setPhase("character"))}
-            onLadder={() => setPhase("ladder")}
           />
         )}
         {phase === "character" && (
@@ -1074,7 +1073,6 @@ function IntroScreen({
   onToggleHaptics,
   saveNote,
   onPlay,
-  onLadder,
 }: {
   soundOn: boolean;
   hapticsOn: boolean;
@@ -1083,7 +1081,6 @@ function IntroScreen({
   onToggleHaptics: () => void;
   saveNote: string;
   onPlay: () => void;
-  onLadder: () => void;
 }) {
   const [musicOn, setMusicOnState] = useState(isMusicOn);
 
@@ -1154,12 +1151,6 @@ function IntroScreen({
         className="chunky chunky-press relative z-10 w-[82%] max-w-[300px] rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase tracking-wide text-primary-foreground"
       >
         Clock in ▶
-      </button>
-      <button
-        onClick={onLadder}
-        className="chunky chunky-press relative z-10 w-[82%] max-w-[300px] rounded-2xl bg-secondary py-2.5 font-display text-sm font-black uppercase text-secondary-foreground"
-      >
-        🪜 Shift Ladder
       </button>
       <p className="relative z-10 w-[82%] max-w-[300px] text-[9px] leading-tight text-muted-foreground drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
         A silly, fast-paced work of fiction. Fictional patients, fictional meds. Definitely not medical or nursing advice... maybe 👀
