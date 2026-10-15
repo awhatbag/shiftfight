@@ -8,7 +8,7 @@ import { BED_SLOTS, GATES, STATION_CHAIRS, STATION_FRAME, stationChair, type Poi
 import { cn } from "@/lib/utils";
 import { Bed, type BedState } from "./Bed";
 import { Nurse, type NurseAction, type NurseDirection } from "./Nurse";
-import { WardDoor, WardDoorRoom } from "./WardDoor";
+import { WardDoor, WardDoorLintel, WardDoorRoom } from "./WardDoor";
 import { DonSprite, type DonPose } from "./DonSprite";
 import { BarrySitting, BarryWalker } from "./BarrySprite";
 import { CatastropheHazardLayer } from "./CatastropheHazardLayer";
@@ -29,6 +29,7 @@ export function WardScene({ level, levelName, beds, events, flash, selected, nur
     <img src={wardBackgroundAsset.url} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover" draggable={false}/>
     <WardDoorRoom/>
     <WardDoor/>
+    <WardDoorLintel src={wardBackgroundAsset.url}/>
     <div className="absolute z-10" style={{ left: `${STATION_FRAME.x * 100}%`, top: `${STATION_FRAME.y * 100}%`, width: `${STATION_FRAME.width * 100}%`, height: `${STATION_FRAME.height * 100}%` }}>
       <button onClick={onGoStation} className="pointer-events-auto absolute inset-0 text-left" aria-label="Return to nurses station"><img src={nursesStationAsset.url} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-contain"/><div className="absolute bottom-[17%] left-1/2 w-[22%] -translate-x-1/2 text-center text-primary-foreground"><p className="font-display truncate text-[9px] font-black uppercase leading-none">Lv {level}</p><p className="font-display truncate text-[6px] font-black uppercase leading-none">{levelName}</p></div></button>
       <div className="pointer-events-none absolute inset-0" aria-label="Five station chairs">{Array.from({ length: 5 }, (_, index) => {
