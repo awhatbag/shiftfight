@@ -17,6 +17,12 @@ export function WardDoorRoom() {
   </div>;
 }
 
+/** Wall strip above the doors, re-drawn from the ward artwork above anyone walking through so heads pass under the lintel. */
+export function WardDoorLintel({ src }: { src: string }) {
+  const left = DOOR_BOX.left - 0.02, width = DOOR_BOX.width + 0.04, height = DOOR_BOX.top + 0.012;
+  return <div aria-hidden="true" className="pointer-events-none absolute" style={{ left: `${left * 100}%`, top: 0, width: `${width * 100}%`, height: `${height * 100}%`, zIndex: 30, backgroundImage: `url(${src})`, backgroundSize: `${100 / width}% ${100 / height}%`, backgroundPosition: `${(left / (1 - width)) * 100}% 0%` }}/>;
+}
+
 /** Animated supplied door sprite (frames 0-5 opening, 6-11 closing). */
 export function WardDoor() {
   const phase = useDoorPhase();
