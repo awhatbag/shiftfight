@@ -227,20 +227,17 @@ function TopBar({
 }) {
   const nextLevel = Math.min(level + 1, MAX_LEVEL);
   const nextTitle = shiftTitle(nextLevel);
+  /* the title screen keeps only a floating menu button, no bar or title text */
+  if (phase === "intro") return null;
+
   return (
     <div className="flex w-full shrink-0 items-center gap-1.5 overflow-hidden border-b-2 border-border bg-background px-2 py-2">
-      {phase === "intro" ? (
-        <span className="flex h-11 shrink-0 items-center px-2 font-display text-sm font-black uppercase text-muted-foreground">
-          Shift Fight!
-        </span>
-      ) : (
-        <button
-          onClick={onBack}
-          className="chunky chunky-press flex h-11 shrink-0 items-center rounded-xl bg-secondary px-2.5 font-display text-xs font-black uppercase text-secondary-foreground"
-        >
-          ← Back
-        </button>
-      )}
+      <button
+        onClick={onBack}
+        className="chunky chunky-press flex h-11 shrink-0 items-center rounded-xl bg-secondary px-2.5 font-display text-xs font-black uppercase text-secondary-foreground"
+      >
+        ← Back
+      </button>
       <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
         {phase === "shop" && onContinue && (
           <button
@@ -749,7 +746,7 @@ function Game() {
             onToggleHaptics={toggleHaptics}
             saveNote={saveNote}
             onPlay={() => (hasSave ? setClockInPrompt(true) : setPhase("character"))}
-            onLadder={() => setPhase("ladder")}
+            onMenu={() => setMenuOpen(true)}
           />
         )}
         {phase === "character" && (
@@ -1074,7 +1071,7 @@ function IntroScreen({
   onToggleHaptics,
   saveNote,
   onPlay,
-  onLadder,
+  onMenu,
 }: {
   soundOn: boolean;
   hapticsOn: boolean;
@@ -1083,7 +1080,7 @@ function IntroScreen({
   onToggleHaptics: () => void;
   saveNote: string;
   onPlay: () => void;
-  onLadder: () => void;
+  onMenu: () => void;
 }) {
   const [musicOn, setMusicOnState] = useState(isMusicOn);
 
@@ -1098,6 +1095,13 @@ function IntroScreen({
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-3 overflow-hidden p-6 text-center">
+      <button
+        onClick={onMenu}
+        aria-label="Open menu"
+        className="chunky chunky-press absolute right-3 top-3 z-30 flex h-11 items-center rounded-xl bg-secondary px-2.5 font-display text-xs font-black uppercase text-secondary-foreground"
+      >
+        ☰ Menu
+      </button>
       <img
         src={receptionAsset.url}
         alt=""
@@ -1154,12 +1158,6 @@ function IntroScreen({
         className="chunky chunky-press relative z-10 w-[82%] max-w-[300px] rounded-2xl bg-primary py-4 font-display text-xl font-black uppercase tracking-wide text-primary-foreground"
       >
         Clock in ▶
-      </button>
-      <button
-        onClick={onLadder}
-        className="chunky chunky-press relative z-10 w-[82%] max-w-[300px] rounded-2xl bg-secondary py-2.5 font-display text-sm font-black uppercase text-secondary-foreground"
-      >
-        🪜 Shift Ladder
       </button>
       <p className="relative z-10 w-[82%] max-w-[300px] text-[9px] leading-tight text-muted-foreground drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
         A silly, fast-paced work of fiction. Fictional patients, fictional meds. Definitely not medical or nursing advice... maybe 👀
