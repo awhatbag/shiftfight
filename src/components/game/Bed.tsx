@@ -84,7 +84,7 @@ export function Bed({
           <div className="h-11" aria-hidden="true" />
 
           {event ? (
-            <div className="relative z-10 animate-pop space-y-1">
+            <div className="relative z-10 mb-2 animate-pop space-y-1">
               <div
                 className={cn(
                   "flex items-center gap-1 rounded-lg px-1.5 py-1",
@@ -119,7 +119,7 @@ export function Bed({
           >
             <span className="shrink-0 font-display text-[9px] font-black text-[#f59e0b]">B{bed.id + 1}</span>
             <span className="shrink-0 text-[9px] font-black text-[#f59e0b]/70">·</span>
-            <span className="min-w-0 font-display text-[10px] font-extrabold uppercase leading-tight tracking-tight text-white line-clamp-2 break-words">
+            <span className="min-w-0 font-display text-[10px] font-extrabold uppercase leading-[1.05] tracking-tight text-white line-clamp-2 break-words">
               {bed.name}
             </span>
           </div>
