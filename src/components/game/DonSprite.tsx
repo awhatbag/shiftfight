@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import donSheet from "@/assets/don-ward-sprites.png.asset.json";
-import { BED_ARRIVAL, routeTo, type Point } from "@/game/wardNav";
+import { BED_ARRIVAL, DOOR_POINT, routeTo, type Point } from "@/game/wardNav";
 import { DOOR_OPEN_MS, doorPhase, holdDoor, releaseDoor } from "@/game/wardDoor";
 
 /** Supplied DON sheet: 10 cols × 5 rows. Rows 0-3 walk down/up/right/left, row 4 = poses. */
@@ -29,7 +29,7 @@ export function DonPortrait({ pose, className }: { pose: DonPose; className?: st
   return <DonFrame row={4} col={POSE_COL[pose]} className={className ?? ""} />;
 }
 
-const ENTRY: Point = { x: 0.5, y: 0.08 }; // top double doors behind the nurses' station
+const ENTRY: Point = DOOR_POINT; // top double doors behind the nurses' station
 const SPEED = 0.11; // ward units per second
 const PAUSE_MS = 2600;
 

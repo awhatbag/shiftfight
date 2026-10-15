@@ -12,16 +12,17 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 
 function set(next: DoorPhase) { phase = next; listeners.forEach((l) => l()); }
 function update() {
-  if (timer) clearTimeout(timer);
-  timer = null;
+  // repeat holds/releases must not cancel an in-flight animation timer
   if (holders.size) {
     if (phase === "open" || phase === "opening") return;
+    if (timer) clearTimeout(timer);
     set("opening");
-    timer = setTimeout(() => set("open"), DOOR_OPEN_MS);
+    timer = setTimeout(() => { timer = null; set("open"); }, DOOR_OPEN_MS);
   } else {
     if (phase === "closed" || phase === "closing") return;
+    if (timer) clearTimeout(timer);
     set("closing");
-    timer = setTimeout(() => set("closed"), DOOR_OPEN_MS);
+    timer = setTimeout(() => { timer = null; set("closed"); update(); }, DOOR_OPEN_MS);
   }
 }
 
