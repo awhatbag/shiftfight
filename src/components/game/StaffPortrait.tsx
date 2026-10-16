@@ -8,7 +8,7 @@ import priyaSheet from "@/assets/priya-ward-sprites.png.asset.json";
  */
 const PORTRAITS: Record<string, { url: string; sheetW: number; sheetH: number; crop: [number, number, number] }> = {
   hca: { url: barrySheet.url, sheetW: 1170, sheetH: 955, crop: [9 * 117 + 15, 4 * 191 + 5, 85] },
-  student: { url: priyaSheet.url, sheetW: 1360, sheetH: 1025, crop: [1097, 832, 104] },
+  student: { url: priyaSheet.url, sheetW: 1360, sheetH: 1030, crop: [8 * 136 + 18, 4 * 206 + 12, 100] },
 };
 
 export function StaffPortrait({ staffKey, fallback, size = 44 }: { staffKey: string; fallback: string; size?: number }) {
