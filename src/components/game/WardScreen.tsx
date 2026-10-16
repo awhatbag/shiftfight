@@ -1006,7 +1006,7 @@ export function WardScreen({
         continue;
       }
       if (!rt.path.length && rt.attendUntil === undefined) continue;
-      let remaining = (now - rt.lastT) / (msPerUnit(upgrades) * (rt.entering ? 4 : 1.3));
+      let remaining = (now - rt.lastT) / (msPerUnit(upgrades) * (rt.entering ? 4 : 3.2));
       rt.lastT = now;
       let cur = staffPosRef.current[key] ?? staffHome(key);
       while (remaining > 0 && rt.path.length) {
