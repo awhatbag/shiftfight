@@ -12,7 +12,7 @@ import type { Point } from "@/game/wardNav";
 type StaffArt = { sheet: string; cellW: number; cellH: number; sitting: string; attendSeq: number[]; idle: [number, number] };
 const STAFF_ART: Record<string, StaffArt> = {
   hca: { sheet: barrySheet.url, cellW: 117, cellH: 191, sitting: barrySitting.url, attendSeq: [0, 1, 0, 1, 2, 3, 2, 3, 6, 6, 7, 7, 8, 8], idle: [4, 9] },
-  student: { sheet: priyaSheet.url, cellW: 153.6, cellH: 204.8, sitting: priyaSitting.url, attendSeq: [0, 1, 0, 1, 2, 3, 2, 3, 6, 6, 7, 7, 8, 8], idle: [4, 8] },
+  student: { sheet: priyaSheet.url, cellW: 136, cellH: 205, sitting: priyaSitting.url, attendSeq: [0, 1, 0, 1, 2, 3, 2, 3, 6, 6, 7, 7, 8, 8], idle: [4, 8] },
 };
 
 export const hasStaffArt = (key: string | undefined): key is string => !!key && key in STAFF_ART;
