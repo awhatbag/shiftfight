@@ -37,7 +37,7 @@ export function WardScene({ level, levelName, beds, events, flash, selected, nur
         const info = staffKey ? STAFF.find((member) => member.key === staffKey) : undefined;
         const runtime = staffKey ? staffRuntime[staffKey] : undefined;
         const playerSeated = index === 0 && !walking && nurseHereBed === null;
-        const seated = playerSeated || (!!staffKey && !runtime?.eventId && !runtime?.path.length);
+        const seated = playerSeated || (!!staffKey && !!runtime && runtime.enterAt === undefined && !runtime.eventId && !runtime.path.length);
         const activated = !!staffKey && seated && redAlert;
         const chair = stationChair(index);
         const bobStyle = { animationDelay: `${-index * 0.37}s` };
