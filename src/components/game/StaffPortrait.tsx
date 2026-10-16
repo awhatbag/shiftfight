@@ -1,4 +1,5 @@
 import barrySheet from "@/assets/barry-ward-sprites.png.asset.json";
+import priyaSheet from "@/assets/priya-ward-sprites.png.asset.json";
 
 /**
  * Shop portraits cropped (via CSS) from each staff member's supplied sprite sheet.
@@ -7,6 +8,7 @@ import barrySheet from "@/assets/barry-ward-sprites.png.asset.json";
  */
 const PORTRAITS: Record<string, { url: string; sheetW: number; sheetH: number; crop: [number, number, number] }> = {
   hca: { url: barrySheet.url, sheetW: 1170, sheetH: 955, crop: [9 * 117 + 15, 4 * 191 + 5, 85] },
+  student: { url: priyaSheet.url, sheetW: 1536, sheetH: 1024, crop: [1229 + 12, 819 + 12, 104] },
 };
 
 export function StaffPortrait({ staffKey, fallback, size = 44 }: { staffKey: string; fallback: string; size?: number }) {
