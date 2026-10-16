@@ -15,6 +15,9 @@ import wardTrack from "@/assets/pixel-triage.mp3.asset.json";
 import coinOpTrack from "@/assets/Coin_Op_Daydream.mp3.asset.json";
 import picnicTrack from "@/assets/Pixel_Picnic.mp3.asset.json";
 import crtTrack from "@/assets/CRT_Controller_2.mp3.asset.json";
+import levelSelectTrack from "@/assets/Level_Select.mp3.asset.json";
+import triage2Track from "@/assets/Pixel_Triage2.mp3.asset.json";
+import clinic2Track from "@/assets/Pixel_Clinic2.mp3.asset.json";
 import shopTrack from "@/assets/level-select-shop.mp3.asset.json";
 
 export type MusicKey = "title" | "savePoint" | "ward" | "shop";
@@ -22,7 +25,15 @@ export type MusicKey = "title" | "savePoint" | "ward" | "shop";
 type TrackDef = { url: string; volume: number };
 
 /** Ward shift playlist: one song per shift, looped; each new shift moves to the next song. */
-export const WARD_PLAYLIST = [wardTrack.url, coinOpTrack.url, picnicTrack.url, crtTrack.url];
+export const WARD_PLAYLIST = [
+  wardTrack.url,
+  coinOpTrack.url,
+  picnicTrack.url,
+  crtTrack.url,
+  levelSelectTrack.url,
+  triage2Track.url,
+  clinic2Track.url,
+];
 const WARD_IDX_KEY = "shift-fight-ward-song";
 
 export const MUSIC_TRACKS: Record<MusicKey, TrackDef> = {
