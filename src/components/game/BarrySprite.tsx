@@ -1,23 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import barrySheet from "@/assets/barry-ward-sprites.png.asset.json";
 import barrySitting from "@/assets/barry-sitting.png.asset.json";
+import priyaSheet from "@/assets/priya-ward-sprites.png.asset.json";
+import priyaSitting from "@/assets/priya-sitting.png.asset.json";
 import type { Point } from "@/game/wardNav";
 
-/** Supplied Barry sheet (cleaned): 10 cols × 5 rows of 117×191, full cap preserved. Rows 0-3 walk down/left/right/up, row 4 attend. */
-const CELL_W = 117;
-const CELL_H = 191;
-/* attend row: pair 1-2, pair 3-4, then 7, 8, 9 individually (5-6 unused, 10 static idle) */
-const ATTEND_SEQ = [0, 1, 0, 1, 2, 3, 2, 3, 6, 6, 7, 7, 8, 8];
-const IDLE_COL = 9;
+/**
+ * Supplied staff sheets: 10 cols × 5 rows. Rows 0-3 walk down/left/right/up, row 4 attend.
+ * Register new staff artwork here; the shared staff runtime drives position.
+ */
+type StaffArt = { sheet: string; cellW: number; cellH: number; sitting: string; attendSeq: number[]; idle: [number, number] };
+const STAFF_ART: Record<string, StaffArt> = {
+  hca: { sheet: barrySheet.url, cellW: 117, cellH: 191, sitting: barrySitting.url, attendSeq: [0, 1, 0, 1, 2, 3, 2, 3, 6, 6, 7, 7, 8, 8], idle: [4, 9] },
+  student: { sheet: priyaSheet.url, cellW: 153.6, cellH: 204.8, sitting: priyaSitting.url, attendSeq: [0, 1, 0, 1, 2, 3, 2, 3, 6, 6, 7, 7, 8, 8], idle: [4, 8] },
+};
 
-function Frame({ row, col }: { row: number; col: number }) {
+export const hasStaffArt = (key: string | undefined): key is string => !!key && key in STAFF_ART;
+
+function Frame({ art, row, col }: { art: StaffArt; row: number; col: number }) {
   return (
     <span
       aria-hidden="true"
       className="block h-full"
       style={{
-        aspectRatio: `${CELL_W} / ${CELL_H}`,
-        backgroundImage: `url(${barrySheet.url})`,
+        aspectRatio: `${art.cellW} / ${art.cellH}`,
+        backgroundImage: `url(${art.sheet})`,
         backgroundSize: "1000% 500%",
         backgroundPosition: `${(col / 9) * 100}% ${(row / 4) * 100}%`,
         imageRendering: "pixelated",
@@ -26,12 +33,15 @@ function Frame({ row, col }: { row: number; col: number }) {
   );
 }
 
-export function BarrySitting() {
-  return <img src={barrySitting.url} alt="" aria-hidden="true" className="block h-full w-auto" style={{ imageRendering: "pixelated" }} draggable={false} />;
+export function StaffSitting({ staffKey }: { staffKey: string }) {
+  const art = STAFF_ART[staffKey];
+  if (!art) return null;
+  return <img src={art.sitting} alt="" aria-hidden="true" className="block h-full w-auto" style={{ imageRendering: "pixelated" }} draggable={false} />;
 }
 
-/** Barry walking the ward or attending at a bedside. Position comes from the shared staff runtime. */
-export function BarryWalker({ pos, attending }: { pos: Point; attending: boolean }) {
+/** Staff walking the ward or attending at a bedside. Position comes from the shared staff runtime. */
+export function StaffWalker({ staffKey, pos, attending }: { staffKey: string; pos: Point; attending: boolean }) {
+  const art = STAFF_ART[staffKey]!;
   const prev = useRef(pos);
   const [dir, setDir] = useState(0);
   const [frame, setFrame] = useState(0);
@@ -51,11 +61,11 @@ export function BarryWalker({ pos, attending }: { pos: Point; attending: boolean
     return () => window.clearInterval(id);
   }, [attending]);
 
-  const row = attending || !moving ? 4 : dir;
-  const col = attending ? ATTEND_SEQ[frame % ATTEND_SEQ.length]! : moving ? frame % 10 : IDLE_COL;
+  const row = attending ? 4 : moving ? dir : art.idle[0];
+  const col = attending ? art.attendSeq[frame % art.attendSeq.length]! : moving ? frame % 10 : art.idle[1];
   return (
     <div className="h-[84px]">
-      <Frame row={row} col={col} />
+      <Frame art={art} row={row} col={col} />
     </div>
   );
 }
