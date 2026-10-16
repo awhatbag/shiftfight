@@ -43,6 +43,8 @@ export type StaffRuntime = {
   lastT: number;
   /** game time at which a newly-arrived staff member walks in through the top doors */
   enterAt?: number | undefined;
+  /** walking in from the doors at a visible, unhurried pace */
+  entering?: boolean | undefined;
   /** game time until which the staff member attends the patient at the bedside */
   attendUntil?: number | undefined;
 };

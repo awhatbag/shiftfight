@@ -360,7 +360,7 @@ export function WardScreen({
   /* hired staff walk in through the top double doors 2s after the shift starts, then sit at the station */
   const staffDoorIds = useRef<Record<string, symbol>>({});
   useEffect(() => {
-    for (const k of staff) {
+    staff.forEach((k, order) => {
       if (!staffRt.current[k]) {
         staffRt.current[k] = {
           path: routeTo(staffHome(k), STAFF_DOOR),
@@ -368,11 +368,12 @@ export function WardScreen({
           goingHome: true,
           cooldownUntil: 0,
           lastT: 0,
-          enterAt: gameT.current + 2000,
+          enterAt: gameT.current + 2000 + order * 2200, // one at a time through the doors
+          entering: true,
         };
         staffPosRef.current[k] = STAFF_DOOR;
       }
-    }
+    });
     setStaffPos({ ...staffPosRef.current });
   }, [staff, staffHome]);
   useEffect(() => () => { for (const id of Object.values(staffDoorIds.current)) releaseDoor(id); }, []);
@@ -1005,7 +1006,7 @@ export function WardScreen({
         continue;
       }
       if (!rt.path.length && rt.attendUntil === undefined) continue;
-      let remaining = (now - rt.lastT) / (msPerUnit(upgrades) * 1.3);
+      let remaining = (now - rt.lastT) / (msPerUnit(upgrades) * (rt.entering ? 4 : 1.3));
       rt.lastT = now;
       let cur = staffPosRef.current[key] ?? staffHome(key);
       while (remaining > 0 && rt.path.length) {
@@ -1029,6 +1030,7 @@ export function WardScreen({
       if (!rt.path.length) {
         if (rt.goingHome) {
           rt.goingHome = false;
+          rt.entering = false;
           continue;
         }
         rt.attendUntil = undefined;
