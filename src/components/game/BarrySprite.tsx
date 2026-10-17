@@ -4,6 +4,7 @@ import barrySitting from "@/assets/barry-sitting.png.asset.json";
 import priyaSheet from "@/assets/priya-ward-sprites.png.asset.json";
 import priyaSitting from "@/assets/priya-sitting.png.asset.json";
 import type { Point } from "@/game/wardNav";
+import { advanceStaffWalk } from "@/game/staffAnimation";
 
 /**
  * Supplied staff sheets: 10 cols × 5 rows. Rows 0-3 walk down/left/right/up, row 4 attend.
@@ -41,28 +42,35 @@ export function StaffSitting({ staffKey }: { staffKey: string }) {
 
 /** Staff walking the ward or attending at a bedside. Position comes from the shared staff runtime. */
 export function StaffWalker({ staffKey, pos, attending }: { staffKey: string; pos: Point; attending: boolean }) {
-  const art = STAFF_ART[staffKey]!;
+  const art = STAFF_ART[staffKey];
   const prev = useRef(pos);
+  const walkPhase = useRef(0);
   const [dir, setDir] = useState(0);
-  const [frame, setFrame] = useState(0);
+  const [walkFrame, setWalkFrame] = useState(0);
+  const [attendFrame, setAttendFrame] = useState(0);
   const [moving, setMoving] = useState(false);
 
   useEffect(() => {
     const dx = pos.x - prev.current.x;
     const dy = pos.y - prev.current.y;
+    const from = prev.current;
     prev.current = pos;
-    if (Math.hypot(dx, dy) < 1e-5) { setMoving(false); return; }
+    if (attending || Math.hypot(dx, dy) < 1e-5) { setMoving(false); return; }
+    walkPhase.current = advanceStaffWalk(walkPhase.current, from, pos);
+    setWalkFrame(Math.floor(walkPhase.current));
     setMoving(true);
     setDir(Math.abs(dx * 0.8) > Math.abs(dy) ? (dx > 0 ? 2 : 1) : dy > 0 ? 0 : 3);
-  }, [pos]);
+  }, [pos, attending]);
 
   useEffect(() => {
-    const id = window.setInterval(() => setFrame((f) => f + 1), attending ? 260 : 125);
+    if (!attending) return;
+    const id = window.setInterval(() => setAttendFrame((f) => f + 1), 260);
     return () => window.clearInterval(id);
   }, [attending]);
 
+  if (!art) return null;
   const row = attending ? 4 : moving ? dir : art.idle[0];
-  const col = attending ? art.attendSeq[frame % art.attendSeq.length]! : moving ? frame % 10 : art.idle[1];
+  const col = attending ? (art.attendSeq[attendFrame % art.attendSeq.length] ?? art.idle[1]) : moving ? walkFrame : art.idle[1];
   return (
     <div className="h-[84px]">
       <Frame art={art} row={row} col={col} />
