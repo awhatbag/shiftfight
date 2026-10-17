@@ -23,5 +23,3 @@ DON visits end their gameplay reactions when departure starts, but retain the wa
 
 Hired staff spawn behind the top doors and walk to their station chair via the shared staff runtime (enterAt/attendUntil in StaffRuntime); character art (e.g. BarrySprite) only renders that runtime, so new staff sprites need no movement logic.
 - Shop staff portraits are CSS crops of each staff member's supplied sprite sheet, registered in src/components/game/StaffPortrait.tsx; staff without artwork fall back to their emoji, so new artwork only needs a registry entry.
-
-StaffWalker advances walk frames from displacement using the staff runtime's weighted distance metric via src/game/staffAnimation.ts; attending keeps its separate timer so walking cadence follows movement without changing gameplay speed.
