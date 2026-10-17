@@ -1,0 +1,6 @@
+---
+name: staff-walking
+description: Accepted hired staff travel and animation pace
+type: preference
+---
+Keep hired staff travel at the accepted relaxed, steady pace. Barry and Priya's full walking animation should take roughly three seconds at that normal pace, with steps synced to distance travelled rather than a fixed timer. Do not speed up their travel to match animation.
