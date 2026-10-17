@@ -30,7 +30,7 @@ export function DonPortrait({ pose, className }: { pose: DonPose; className?: st
 }
 
 const ENTRY: Point = DOOR_POINT; // top double doors behind the nurses' station
-const SPEED = 0.11; // ward units per second
+const SPEED = 1000 / (1500 * 3.2); // ward units per second — same relaxed pace as hired staff
 const PAUSE_MS = 2600;
 
 /** The DON patrols the ward on her own, inspecting random bays and posing on reactions. */
@@ -122,7 +122,7 @@ export function DonSprite({ line, pose, poseKey, leaving = false, onExit }: { li
       setMoving(true);
       setDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 2 : 3) : dy > 0 ? 0 : 1);
       acc += dt;
-      if (acc > 0.09) { acc = 0; setFrame((f) => (f + 1) % 10); }
+      if (acc >= 0.3) { acc = 0; setFrame((f) => (f + 1) % 10); } // 10-frame walk ≈ 3s
     }, 60);
     return () => window.clearInterval(id);
   }, []);
