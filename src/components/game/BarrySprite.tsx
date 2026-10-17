@@ -57,7 +57,7 @@ export function StaffWalker({ staffKey, pos, attending }: { staffKey: string; po
   }, [pos]);
 
   useEffect(() => {
-    const id = window.setInterval(() => setFrame((f) => f + 1), attending ? 260 : 125);
+    const id = window.setInterval(() => setFrame((f) => f + 1), attending ? 260 : 300); // 10-frame walk ≈ 3s
     return () => window.clearInterval(id);
   }, [attending]);
 
