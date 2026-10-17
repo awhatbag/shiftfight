@@ -597,7 +597,17 @@ export function WardScreen({
         }
         return hazard;
       });
-      setAvocados((current) => [...current, ...created]);
+      setAvocados((current) => {
+        // Cull hazards that finished their roll or lingered after impact;
+        // the render layer hides these, but keeping them in state grows the
+        // array without bound during the 30s event.
+        const live = current.filter((hazard) => {
+          const age = now - hazard.born;
+          if (hazard.hitX !== null && age >= hazard.hitAt) return age - hazard.hitAt <= 5_850;
+          return age <= hazard.speed + 500;
+        });
+        return [...live, ...created];
+      });
       avocadoNextSpawnT.current = now + 170 + progress * 720 + Math.random() * (180 + progress * 420);
     };
       interval = window.setInterval(spawn, 90);
