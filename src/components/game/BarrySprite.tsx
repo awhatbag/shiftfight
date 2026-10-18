@@ -4,6 +4,7 @@ import barrySitting from "@/assets/barry-sitting.png.asset.json";
 import priyaSheet from "@/assets/priya-ward-sprites.png.asset.json";
 import priyaSitting from "@/assets/priya-sitting.png.asset.json";
 import type { Point } from "@/game/wardNav";
+import { STAFF_WALK_CYCLE_MS, STAFF_WALK_FRAMES, staffAnimationFrame } from "@/game/staffAnimation";
 
 /**
  * Supplied staff sheets: 10 cols × 5 rows. Rows 0-3 walk down/left/right/up, row 4 attend.
@@ -40,29 +41,27 @@ export function StaffSitting({ staffKey }: { staffKey: string }) {
 }
 
 /** Staff walking the ward or attending at a bedside. Position comes from the shared staff runtime. */
-export function StaffWalker({ staffKey, pos, attending }: { staffKey: string; pos: Point; attending: boolean }) {
-  const art = STAFF_ART[staffKey]!;
+export function StaffWalker({ staffKey, pos, walking, attending }: { staffKey: string; pos: Point; walking: boolean; attending: boolean }) {
+  const art = STAFF_ART[staffKey];
   const prev = useRef(pos);
   const [dir, setDir] = useState(0);
   const [frame, setFrame] = useState(0);
-  const [moving, setMoving] = useState(false);
 
   useEffect(() => {
     const dx = pos.x - prev.current.x;
     const dy = pos.y - prev.current.y;
     prev.current = pos;
-    if (Math.hypot(dx, dy) < 1e-5) { setMoving(false); return; }
-    setMoving(true);
+    if (Math.hypot(dx, dy) < 1e-5) return; // Keep direction during unchanged-position ticks.
     setDir(Math.abs(dx * 0.8) > Math.abs(dy) ? (dx > 0 ? 2 : 1) : dy > 0 ? 0 : 3);
   }, [pos]);
 
   useEffect(() => {
-    const id = window.setInterval(() => setFrame((f) => f + 1), attending ? 260 : 300); // 10-frame walk ≈ 3s
+    const id = window.setInterval(() => setFrame((f) => f + 1), walking ? STAFF_WALK_CYCLE_MS / STAFF_WALK_FRAMES.length : 260);
     return () => window.clearInterval(id);
-  }, [attending]);
+  }, [walking, attending]);
 
-  const row = attending ? 4 : moving ? dir : art.idle[0];
-  const col = attending ? art.attendSeq[frame % art.attendSeq.length]! : moving ? frame % 10 : art.idle[1];
+  if (!art) return null;
+  const { row, col } = staffAnimationFrame({ walking, attending, direction: dir, frame, attendSeq: art.attendSeq, idle: art.idle });
   return (
     <div className="h-[84px]">
       <Frame art={art} row={row} col={col} />
