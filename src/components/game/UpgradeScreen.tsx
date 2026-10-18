@@ -46,7 +46,7 @@ export function UpgradeScreen({
   onBack,
   character,
 }: {
-  character?: PlayerCharacter;
+  character: PlayerCharacter;
   points: number;
   level: number;
   rank: {
