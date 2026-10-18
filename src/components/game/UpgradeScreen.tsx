@@ -10,6 +10,21 @@ import {
 import { GEAR_CATEGORIES, GEAR_ITEMS } from "@/game/gear";
 import { BED_UPGRADES } from "@/game/bedUpgrades";
 import { StaffPortrait } from "./StaffPortrait";
+import { Nurse } from "./Nurse";
+import type { PlayerCharacter } from "@/game/character";
+import type { ReactNode } from "react";
+
+function Section({ title, children, open = false }: { title: string; children: ReactNode; open?: boolean }) {
+  return (
+    <details open={open} className="group rounded-2xl border-2 border-border bg-card/70">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-3 font-display text-xs font-black uppercase">
+        <span>{title}</span>
+        <span className="transition-transform group-open:rotate-180">▼</span>
+      </summary>
+      <div className="space-y-2 px-2 pb-2">{children}</div>
+    </details>
+  );
+}
 
 export function UpgradeScreen({
   points,
@@ -29,7 +44,9 @@ export function UpgradeScreen({
   onSave,
   saveNote,
   onBack,
+  character,
 }: {
+  character: PlayerCharacter;
   points: number;
   level: number;
   rank: {
@@ -86,7 +103,29 @@ export function UpgradeScreen({
         </span>
       </div>
 
-      <div className="space-y-2">
+      <div className="sticky top-0 z-10 flex items-center gap-3 rounded-2xl border-2 border-gold bg-card p-3 shadow-lg">
+        <div className="relative h-32 w-20 shrink-0 rounded-xl bg-[image:var(--gradient-gold)] p-1">
+          <Nurse character={character} variant="preview" className="h-full" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-xs font-black uppercase">Your nurse · equipped</p>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {equippedGear.length === 0 && (
+              <span className="text-[11px] text-muted-foreground">Nothing equipped yet</span>
+            )}
+            {equippedGear.map((k) => {
+              const g = GEAR_ITEMS.find((x) => x.key === k);
+              return g ? (
+                <span key={k} className="rounded-lg bg-secondary px-1.5 py-0.5 text-[11px]">
+                  {g.icon} {g.name}
+                </span>
+              ) : null;
+            })}
+          </div>
+        </div>
+      </div>
+
+      <Section title="🩺 Ward upgrades">
         {UPGRADE_INFO.map((u) => {
           const lvl = upgrades[u.key];
           const cost = u.cost(lvl);
@@ -129,7 +168,7 @@ export function UpgradeScreen({
             </button>
           );
         })}
-      </div>
+      </Section>
 
       <div className="rounded-2xl border-2 border-dashed border-border bg-card/70 p-3">
         <p className="font-display text-xs font-black uppercase text-muted-foreground">
@@ -158,18 +197,12 @@ export function UpgradeScreen({
       </div>
 
       {/* ---------- nurse equipment ---------- */}
-      <div className="space-y-2">
-        <p className="font-display text-xs font-black uppercase text-muted-foreground">
-          Your kit · equipment & cosmetics
-        </p>
+      <>
         {GEAR_CATEGORIES.map((cat) => {
           const items = GEAR_ITEMS.filter((g) => g.category === cat.key);
           if (!items.length) return null;
           return (
-            <div key={cat.key} className="space-y-1.5">
-              <p className="font-display text-[11px] font-black uppercase tracking-widest">
-                {cat.icon} {cat.name}
-              </p>
+            <Section key={cat.key} title={`${cat.icon} ${cat.name}`}>
               {items.map((g) => {
                 const owned = gear.includes(g.key);
                 const equipped = equippedGear.includes(g.key);
@@ -217,16 +250,13 @@ export function UpgradeScreen({
                   </button>
                 );
               })}
-            </div>
+            </Section>
           );
         })}
-      </div>
+      </>
 
       {/* ---------- bed upgrades ---------- */}
-      <div className="space-y-2">
-        <p className="font-display text-xs font-black uppercase text-muted-foreground">
-          🛏️ Bed upgrades · change how the bays behave
-        </p>
+      <Section title="🛏️ Bed upgrades">
         {BED_UPGRADES.map((b) => {
           const owned = bedUpgrades.includes(b.key);
           const locked = rank.level < (b.rank ?? 1);
@@ -255,13 +285,10 @@ export function UpgradeScreen({
             </button>
           );
         })}
-      </div>
+      </Section>
 
       {/* ---------- staff ---------- */}
-      <div className="space-y-2">
-        <p className="font-display text-xs font-black uppercase text-muted-foreground">
-          Hire the team · {staff.length}/{MAX_STAFF} seats filled
-        </p>
+      <Section title={`👥 Hire the team · ${staff.length}/${MAX_STAFF}`}>
         {STAFF.map((s) => {
           const hired = staff.includes(s.key);
           const need = s.rank ?? 2;
@@ -298,7 +325,7 @@ export function UpgradeScreen({
             </button>
           );
         })}
-      </div>
+      </Section>
 
       <div className="mt-auto space-y-2">
         <div className="grid grid-cols-2 gap-2">

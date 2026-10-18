@@ -842,6 +842,7 @@ function Game() {
         )}
         {phase === "shop" && (
           <UpgradeScreen
+            character={character}
             points={points}
             level={level}
             rank={rank}
