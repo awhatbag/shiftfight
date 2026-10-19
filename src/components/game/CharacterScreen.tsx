@@ -67,10 +67,12 @@ export function CharacterScreen({
   character,
   onChange,
   onConfirm,
+  confirmLabel = "Clock in ▶",
 }: {
   character: PlayerCharacter;
   onChange: (c: PlayerCharacter) => void;
   onConfirm: (c: PlayerCharacter) => void;
+  confirmLabel?: string;
 }) {
   const [customising, setCustomising] = useState(false);
 
@@ -177,7 +179,7 @@ export function CharacterScreen({
         onClick={() => onConfirm(character)}
         className="chunky chunky-press mt-auto w-full shrink-0 rounded-2xl bg-primary py-5 font-display text-2xl font-black uppercase tracking-wide text-primary-foreground"
       >
-        Clock in ▶
+        {confirmLabel}
       </button>
     </div>
   );
