@@ -1006,6 +1006,13 @@ export function WardScreen({
       const doorId = staffDoorIds.current[key];
       if (doorId && (staffPosRef.current[key]?.y ?? 1) > 0.2) releaseDoor(doorId);
 
+      // assigned call resolved while still walking there: turn back to the desk
+      if (rt.eventId !== null && rt.attendUntil === undefined && !rt.goingHome && rt.path.length && !events.some((e) => e.id === rt.eventId)) {
+        rt.eventId = null;
+        rt.goingHome = true;
+        rt.cooldownUntil = now + b.cooldownMs;
+        rt.path = routeTo(staffHome(key), staffPosRef.current[key] ?? staffHome(key));
+      }
       if (rt.attendUntil !== undefined) {
         if (now < rt.attendUntil) {
           // freeze this bed's call timer while staff are at the bedside
