@@ -63,7 +63,13 @@ export function StaffWalker({ staffKey, pos, walking, attending }: { staffKey: s
   if (!art) return null;
   const { row, col } = staffAnimationFrame({ walking, attending, direction: dir, frame, attendSeq: art.attendSeq, idle: art.idle });
   return (
-    <div className="h-[84px]">
+    <div className="relative h-[84px]">
+      {attending && (
+        <span className="font-display pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap border-2 border-foreground bg-card px-1.5 py-0.5 text-[9px] font-black uppercase text-foreground shadow-[2px_2px_0_0_hsl(var(--foreground)/0.6)] animate-pop" style={{ imageRendering: "pixelated" }}>
+          On it!
+          <span className="absolute left-1/2 top-full h-1.5 w-1.5 -translate-x-1/2 -translate-y-[3px] rotate-45 border-b-2 border-r-2 border-foreground bg-card" />
+        </span>
+      )}
       <Frame art={art} row={row} col={col} />
     </div>
   );

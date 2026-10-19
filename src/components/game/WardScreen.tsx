@@ -1007,7 +1007,14 @@ export function WardScreen({
       if (doorId && (staffPosRef.current[key]?.y ?? 1) > 0.2) releaseDoor(doorId);
 
       if (rt.attendUntil !== undefined) {
-        if (now < rt.attendUntil) { rt.lastT = now; continue; }
+        if (now < rt.attendUntil) {
+          // freeze this bed's call timer while staff are at the bedside
+          const dt = now - rt.lastT;
+          const id = rt.eventId;
+          if (dt > 0 && id !== null) setEvents((c) => c.map((e) => (e.id === id ? { ...e, born: e.born + dt } : e)));
+          rt.lastT = now;
+          continue;
+        }
       } else if (!rt.path.length && rt.eventId !== null) {
         // just reached the bedside: attend the patient briefly before resolving
         rt.attendUntil = now + 2000;
@@ -1041,6 +1048,11 @@ export function WardScreen({
         if (rt.goingHome) {
           rt.goingHome = false;
           rt.entering = false;
+          continue;
+        }
+        if (rt.attendUntil === undefined && rt.eventId !== null) {
+          // arrived this tick: stay at the bedside before resolving
+          rt.attendUntil = now + 2000;
           continue;
         }
         rt.attendUntil = undefined;
