@@ -44,6 +44,7 @@ export function UpgradeScreen({
   onSave,
   saveNote,
   onBack,
+  onCustomise,
   character,
 }: {
   character: PlayerCharacter;
@@ -70,6 +71,7 @@ export function UpgradeScreen({
   onSave: () => void;
   saveNote: string;
   onBack: () => void;
+  onCustomise?: () => void;
 }) {
   const maxTier = rank.level >= 4 ? 5 : 4;
   const seatsLeft = MAX_STAFF - staff.length;
@@ -122,6 +124,14 @@ export function UpgradeScreen({
               ) : null;
             })}
           </div>
+          {onCustomise && (
+            <button
+              onClick={onCustomise}
+              className="chunky chunky-press mt-2 w-full rounded-xl bg-secondary py-2 font-display text-xs font-black uppercase text-secondary-foreground"
+            >
+              🎨 Customise your nurse
+            </button>
+          )}
         </div>
       </div>
 

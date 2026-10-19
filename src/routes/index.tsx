@@ -266,6 +266,7 @@ function TopBar({
 
 function Game() {
   const [phase, setPhase] = useState<Phase>("intro");
+  const [characterReturn, setCharacterReturn] = useState<"play" | "shop">("play");
   // Screen music: character customisation gets its own track; the shop track
   // starts on the summary (right after the end-of-shift whistle) and keeps
   // playing into the shop without restarting. The ward track is started by the
@@ -713,7 +714,11 @@ function Game() {
         setPhase("intro");
         break;
       case "character":
-        setPhase("intro");
+        if (characterReturn === "shop") {
+          setCharacterReturn("play");
+          writeCharacter(character);
+          setPhase("shop");
+        } else setPhase("intro");
         break;
     }
   }
@@ -753,11 +758,15 @@ function Game() {
           <CharacterScreen
             character={character}
             onChange={setCharacter}
+            confirmLabel={characterReturn === "shop" ? "Save & back to shop ◀" : undefined}
             onConfirm={(c) => {
               const next = normalizeCharacter(c);
               setCharacter(next);
               writeCharacter(next);
-              play();
+              if (characterReturn === "shop") {
+                setCharacterReturn("play");
+                setPhase("shop");
+              } else play();
             }}
           />
         )}
@@ -884,6 +893,10 @@ function Game() {
             onSave={saveProgress}
             saveNote={saveNote}
             onBack={() => setPhase("summary")}
+            onCustomise={() => {
+              setCharacterReturn("shop");
+              setPhase("character");
+            }}
           />
         )}
 
