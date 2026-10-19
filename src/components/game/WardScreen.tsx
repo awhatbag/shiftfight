@@ -1010,7 +1010,7 @@ export function WardScreen({
         if (now < rt.attendUntil) { rt.lastT = now; continue; }
       } else if (!rt.path.length && rt.eventId !== null) {
         // just reached the bedside: attend the patient briefly before resolving
-        rt.attendUntil = now + 1600;
+        rt.attendUntil = now + 2000;
         rt.lastT = now;
         moved = true;
         continue;
