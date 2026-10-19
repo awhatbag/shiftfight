@@ -72,7 +72,7 @@ export function CharacterScreen({
   character: PlayerCharacter;
   onChange: (c: PlayerCharacter) => void;
   onConfirm: (c: PlayerCharacter) => void;
-  confirmLabel?: string;
+  confirmLabel?: string | undefined;
 }) {
   const [customising, setCustomising] = useState(false);
 
