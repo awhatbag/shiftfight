@@ -12,17 +12,15 @@ import { BED_UPGRADES } from "@/game/bedUpgrades";
 import { StaffPortrait } from "./StaffPortrait";
 import { Nurse } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
-function Section({ title, children, open = false }: { title: string; children: ReactNode; open?: boolean }) {
+function Section({ title, children, show }: { title: string; children: ReactNode; show: boolean }) {
+  if (!show) return null;
   return (
-    <details open={open} className="group rounded-2xl border-2 border-border bg-card/70">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-3 font-display text-xs font-black uppercase">
-        <span>{title}</span>
-        <span className="transition-transform group-open:rotate-180">▼</span>
-      </summary>
+    <div className="rounded-2xl border-2 border-border bg-card/70">
+      <p className="p-3 font-display text-xs font-black uppercase">{title}</p>
       <div className="space-y-2 px-2 pb-2">{children}</div>
-    </details>
+    </div>
   );
 }
 
@@ -78,6 +76,24 @@ export function UpgradeScreen({
   const nextBedLevel = Array.from({ length: 10 }, (_, i) => i + 1).find(
     (l) => l > level && bedsForLevel(l) > bedCount,
   );
+  const [tab, setTab] = useState<string>("ward");
+  const tabs = [
+    { id: "ward", label: "🩺 Ward" },
+    ...GEAR_CATEGORIES.map((c) => ({ id: c.key as string, label: `${c.icon} ${c.name}` })),
+    { id: "staff", label: "👥 Staff" },
+  ];
+  const tabButton = (t: { id: string; label: string }) => (
+    <button
+      key={t.id}
+      onClick={() => setTab(t.id)}
+      className={cn(
+        "chunky chunky-press rounded-xl px-1.5 py-2 font-display text-[10px] font-black uppercase leading-tight",
+        tab === t.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
+      )}
+    >
+      {t.label}
+    </button>
+  );
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
@@ -105,37 +121,44 @@ export function UpgradeScreen({
         </span>
       </div>
 
-      <div className="sticky top-0 z-10 flex items-center gap-3 rounded-2xl border-2 border-gold bg-card p-3 shadow-lg">
-        <div className="relative h-32 w-20 shrink-0 rounded-xl bg-[image:var(--gradient-gold)] p-1">
-          <Nurse character={character} variant="preview" className="h-full" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-xs font-black uppercase">Your nurse · equipped</p>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {equippedGear.length === 0 && (
-              <span className="text-[11px] text-muted-foreground">Nothing equipped yet</span>
-            )}
-            {equippedGear.map((k) => {
-              const g = GEAR_ITEMS.find((x) => x.key === k);
-              return g ? (
-                <span key={k} className="rounded-lg bg-secondary px-1.5 py-0.5 text-[11px]">
-                  {g.icon} {g.name}
-                </span>
-              ) : null;
-            })}
+      <div className="rounded-2xl border-2 border-gold bg-card p-2 shadow-lg">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div className="flex flex-col gap-1.5">
+            {tabs.slice(0, 4).map((t) => tabButton(t))}
           </div>
-          {onCustomise && (
-            <button
-              onClick={onCustomise}
-              className="chunky chunky-press mt-2 w-full rounded-xl bg-secondary py-2 font-display text-xs font-black uppercase text-secondary-foreground"
-            >
-              🎨 Customise your nurse
-            </button>
+          <div className="flex flex-col items-center gap-1">
+            <div className="relative h-52 w-32 rounded-xl bg-[image:var(--gradient-gold)] p-1">
+              <Nurse character={character} variant="preview" className="h-full" />
+            </div>
+            {onCustomise && (
+              <button
+                onClick={onCustomise}
+                className="chunky chunky-press w-32 rounded-xl bg-secondary py-1.5 font-display text-[10px] font-black uppercase text-secondary-foreground"
+              >
+                🎨 Customise
+              </button>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {tabs.slice(4).map((t) => tabButton(t))}
+          </div>
+        </div>
+        <div className="mt-2 flex flex-wrap justify-center gap-1">
+          {equippedGear.length === 0 && (
+            <span className="text-[11px] text-muted-foreground">Nothing equipped yet</span>
           )}
+          {equippedGear.map((k) => {
+            const g = GEAR_ITEMS.find((x) => x.key === k);
+            return g ? (
+              <span key={k} className="rounded-lg bg-secondary px-1.5 py-0.5 text-[11px]">
+                {g.icon} {g.name}
+              </span>
+            ) : null;
+          })}
         </div>
       </div>
 
-      <Section title="🩺 Ward upgrades">
+      <Section show={tab === "ward"} title="🩺 Ward upgrades">
         {UPGRADE_INFO.map((u) => {
           const lvl = upgrades[u.key];
           const cost = u.cost(lvl);
@@ -178,8 +201,6 @@ export function UpgradeScreen({
             </button>
           );
         })}
-      </Section>
-
       <div className="rounded-2xl border-2 border-dashed border-border bg-card/70 p-3">
         <p className="font-display text-xs font-black uppercase text-muted-foreground">
           Ward expansion · unlocked by shift level
@@ -205,6 +226,7 @@ export function UpgradeScreen({
           </span>
         </div>
       </div>
+      </Section>
 
       {/* ---------- nurse equipment ---------- */}
       <>
@@ -212,7 +234,7 @@ export function UpgradeScreen({
           const items = GEAR_ITEMS.filter((g) => g.category === cat.key);
           if (!items.length) return null;
           return (
-            <Section key={cat.key} title={`${cat.icon} ${cat.name}`}>
+            <Section key={cat.key} show={tab === cat.key} title={`${cat.icon} ${cat.name}`}>
               {items.map((g) => {
                 const owned = gear.includes(g.key);
                 const equipped = equippedGear.includes(g.key);
@@ -266,7 +288,7 @@ export function UpgradeScreen({
       </>
 
       {/* ---------- bed upgrades ---------- */}
-      <Section title="🛏️ Bed upgrades">
+      <Section show={tab === "ward"} title="🛏️ Bed upgrades">
         {BED_UPGRADES.map((b) => {
           const owned = bedUpgrades.includes(b.key);
           const locked = rank.level < (b.rank ?? 1);
@@ -298,7 +320,7 @@ export function UpgradeScreen({
       </Section>
 
       {/* ---------- staff ---------- */}
-      <Section title={`👥 Hire the team · ${staff.length}/${MAX_STAFF}`}>
+      <Section show={tab === "staff"} title={`👥 Hire the team · ${staff.length}/${MAX_STAFF}`}>
         {STAFF.map((s) => {
           const hired = staff.includes(s.key);
           const need = s.rank ?? 2;
