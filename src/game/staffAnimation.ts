@@ -1,6 +1,7 @@
 /** The final cell is a standing pose, not part of the supplied walk cycle. */
 export const STAFF_WALK_FRAMES = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
-export const STAFF_WALK_CYCLE_MS = 3000;
+export const STAFF_WALK_CYCLE_MS = 3900;
+export const STAFF_ATTEND_FRAME_MS = 338;
 
 /** Walk frames for a direction row; per-staff overrides drop frames the artist marked unusable. */
 export function walkFramesFor(direction: number, walkSeq?: readonly (readonly number[])[]): readonly number[] {

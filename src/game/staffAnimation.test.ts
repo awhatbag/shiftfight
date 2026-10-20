@@ -13,9 +13,9 @@ describe("hired staff animation", () => {
     expect(Array.from({ length: 10 }, (_, frame) => staffAnimationFrame({ ...base, walking: true, frame }).col))
       .toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 0]);
   });
-  it("keeps a full walking cycle at three seconds", () => {
-    expect(STAFF_WALK_CYCLE_MS).toBe(3000);
-    expect(STAFF_WALK_CYCLE_MS / STAFF_WALK_FRAMES.length * 9).toBe(3000);
+  it("keeps a full walking cycle 30% slower than three seconds", () => {
+    expect(STAFF_WALK_CYCLE_MS).toBe(3900);
+    expect(STAFF_WALK_CYCLE_MS / STAFF_WALK_FRAMES.length * 9).toBe(3900);
   });
   it("uses only the allowed walk frames for a direction when supplied", () => {
     const walkSeq = [[0, 1, 2, 4, 9], [0, 1, 3, 5, 6, 7], [0, 3, 4, 7], [0, 3, 4, 7, 8]];

@@ -4,7 +4,7 @@ import barrySitting from "@/assets/barry-sitting.png.asset.json";
 import priyaSheet from "@/assets/priya-ward-sprites.png.asset.json";
 import priyaSitting from "@/assets/priya-sitting.png.asset.json";
 import type { Point } from "@/game/wardNav";
-import { STAFF_WALK_CYCLE_MS, staffAnimationFrame, walkFramesFor } from "@/game/staffAnimation";
+import { STAFF_ATTEND_FRAME_MS, STAFF_WALK_CYCLE_MS, staffAnimationFrame, walkFramesFor } from "@/game/staffAnimation";
 
 /**
  * Supplied staff sheets: 10 cols × 5 rows. Rows 0-3 walk down/left/right/up, row 4 attend.
@@ -60,7 +60,7 @@ export function StaffWalker({ staffKey, pos, walking, attending }: { staffKey: s
 
   const walkLen = walkFramesFor(dir, art?.walkSeq).length;
   useEffect(() => {
-    const id = window.setInterval(() => setFrame((f) => f + 1), walking ? STAFF_WALK_CYCLE_MS / walkLen : 260);
+    const id = window.setInterval(() => setFrame((f) => f + 1), walking ? STAFF_WALK_CYCLE_MS / walkLen : STAFF_ATTEND_FRAME_MS);
     return () => window.clearInterval(id);
   }, [walking, attending, walkLen]);
 
