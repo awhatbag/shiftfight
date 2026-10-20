@@ -9,7 +9,7 @@ export function walkFramesFor(direction: number, walkSeq?: readonly (readonly nu
 
 export function staffAnimationFrame({ walking, attending, direction, frame, attendSeq, idle, walkSeq }: {
   walking: boolean; attending: boolean; direction: number; frame: number;
-  attendSeq: readonly number[]; idle: readonly [number, number]; walkSeq?: readonly (readonly number[])[];
+  attendSeq: readonly number[]; idle: readonly [number, number]; walkSeq?: readonly (readonly number[])[] | undefined;
 }) {
   if (walking) { const seq = walkFramesFor(direction, walkSeq); return { row: direction, col: seq[frame % seq.length] ?? 0 }; }
   if (attending) return { row: 4, col: attendSeq[frame % attendSeq.length] ?? idle[1] };
