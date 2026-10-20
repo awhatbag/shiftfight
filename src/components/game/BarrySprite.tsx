@@ -37,7 +37,9 @@ function Frame({ art, row, col }: { art: StaffArt; row: number; col: number }) {
 export function StaffSitting({ staffKey }: { staffKey: string }) {
   const art = STAFF_ART[staffKey];
   if (!art) return null;
-  return <img src={art.sitting} alt="" aria-hidden="true" className="block h-full w-auto" style={{ imageRendering: "pixelated" }} draggable={false} />;
+  // Barry's narrower seated art is shown 10% smaller, bottom-anchored in the same slot.
+  const scale = staffKey === "hca" ? 0.9 : 1;
+  return <img src={art.sitting} alt="" aria-hidden="true" className="block h-full w-auto" style={{ transform: `scale(${scale})`, transformOrigin: "50% 100%", imageRendering: "pixelated" }} draggable={false} />;
 }
 
 /** Staff walking the ward or attending at a bedside. Position comes from the shared staff runtime. */
