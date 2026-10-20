@@ -122,26 +122,21 @@ export function UpgradeScreen({
       </div>
 
       <div className="rounded-2xl border-2 border-gold bg-card p-2 shadow-lg">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          <div className="flex flex-col gap-1.5">
-            {tabs.slice(0, 4).map((t) => tabButton(t))}
+        <div className="flex flex-col items-center gap-2">
+          <div className="relative h-80 w-48 rounded-xl bg-[image:var(--gradient-gold)] p-1">
+            <Nurse character={character} variant="preview" className="h-full" />
           </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="relative h-52 w-32 rounded-xl bg-[image:var(--gradient-gold)] p-1">
-              <Nurse character={character} variant="preview" className="h-full" />
-            </div>
-            {onCustomise && (
-              <button
-                onClick={onCustomise}
-                className="chunky chunky-press w-32 rounded-xl bg-secondary py-1.5 font-display text-[10px] font-black uppercase text-secondary-foreground"
-              >
-                🎨 Customise
-              </button>
-            )}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {tabs.slice(4).map((t) => tabButton(t))}
-          </div>
+          {onCustomise && (
+            <button
+              onClick={onCustomise}
+              className="chunky chunky-press w-48 rounded-xl bg-secondary py-1.5 font-display text-[11px] font-black uppercase text-secondary-foreground"
+            >
+              🎨 Customise
+            </button>
+          )}
+        </div>
+        <div className="mt-2 grid grid-cols-4 gap-1.5">
+          {tabs.map((t) => tabButton(t))}
         </div>
         <div className="mt-2 flex flex-wrap justify-center gap-1">
           {equippedGear.length === 0 && (
