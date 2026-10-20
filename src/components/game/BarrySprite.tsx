@@ -4,15 +4,16 @@ import barrySitting from "@/assets/barry-sitting.png.asset.json";
 import priyaSheet from "@/assets/priya-ward-sprites.png.asset.json";
 import priyaSitting from "@/assets/priya-sitting.png.asset.json";
 import type { Point } from "@/game/wardNav";
-import { STAFF_WALK_CYCLE_MS, STAFF_WALK_FRAMES, staffAnimationFrame } from "@/game/staffAnimation";
+import { STAFF_WALK_CYCLE_MS, staffAnimationFrame, walkFramesFor } from "@/game/staffAnimation";
 
 /**
  * Supplied staff sheets: 10 cols × 5 rows. Rows 0-3 walk down/left/right/up, row 4 attend.
  * Register new staff artwork here; the shared staff runtime drives position.
  */
-type StaffArt = { sheet: string; cellW: number; cellH: number; sitting: string; attendSeq: number[]; idle: [number, number] };
+type StaffArt = { sheet: string; cellW: number; cellH: number; sitting: string; attendSeq: number[]; idle: [number, number]; walkSeq?: number[][] };
 const STAFF_ART: Record<string, StaffArt> = {
-  hca: { sheet: barrySheet.url, cellW: 117, cellH: 191, sitting: barrySitting.url, attendSeq: [0, 1, 0, 1, 2, 3, 2, 3, 6, 6, 7, 7, 8, 8], idle: [4, 9] },
+  // Barry walk frames per row (down, left, right, up): only cells not marked with a red X on his v2 sheet.
+  hca: { sheet: barrySheet.url, cellW: 117, cellH: 191, sitting: barrySitting.url, attendSeq: [0, 1, 0, 1, 2, 3, 2, 3, 6, 6, 7, 7, 8, 8], idle: [4, 9], walkSeq: [[0, 1, 2, 4, 9], [0, 1, 3, 5, 6, 7], [0, 3, 4, 7], [0, 3, 4, 7, 8]] },
   student: { sheet: priyaSheet.url, cellW: 136, cellH: 206, sitting: priyaSitting.url, attendSeq: [1, 2, 1, 2, 5, 5, 6, 6, 7, 7, 9, 9], idle: [4, 8] },
 };
 
@@ -57,13 +58,14 @@ export function StaffWalker({ staffKey, pos, walking, attending }: { staffKey: s
     setDir(Math.abs(dx * 0.8) > Math.abs(dy) ? (dx > 0 ? 2 : 1) : dy > 0 ? 0 : 3);
   }, [pos]);
 
+  const walkLen = walkFramesFor(dir, art?.walkSeq).length;
   useEffect(() => {
-    const id = window.setInterval(() => setFrame((f) => f + 1), walking ? STAFF_WALK_CYCLE_MS / STAFF_WALK_FRAMES.length : 260);
+    const id = window.setInterval(() => setFrame((f) => f + 1), walking ? STAFF_WALK_CYCLE_MS / walkLen : 260);
     return () => window.clearInterval(id);
-  }, [walking, attending]);
+  }, [walking, attending, walkLen]);
 
   if (!art) return null;
-  const { row, col } = staffAnimationFrame({ walking, attending, direction: dir, frame, attendSeq: art.attendSeq, idle: art.idle });
+  const { row, col } = staffAnimationFrame({ walking, attending, direction: dir, frame, attendSeq: art.attendSeq, idle: art.idle, walkSeq: art.walkSeq });
   return (
     <div className="relative h-[84px]">
       {attending && (
