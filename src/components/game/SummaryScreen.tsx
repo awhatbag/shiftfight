@@ -26,6 +26,11 @@ export function SummaryScreen({
   const [stage, setStage] = useState(0);
   const [shownXp, setShownXp] = useState(reward.beforeXp);
   const levelledUp = reward.afterRank.level > reward.beforeRank.level;
+  const xpRevealed = stage >= 4;
+  // Presentation only: never allow a malformed review to throw in String.repeat.
+  const reviewStars = review && Number.isFinite(review.stars)
+    ? Math.max(0, Math.min(5, Math.round(review.stars)))
+    : 0;
   useEffect(() => {
     const timers = [
       window.setTimeout(() => setStage(1), 380),
@@ -45,7 +50,7 @@ export function SummaryScreen({
     return () => timers.forEach(window.clearTimeout);
   }, [levelledUp, reward.afterXp, reward.unlocks.length]);
   useEffect(() => {
-    if (stage < 4) return undefined;
+    if (!xpRevealed) return undefined;
     const started = performance.now();
     const duration = 900;
     let frame = 0;
@@ -57,7 +62,7 @@ export function SummaryScreen({
     };
     frame = window.requestAnimationFrame(animate);
     return () => window.cancelAnimationFrame(frame);
-  }, [reward.afterXp, reward.beforeXp, stage]);
+  }, [reward.afterXp, reward.beforeXp, xpRevealed]);
   const shownRank = useMemo(() => nurseRank(shownXp), [shownXp]);
   const achievement = notableAchievement(stats);
   const rating = RATINGS.find((r) => stats.points >= r.min) ?? RATINGS[RATINGS.length - 1];
@@ -140,8 +145,8 @@ export function SummaryScreen({
             <DonPortrait pose={review.stars >= 5 ? "ecstatic" : review.stars === 4 ? "triumphant" : review.stars === 3 ? "smug" : review.stars === 2 ? "stressed" : "disappointed"} className="h-16 shrink-0" />
             <div className="min-w-0">
               <p className="font-display text-lg font-black leading-none">
-                {"⭐".repeat(review.stars)}
-                {"☆".repeat(5 - review.stars)}
+                {"⭐".repeat(reviewStars)}
+                {"☆".repeat(5 - reviewStars)}
               </p>
               <p className="font-display text-[11px] font-black uppercase text-muted-foreground">
                 {review.rating}
