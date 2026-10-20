@@ -226,7 +226,8 @@ function TopBar({
   onMenu: () => void;
   onContinue?: () => void;
 }) {
-  const nextLevel = Math.min(level + 1, MAX_LEVEL);
+  /* level already advanced when the shift ended, so it IS the next shift */
+  const nextLevel = level;
   const nextTitle = shiftTitle(nextLevel);
   /* the title screen keeps only a floating menu button, no bar or title text */
   if (phase === "intro") return null;
