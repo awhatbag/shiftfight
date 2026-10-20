@@ -7,20 +7,20 @@ export class SummaryErrorBoundary extends Component<
   { children: ReactNode; onContinue: () => void },
   { failed: boolean }
 > {
-  state = { failed: false };
+  override state = { failed: false };
 
   static getDerivedStateFromError() {
     return { failed: true };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     reportLovableError(error, {
       boundary: "shift_summary",
       componentStack: info.componentStack,
     });
   }
 
-  render() {
+  override render() {
     if (!this.state.failed) return this.props.children;
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-4 text-center">
