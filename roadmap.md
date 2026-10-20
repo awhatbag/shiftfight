@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Protect the summary from presentation errors and verify shift-to-shop recovery without changing saved rewards.
+- [x] Protect the summary from presentation errors and verify shift-to-shop recovery without changing saved rewards.
 
 - [x] Create reusable animated pixel nurse renderer and sprite state model (sprite sheets cropped from the supplied nurse artwork).
 - [x] Expand character cosmetics with future real-money locked hairstyles and scrubs.
