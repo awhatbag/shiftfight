@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { AdBanner } from "@/components/game/AdBanner";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
+import { SummaryErrorBoundary } from "@/components/game/SummaryErrorBoundary";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
 import { LadderScreen } from "@/components/game/LadderScreen";
@@ -708,7 +709,7 @@ function Game() {
         setPhase("intro");
         break;
       case "shop":
-        setPhase("summary");
+        setPhase(last && lastReward ? "summary" : "intro");
         break;
       case "fired":
         setPhase("intro");
@@ -830,14 +831,16 @@ function Game() {
           />
         )}
         {phase === "summary" && last && lastReward && (
-          <SummaryScreen
-            stats={last}
-            totalPoints={points}
-            totalXp={xp}
-            review={review}
-            reward={lastReward}
-            onNext={() => setPhase(review?.fired ? "fired" : "shop")}
-          />
+          <SummaryErrorBoundary onContinue={() => setPhase(review?.fired ? "fired" : "shop")}>
+            <SummaryScreen
+              stats={last}
+              totalPoints={points}
+              totalXp={xp}
+              review={review}
+              reward={lastReward}
+              onNext={() => setPhase(review?.fired ? "fired" : "shop")}
+            />
+          </SummaryErrorBoundary>
         )}
         {phase === "fired" && (
           <FiredScreen
