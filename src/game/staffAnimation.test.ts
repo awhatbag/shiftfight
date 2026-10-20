@@ -17,6 +17,11 @@ describe("hired staff animation", () => {
     expect(STAFF_WALK_CYCLE_MS).toBe(3000);
     expect(STAFF_WALK_CYCLE_MS / STAFF_WALK_FRAMES.length * 9).toBe(3000);
   });
+  it("uses only the allowed walk frames for a direction when supplied", () => {
+    const walkSeq = [[0, 1, 2, 4, 9], [0, 1, 3, 5, 6, 7], [0, 3, 4, 7], [0, 3, 4, 7, 8]];
+    expect(Array.from({ length: 5 }, (_, frame) => staffAnimationFrame({ ...base, walking: true, frame, walkSeq }).col))
+      .toEqual([0, 3, 4, 7, 0]);
+  });
   it("uses action poses only after arrival", () => {
     expect(staffAnimationFrame({ ...base, walking: false, attending: true, frame: 1 })).toEqual({ row: 4, col: 2 });
     expect(staffAnimationFrame({ ...base, walking: false })).toEqual({ row: 4, col: 9 });
