@@ -1,6 +1,19 @@
 import wardBackgroundAsset from "@/assets/shift-fight-ward-spring-background.png.asset.json";
 import curtainAsset from "@/assets/curtain-partition.png.asset.json";
-import nursesStationAsset from "@/assets/nurses-station.png.asset.json";
+import nursesStationAsset from "@/assets/nurses-station-no-chairs.png";
+import chair0 from "@/assets/station-chair-0.png";
+import chair1 from "@/assets/station-chair-1.png";
+import chair2 from "@/assets/station-chair-2.png";
+import chair3 from "@/assets/station-chair-3.png";
+import chair4 from "@/assets/station-chair-4.png";
+// Chair layers cut from the station art (fractions of its 1774x887 canvas); hidden while someone sits there.
+const CHAIR_ART = [
+  { src: chair0, left: 0.1691, top: 0.4532, width: 0.0958, height: 0.1522 },
+  { src: chair1, left: 0.3044, top: 0.5073, width: 0.1015, height: 0.1263 },
+  { src: chair2, left: 0.451, top: 0.5242, width: 0.0986, height: 0.1127 },
+  { src: chair3, left: 0.5947, top: 0.5073, width: 0.1015, height: 0.1263 },
+  { src: chair4, left: 0.7384, top: 0.4555, width: 0.0986, height: 0.1511 },
+];
 import criticalMarkAsset from "@/assets/critical-mark.png.asset.json";
 import { STAFF, URGENCY_META, urgencyOf } from "@/game/config";
 import type { PlayerCharacter } from "@/game/character";
@@ -31,7 +44,11 @@ export function WardScene({ level, levelName, beds, events, flash, selected, nur
     <WardDoor/>
     <WardDoorLintel src={wardBackgroundAsset.url}/>
     <div className="absolute z-10" style={{ left: `${STATION_FRAME.x * 100}%`, top: `${STATION_FRAME.y * 100}%`, width: `${STATION_FRAME.width * 100}%`, height: `${STATION_FRAME.height * 100}%` }}>
-      <button onClick={onGoStation} className="pointer-events-auto absolute inset-0 text-left" aria-label="Return to nurses station"><img src={nursesStationAsset.url} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-contain"/><div className="absolute bottom-[17%] left-1/2 w-[22%] -translate-x-1/2 text-center text-primary-foreground"><p className="font-display truncate text-[9px] font-black uppercase leading-none">Lv {level}</p><p className="font-display truncate text-[6px] font-black uppercase leading-none">{levelName}</p></div></button>
+      <button onClick={onGoStation} className="pointer-events-auto absolute inset-0 text-left" aria-label="Return to nurses station"><img src={nursesStationAsset} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-contain"/><div className="pointer-events-none absolute inset-0 grid place-items-center [container-type:size]"><div className="relative" style={{ width: "min(100cqw, 200cqh)", aspectRatio: "1774 / 887" }}>{CHAIR_ART.map((art, index) => {
+        const staffKey = index > 0 ? staff[index - 1] : undefined; const runtime = staffKey ? staffRuntime[staffKey] : undefined;
+        const occupied = index === 0 ? !walking && nurseHereBed === null : !!staffKey && !!runtime && runtime.enterAt === undefined && !runtime.eventId && !runtime.path.length;
+        return occupied ? null : <img key={index} src={art.src} alt="" aria-hidden="true" draggable={false} className="absolute" style={{ left: `${art.left * 100}%`, top: `${art.top * 100}%`, width: `${art.width * 100}%`, height: `${art.height * 100}%` }}/>;
+      })}</div></div><div className="absolute bottom-[17%] left-1/2 w-[22%] -translate-x-1/2 text-center text-primary-foreground"><p className="font-display truncate text-[9px] font-black uppercase leading-none">Lv {level}</p><p className="font-display truncate text-[6px] font-black uppercase leading-none">{levelName}</p></div></button>
       <div className="pointer-events-none absolute inset-0" aria-label="Five station chairs">{Array.from({ length: 5 }, (_, index) => {
         const staffKey = index > 0 ? staff[index - 1] : undefined;
         const info = staffKey ? STAFF.find((member) => member.key === staffKey) : undefined;
@@ -44,7 +61,7 @@ export function WardScene({ level, levelName, beds, events, flash, selected, nur
         return <button key={index} onClick={() => staffKey ? onTapStaff(staffKey) : onGoStation()} aria-label={staffKey ? `Send ${info?.name ?? "staff"}` : index === 0 ? "Nurse chair" : "Empty chair"} className={cn("pointer-events-auto absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center text-xl", activated && "animate-throb rounded-full ring-4 ring-alarm/30")} style={{ left: `${chair.x * 100}%`, top: `${chair.y * 100}%` }}>{seated && hasStaffArt(staffKey) ? <span className="desk-bob block h-[44px]" style={bobStyle}><StaffSitting staffKey={staffKey}/></span> : <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-full">{playerSeated ? <span className="desk-bob block h-[52px] w-[41px] overflow-hidden" style={bobStyle}><Nurse character={character} action="sit" direction="north"/></span> : seated && info ? <span className="desk-bob block" style={bobStyle}>{info.icon}</span> : ""}</span>}</button>;
       })}</div>
     </div>
-    <div className="pointer-events-none absolute" style={{ left: `${STATION_FRAME.x * 100}%`, top: `${STATION_FRAME.y * 100}%`, width: `${STATION_FRAME.width * 100}%`, height: `${STATION_FRAME.height * 100}%`, zIndex: Math.round((STATION_FRAME.y + STATION_FRAME.height) * 100), clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 13% 24%, 13% 62%, 87% 62%, 87% 24%, 13% 24%)" }}><img src={nursesStationAsset.url} alt="" aria-hidden="true" draggable={false} className="absolute inset-0 h-full w-full object-contain"/></div>
+    <div className="pointer-events-none absolute" style={{ left: `${STATION_FRAME.x * 100}%`, top: `${STATION_FRAME.y * 100}%`, width: `${STATION_FRAME.width * 100}%`, height: `${STATION_FRAME.height * 100}%`, zIndex: Math.round((STATION_FRAME.y + STATION_FRAME.height) * 100), clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 13% 24%, 13% 62%, 87% 62%, 87% 24%, 13% 24%)" }}><img src={nursesStationAsset} alt="" aria-hidden="true" draggable={false} className="absolute inset-0 h-full w-full object-contain"/></div>
     {GATES.map((gate) => <div key={gate.y} className="pointer-events-none absolute overflow-visible" style={{ top: `${gate.box.top * 100}%`, left: `${gate.box.left * 100}%`, width: `${gate.box.width * 100}%`, height: `${gate.box.height * 100}%`, zIndex: Math.round((gate.box.top + gate.box.height) * 100) }}><img src={curtainAsset.url} alt="" aria-hidden="true" draggable={false} className="h-full w-full object-fill" style={{ transform: gate.side === "right" ? "scaleX(-1)" : undefined }}/></div>)}
     {staff.map((key) => {
       const info = STAFF.find((member) => member.key === key); const runtime = staffRuntime[key]; const position = staffPositions[key] ?? staffHome(key); const onJob = !!runtime && (runtime.eventId !== null || runtime.path.length > 0); const activated = !onJob && redAlert;
