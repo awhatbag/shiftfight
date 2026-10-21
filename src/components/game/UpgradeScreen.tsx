@@ -77,9 +77,17 @@ export function UpgradeScreen({
     (l) => l > level && bedsForLevel(l) > bedCount,
   );
   const [tab, setTab] = useState<string>("ward");
+  const TAB_LABELS: Record<string, string> = {
+    shoes: "👟 Shoes",
+    ppe: "🥽 PPE",
+    pager: "📟 Pagers",
+    scrubs: "👕 Scrubs",
+    watch: "⌚ Watches",
+    cap: "🧢 Caps",
+  };
   const tabs = [
     { id: "ward", label: "🩺 Ward" },
-    ...GEAR_CATEGORIES.map((c) => ({ id: c.key as string, label: `${c.icon} ${c.name}` })),
+    ...GEAR_CATEGORIES.map((c) => ({ id: c.key as string, label: TAB_LABELS[c.key] ?? c.name })),
     { id: "staff", label: "👥 Staff" },
   ];
   const tabButton = (t: { id: string; label: string }) => (
@@ -87,7 +95,7 @@ export function UpgradeScreen({
       key={t.id}
       onClick={() => setTab(t.id)}
       className={cn(
-        "chunky chunky-press rounded-xl px-1.5 py-2 font-display text-[10px] font-black uppercase leading-tight",
+        "chunky chunky-press flex h-14 w-full items-center justify-center rounded-xl px-1 text-center font-display text-xs font-black uppercase leading-tight",
         tab === t.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
       )}
     >
@@ -135,7 +143,7 @@ export function UpgradeScreen({
             </button>
           )}
         </div>
-        <div className="mt-2 grid grid-cols-4 gap-1.5">
+        <div className="mt-2 grid grid-cols-4 gap-2">
           {tabs.map((t) => tabButton(t))}
         </div>
         <div className="mt-2 flex flex-wrap justify-center gap-1">
