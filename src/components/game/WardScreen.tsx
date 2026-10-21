@@ -31,7 +31,7 @@ import {
   playWhistle,
   primeAudio,
 } from "@/lib/sfx";
-import { isMusicOn, nextWardSong, playMusic, setMusicEnabled, stopMusic, subscribeMusic, toggleMusic } from "@/lib/music";
+import { isMusicOn, nextWardSong, pauseMusic, playMusic, resumeMusic, setMusicEnabled, stopMusic, subscribeMusic, toggleMusic } from "@/lib/music";
 import {
   EVENTS,
   shuffledPatientNames,
@@ -509,14 +509,17 @@ export function WardScreen({
     setEvents(Array.from({ length: activeBeds }, (_, bed) => makeAvocadoEvent(bed)));
     avocadoStartT.current = gameT.current;
     avocadoNextSpawnT.current = gameT.current;
+    resumeMusic("ward");
     playCallBell();
     buzz(35);
   }, [activeBeds, makeAvocadoEvent]);
 
-  /* after the intro: paused earthquake rumble before the avalanche begins */
+  /* after the intro: paused earthquake rumble before the avalanche begins.
+     Everything freezes — characters, timers, bells — and the music cuts out. */
   const startAvocadoWave = useCallback(() => {
     if (avocadoPhaseRef.current !== "intro") return;
     setAvocadoPhase("wave");
+    pauseMusic("ward");
     buzz([40, 60, 40, 80, 50, 90, 40]);
   }, []);
   useEffect(() => {
@@ -1344,7 +1347,7 @@ export function WardScreen({
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      <div ref={wardRef} className={`ward-viewport terrazzo relative flex-1 select-none overflow-hidden${avocadoPhase === "wave" ? " earthquake-shake" : ""}`}>
+      <div ref={wardRef} className={`ward-viewport terrazzo relative flex-1 select-none overflow-hidden${avocadoPhase === "wave" ? " earthquake-shake ward-frozen" : ""}`}>
       <WardScene
         don={don && phase === "play" ? don : null}
         onDonExit={finishDonExit}
@@ -1372,6 +1375,7 @@ export function WardScreen({
         hazards={avocados}
         hazardSprites={catastrophe.hazardSprites}
         now={gameT.current}
+        frozen={avocadoPhase === "wave"}
       />
 
       <div className="pointer-events-none absolute inset-0">
