@@ -608,6 +608,8 @@
   90% { transform: translate(-3px, 4px); }
 }
 .earthquake-shake { animation: earthquake-shake 0.18s steps(2) infinite; }
+/* during the quake every descendant animation freezes; the shake itself lives on the container */
+.ward-frozen * { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) { .earthquake-shake { animation: none; } }
 
 /* Mandatory training: classic beige 90s PC */

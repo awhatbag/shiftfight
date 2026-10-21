@@ -213,6 +213,27 @@ export function playMusic(key: MusicKey) {
     .catch(() => armAutoplay(key));
 }
 
+/** Pause instantly, keeping the play position (e.g. catastrophe earthquake). */
+export function pauseMusic(key: MusicKey) {
+  const p = players.get(key);
+  if (!p) return;
+  if (p.fade) clearInterval(p.fade);
+  p.fade = null;
+  p.el.pause();
+}
+
+/** Resume from the paused position with a quick fade back in. */
+export function resumeMusic(key: MusicKey) {
+  const p = players.get(key);
+  if (!p || p.target <= 0 || !musicOn) return;
+  const player = p;
+  player.el.volume = 0;
+  void player.el
+    .play()
+    .then(() => fadeTo(player, player.target))
+    .catch(() => armAutoplay(key));
+}
+
 /** Fade out quickly and pause. */
 export function stopMusic(key: MusicKey) {
   const p = players.get(key);
