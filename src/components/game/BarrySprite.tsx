@@ -4,7 +4,7 @@ import barrySitting from "@/assets/barry-sitting.png.asset.json";
 import priyaSheet from "@/assets/priya-ward-sprites.png.asset.json";
 import priyaSitting from "@/assets/priya-sitting.png.asset.json";
 import type { Point } from "@/game/wardNav";
-import { STAFF_ATTEND_FRAME_MS, STAFF_WALK_CYCLE_MS, staffAnimationFrame, walkFramesFor } from "@/game/staffAnimation";
+import { STAFF_ATTEND_FRAME_MS, STAFF_STRIDE_LEN, staffAnimationFrame, strideFrame } from "@/game/staffAnimation";
 
 /**
  * Supplied staff sheets: 10 cols × 5 rows. Rows 0-3 walk down/left/right/up, row 4 attend.
@@ -49,24 +49,27 @@ export function StaffWalker({ staffKey, pos, walking, attending, frozen = false 
   const prev = useRef(pos);
   const [dir, setDir] = useState(0);
   const [frame, setFrame] = useState(0);
+  const [travelled, setTravelled] = useState(0);
 
   useEffect(() => {
     const dx = pos.x - prev.current.x;
     const dy = pos.y - prev.current.y;
     prev.current = pos;
-    if (Math.hypot(dx, dy) < 1e-5) return; // Keep direction during unchanged-position ticks.
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1e-5) return; // Keep direction during unchanged-position ticks.
+    if (dist < 0.2) setTravelled((t) => t + dist); // ignore teleports
     setDir(Math.abs(dx * 0.8) > Math.abs(dy) ? (dx > 0 ? 2 : 1) : dy > 0 ? 0 : 3);
   }, [pos]);
 
-  const walkLen = walkFramesFor(dir, art?.walkSeq).length;
+  // Walking steps follow distance; the timer only drives bedside actions.
   useEffect(() => {
-    if (frozen) return; // earthquake: hold the current frame
-    const id = window.setInterval(() => setFrame((f) => f + 1), walking ? STAFF_WALK_CYCLE_MS / walkLen : STAFF_ATTEND_FRAME_MS);
+    if (frozen || walking) return;
+    const id = window.setInterval(() => setFrame((f) => f + 1), STAFF_ATTEND_FRAME_MS);
     return () => window.clearInterval(id);
-  }, [walking, attending, walkLen, frozen]);
+  }, [walking, attending, frozen]);
 
   if (!art) return null;
-  const { row, col } = staffAnimationFrame({ walking, attending, direction: dir, frame, attendSeq: art.attendSeq, idle: art.idle, walkSeq: art.walkSeq });
+  const { row, col } = staffAnimationFrame({ walking, attending, direction: dir, frame: walking ? strideFrame(travelled, STAFF_STRIDE_LEN) : frame, attendSeq: art.attendSeq, idle: art.idle, walkSeq: art.walkSeq });
   return (
     <div className="relative h-[84px]">
       {attending && (
