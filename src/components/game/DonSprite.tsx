@@ -34,7 +34,7 @@ const SPEED = 1000 / (1500 * 3.2); // ward units per second — same relaxed pac
 const PAUSE_MS = 2600;
 
 /** The DON patrols the ward on her own, inspecting random bays and posing on reactions. */
-export function DonSprite({ line, pose, poseKey, leaving = false, onExit }: { line: string; pose: DonPose; poseKey: number; leaving?: boolean; onExit: () => void }) {
+export function DonSprite({ line, pose, poseKey, leaving = false, frozen = false, onExit }: { line: string; pose: DonPose; poseKey: number; leaving?: boolean; frozen?: boolean; onExit: () => void }) {
   const [pos, setPos] = useState<Point>(ENTRY);
   const [dir, setDir] = useState(0);
   const [frame, setFrame] = useState(0);
@@ -44,6 +44,8 @@ export function DonSprite({ line, pose, poseKey, leaving = false, onExit }: { li
   const posRef = useRef(ENTRY);
   const pauseUntil = useRef(0);
   const leavingRef = useRef(leaving);
+  const frozenRef = useRef(frozen);
+  frozenRef.current = frozen;
   const onExitRef = useRef(onExit);
   onExitRef.current = onExit;
   const doorId = useRef(Symbol("don"));
@@ -72,7 +74,7 @@ export function DonSprite({ line, pose, poseKey, leaving = false, onExit }: { li
     if (leaving) return;
     setPosing(true);
     pauseUntil.current = Math.max(pauseUntil.current, performance.now() + PAUSE_MS);
-    const t = window.setTimeout(() => setPosing(false), PAUSE_MS);
+    const t = window.setTimeout(() => { if (!frozenRef.current) setPosing(false); }, PAUSE_MS);
     return () => window.clearTimeout(t);
   }, [poseKey, leaving]);
 
@@ -84,6 +86,7 @@ export function DonSprite({ line, pose, poseKey, leaving = false, onExit }: { li
       const dt = Math.min(0.2, (now - last) / 1000);
       last = now;
       if (exited.current) return;
+      if (frozenRef.current) return; // earthquake: the DON stands completely still
       if (!visibleRef.current) {
         if (doorPhase() !== "open") return;
         visibleRef.current = true; setVisible(true);

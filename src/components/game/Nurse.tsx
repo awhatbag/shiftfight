@@ -19,6 +19,8 @@ type NurseProps = {
   expression?: NurseExpression;
   variant?: "ward" | "preview";
   className?: string;
+  /** freeze the walk-cycle animation in place (catastrophe earthquake) */
+  frozen?: boolean;
 };
 
 // Sprite sheet cut directly from the supplied "nurse choices" artwork.
@@ -79,6 +81,7 @@ export function Nurse({
   direction = "south",
   variant = "ward",
   className = "",
+  frozen = false,
 }: NurseProps) {
   const col = Math.max(0, PRESENTATIONS.indexOf(character.presentation));
   const skinColor = cosmeticColor("skin", character.cosmetics?.skin);
@@ -119,7 +122,7 @@ export function Nurse({
   else if (direction === "south") frames = [ROW.idle, ROW.walkS];
   else frames = [ROW.walkE1, ROW.walkE2];
 
-  const animate = frames.length > 1 && (action === "walk" || action === "run");
+  const animate = !frozen && frames.length > 1 && (action === "walk" || action === "run");
   const idx = useFrameToggle(animate, frames, action === "run" ? 110 : 170);
   const frame = frames[idx % frames.length] as number;
   const flip = direction === "west" && action !== "sit";

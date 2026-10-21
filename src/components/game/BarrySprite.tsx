@@ -44,7 +44,7 @@ export function StaffSitting({ staffKey }: { staffKey: string }) {
 }
 
 /** Staff walking the ward or attending at a bedside. Position comes from the shared staff runtime. */
-export function StaffWalker({ staffKey, pos, walking, attending }: { staffKey: string; pos: Point; walking: boolean; attending: boolean }) {
+export function StaffWalker({ staffKey, pos, walking, attending, frozen = false }: { staffKey: string; pos: Point; walking: boolean; attending: boolean; frozen?: boolean }) {
   const art = STAFF_ART[staffKey];
   const prev = useRef(pos);
   const [dir, setDir] = useState(0);
@@ -60,9 +60,10 @@ export function StaffWalker({ staffKey, pos, walking, attending }: { staffKey: s
 
   const walkLen = walkFramesFor(dir, art?.walkSeq).length;
   useEffect(() => {
+    if (frozen) return; // earthquake: hold the current frame
     const id = window.setInterval(() => setFrame((f) => f + 1), walking ? STAFF_WALK_CYCLE_MS / walkLen : STAFF_ATTEND_FRAME_MS);
     return () => window.clearInterval(id);
-  }, [walking, attending, walkLen]);
+  }, [walking, attending, walkLen, frozen]);
 
   if (!art) return null;
   const { row, col } = staffAnimationFrame({ walking, attending, direction: dir, frame, attendSeq: art.attendSeq, idle: art.idle, walkSeq: art.walkSeq });
