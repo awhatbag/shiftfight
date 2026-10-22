@@ -7,7 +7,7 @@ export const STAFF_SHOO_MS=1000;
 export const GOOSE_SAFE_MS=5000;
 export type GooseMode='waiting'|'walk'|'honk'|'block'|'fly'|'attackWalk'|'melee'|'exit'|'gone';
 export type Goose={id:number; pos:Point; path:Point[]; mode:GooseMode; since:number; until:number; arriveAt:number; faceLeft:boolean; bed:number|null; safeUntil:number; desk:boolean; flightFrom?:Point; flightTo?:Point; shooBy?:string | undefined;};
-export type GooseWorld={geese:Goose[]; time:number; nextAttack:number; attacks:number; target:number; bedHits:Record<number,number>; exiting:boolean; exitIndex:number; nextExit:number;};
+export type GooseWorld={geese:Goose[]; time:number; nextAttack:number; attacks:number; target:number; bedHits:Record<number,number>; exiting:boolean; exitIndex:number; nextExit:number; exitStarted?:number;};
 const FLOOR:Point[]=[...BED_ARRIVAL,{x:.485,y:.32},{x:.485,y:.465},{x:.485,y:.62},{x:.5,y:.76},{x:.52,y:.92}];
 const DESK:Point[]=[{x:.35,y:.19},{x:.5,y:.19},{x:.65,y:.19}];
 export const gooseDistance=(a:Point,b:Point)=>Math.hypot((a.x-b.x)*.8,a.y-b.y);
@@ -22,7 +22,7 @@ function roam(g:Goose,now:number,rng:()=>number){
  if(r<.68&&!g.desk&&now>=g.safeUntil){g.mode='block';g.until=now+2200;return;}
  const dest=choose(g.desk?DESK:FLOOR,rng);if(dest){if(g.desk){g.path=[dest];g.mode='walk';}else travel(g,dest,'walk',now);}
 }
-export function startGooseExit(w:GooseWorld){w.exiting=true;w.exitIndex=0;w.nextExit=w.time;for(const g of w.geese){g.shooBy=undefined;g.bed=null;g.path=[];if(g.mode==='waiting')g.mode='gone';}}
+export function startGooseExit(w:GooseWorld){w.exiting=true;w.exitStarted=w.time;w.exitIndex=0;w.nextExit=w.time;for(const g of w.geese){g.shooBy=undefined;g.bed=null;g.path=[];if(g.mode==='waiting')g.mode='gone';}}
 export function gooseNeedsDoor(w:GooseWorld){return w.exiting?w.geese.some(g=>g.mode!=='gone'):w.geese.some(g=>g.mode==='waiting'&&w.time>=g.arriveAt||g.mode!=='waiting'&&g.mode!=='gone'&&g.pos.y<.2);}
 /** Move along each existing navigation segment, never cutting corners. */
 function walk(g:Goose,dt:number,speed:number){let left=dt*speed;while(left>0&&g.path.length){const p=g.path[0];if(!p)break;const d=gooseDistance(g.pos,p);g.faceLeft=p.x<g.pos.x;if(d<=left){g.pos={...p};g.path.shift();left-=d;}else{const r=left/d;g.pos={x:g.pos.x+(p.x-g.pos.x)*r,y:g.pos.y+(p.y-g.pos.y)*r};left=0;}}}
