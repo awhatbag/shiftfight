@@ -13,7 +13,7 @@ export function GooseLayer({world}:{world:GooseWorld|null}){
   const src=flying?fly.url:g.mode==='honk'||g.mode==='block'?honk.url:g.mode==='attackWalk'||g.mode==='melee'?attack.url:walk.url;
   const animationTime=world.exiting&&g.mode!=='exit'?(world.exitStarted??world.time):world.time;
   const frame=Math.floor((animationTime-g.since)/160)%6;
-  return <div key={g.id} data-goose={g.id} data-mode={g.mode} data-frame={frame} className="pointer-events-none absolute" style={{left:`${g.pos.x*100}%`,top:`${g.pos.y*100}%`,width:'8%',aspectRatio:'600 / 660',transform:'translate(-50%,-94%)',zIndex:g.pos.y<.12?8:flying?80:g.desk?34:Math.round(g.pos.y*100)+2}}>
+  return <div key={g.id} data-goose={g.id} data-mode={g.mode} data-frame={frame} className="pointer-events-none absolute" style={{left:`${g.pos.x*100}%`,top:`${g.pos.y*100}%`,width:'16%',aspectRatio:'600 / 660',transform:'translate(-50%,-94%)',zIndex:g.pos.y<.12?8:flying?80:g.desk?34:Math.round(g.pos.y*100)+2}}>
    <div className="h-full w-full overflow-hidden [image-rendering:pixelated]" style={{backgroundImage:`url(${src})`,backgroundSize:'600% 100%',backgroundPosition:`${frame/5*100}% 0%`,transform:`scaleX(${g.faceLeft?(src===walk.url?1:-1):(src===walk.url?-1:1)})`}}/>
    {!world.exiting&&g.mode==='honk'&&g.id%2===0&&world.time-g.since<650&&<span className="pixel-count absolute bottom-full left-1/2 -translate-x-1/2 text-sm">HONK!</span>}
   </div>;
