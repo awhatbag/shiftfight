@@ -7,6 +7,11 @@
  * To add a new catastrophe, create its data file and append it to CATASTROPHES.
  */
 import type { EventDef } from "./config";
+import { GOOSE_EVENTS, gooseConclusion, isGooseEvent } from "./gooseProblems";
+import { GOOSE_DURATION_MS } from "./gooseRuntime";
+import gooseGood from "@/assets/don-goose-good.png.asset.json";
+import gooseAverage from "@/assets/don-goose-average.png.asset.json";
+import gooseBad from "@/assets/don-goose-bad.png.asset.json";
 import avocado1Asset from "@/assets/avocado1.png.asset.json";
 import avocado2Asset from "@/assets/avocado2.png.asset.json";
 import avocado3Asset from "@/assets/avocado3.png.asset.json";
@@ -32,7 +37,8 @@ export type CatastropheDef = {
   devCommand: string;
   devLabel: string;
   /** automatic trigger: only on this level, once per shift */
-  level: number;
+  level?: number;
+  outcomeSprites?: Record<CatastropheOutcome, string>;
   /** false keeps a registered catastrophe out of automatic scheduling */
   available?: boolean;
   minRemainingMs: number;
@@ -75,7 +81,15 @@ export const AVOCADO_AVALANCHE: CatastropheDef = {
   hazardSprites: [avocado1Asset.url, avocado2Asset.url, avocado3Asset.url],
 };
 
-export const CATASTROPHES: CatastropheDef[] = [AVOCADO_AVALANCHE];
+export const GOOSEPOCALYPSE: CatastropheDef = {
+  id: "goosepocalypse", devCommand: "goosepocalypse", devLabel: "🪿 Trigger Goosepocalypse",
+  available: true, minRemainingMs: 40_000, durationMs: GOOSE_DURATION_MS, respawnMs: 0,
+  events: GOOSE_EVENTS, isEvent: isGooseEvent, grade: gradeAvalanche, conclusion: gooseConclusion,
+  nextIntroLabel: () => "Let's get this flock out ▶", defaultIntroLabel: "Let's get this flock out ▶",
+  intro: { title: "Goosepocalypse", lines: ["The geese are loose! Eight have escaped from the administration office.", "Why were they there? Apparently the new management team took 'winging it' literally."], closing: "Protect the patients. Do not negotiate with the honks." },
+  hazardSprites: [], outcomeSprites: { positive: gooseGood.url, neutral: gooseAverage.url, negative: gooseBad.url },
+};
+export const CATASTROPHES: CatastropheDef[] = [AVOCADO_AVALANCHE, GOOSEPOCALYPSE];
 
 export const isCatastropheEvent = (event: EventDef) =>
   CATASTROPHES.some((c) => c.isEvent(event));
@@ -123,7 +137,7 @@ export function pickCatastrophe(
   if (schedule.shiftsUntilNext > 0) return null;
   const pool = registry.filter((c) => isEligible(c, level) && !schedule.completed.includes(c.id));
   if (!pool.length) return null;
-  return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))]!.id;
+  return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))]?.id ?? null;
 }
 
 /** call once per finished shift; occurredId only for an automatic catastrophe that actually ran */
