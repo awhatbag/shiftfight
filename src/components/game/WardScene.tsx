@@ -29,7 +29,8 @@ import { GooseLayer } from "./GooseLayer";
 import type { GooseWorld } from "@/game/gooseRuntime";
 import type { ActiveEvent, RollingHazard, StaffRuntime } from "./wardTypes";
 
-export function WardScene({ level, levelName, beds, events, flash, selected, nurseHereBed, onTapBed, onGoStation, staff, staffRuntime, staffPositions, staffHome, staffFlash, redAlert, onTapStaff, character, nurse, walking, nurseAction, nurseDirection, hazards, hazardSprites, now, don, onDonExit, frozen = false, gooseWorld = null }: {
+export function WardScene({ level, levelName, beds, events, flash, selected, nurseHereBed, onTapBed, onGoStation, staff, staffRuntime, staffPositions, staffHome, staffFlash, redAlert, onTapStaff, character, nurse, walking, nurseAction, nurseDirection, hazards, hazardSprites, now, don, onDonExit, frozen = false, gooseWorld = null, nurseObstructed = false }: {
+  nurseObstructed?: boolean;
   gooseWorld?: GooseWorld | null;
   don?: { line: string; pose: DonPose; key: number; leaving?: boolean } | null;
   onDonExit: () => void;
@@ -79,6 +80,6 @@ export function WardScene({ level, levelName, beds, events, flash, selected, nur
     <GooseLayer world={gooseWorld}/>
     <div className="pointer-events-none absolute inset-0 z-[4]">{beds.map((bed) => { const slot = BED_SLOTS[bed.id]; if (!slot) return null; return <div key={`sh-bed-${bed.id}`} className="absolute rounded-[50%] bg-black/45 blur-[5px]" style={{ left: `${slot.x * 100}%`, top: `${(slot.y + 0.042) * 100}%`, width: "25%", height: "6%", transform: "translate(-50%,-50%)" }}/>; })}{GATES.map((gate) => <div key={`sh-curtain-${gate.y}`} className="absolute rounded-[50%] bg-black/45 blur-[5px]" style={{ left: `${(gate.box.left + gate.box.width / 2) * 100}%`, top: `${(gate.box.top + gate.box.height - 0.02) * 100}%`, width: `${gate.box.width * 88}%`, height: "4.5%", transform: "translate(-50%,-50%)" }}/>)}</div>
     {don && <DonSprite line={don.line} pose={don.pose} poseKey={don.key} leaving={don.leaving ?? false} frozen={frozen} onExit={onDonExit}/>}
-    <div className={cn("pointer-events-none absolute h-[84px] w-[62px] transition-all ease-linear", !walking && nurseHereBed === null && "invisible")} style={{ left: `${nurse.x * 100}%`, top: `${nurse.y * 100}%`, transform: "translate(-50%,-80%)", transitionDuration: "80ms", zIndex: Math.round(nurse.y * 100) + 1 }}><Nurse character={character} moving={walking} action={nurseAction} direction={nurseDirection} expression={selectedEvent && nurseHereBed !== null ? "concerned" : "neutral"} frozen={frozen}/></div>
+    <div className={cn("pointer-events-none absolute h-[84px] w-[62px] transition-all ease-linear", !walking && nurseHereBed === null && "invisible")} style={{ left: `${nurse.x * 100}%`, top: `${nurse.y * 100}%`, transform: "translate(-50%,-80%)", transitionDuration: "80ms", zIndex: Math.round(nurse.y * 100) + 1 }}><Nurse character={character} moving={walking && !nurseObstructed} action={nurseAction} direction={nurseDirection} expression={selectedEvent && nurseHereBed !== null ? "concerned" : "neutral"} frozen={frozen}/></div>
   </div>;
 }

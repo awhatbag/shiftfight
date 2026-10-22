@@ -989,7 +989,7 @@ export function WardScreen({
     if (blocker) {
       lastMoveT.current = gameT.current;
       setBlockedGoose(blocker.id);
-      setWalking(false);
+      setWalking(true);
       setNurseAction(blocker.shooBy === "nurse" ? "interact" : "idle");
       return;
     }
@@ -1451,6 +1451,7 @@ export function WardScreen({
         now={gameT.current}
         frozen={avocadoPhase === "wave" || avocadoPhase === "exit"}
         gooseWorld={gooseWorld.current}
+        nurseObstructed={blockedGoose !== null}
       />
 
       {blockedGoose !== null && avocadoPhase === "active" && (
