@@ -96,7 +96,7 @@ export const isCatastropheEvent = (event: EventDef) =>
 
 /** catastrophes that may trigger automatically on this level */
 export const catastrophesForLevel = (level: number) =>
-  CATASTROPHES.filter((c) => c.level === level);
+  CATASTROPHES.filter((c) => isEligible(c, level));
 
 /* ---------------- shared scheduler ----------------
    Pure functions: the scheduler only knows ids, eligibility and the rotation.

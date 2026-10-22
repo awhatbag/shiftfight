@@ -1,9 +1,9 @@
 # Roadmap
 
-- [ ] Register Goosepocalypse with supplied isolated-frame artwork and 25 patient problems.
-- [ ] Add staggered door entry, path roaming, flights, physical attacks and nurse/staff shooing.
-- [ ] Add paused sequential exit, DON outcomes and unresolved-call preservation.
-- [ ] Run focused rules tests and live Goosepocalypse/Avocado checks.
+- [x] Register Goosepocalypse with supplied isolated-frame artwork and 25 patient problems.
+- [x] Add staggered door entry, path roaming, flights, physical attacks and nurse/staff shooing.
+- [x] Add paused sequential exit, DON outcomes and unresolved-call preservation.
+- [x] Run focused rules tests and live Goosepocalypse/Avocado checks; staff obstruction is covered by pure tests rather than a hired-staff live run.
 
 - [x] Protect the summary from presentation errors and verify shift-to-shop recovery without changing saved rewards.
 

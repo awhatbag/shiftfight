@@ -474,7 +474,8 @@ export function WardScreen({
       level, including bed upgrades, gear and shift heat. */
   const makeAvocadoEvent = useCallback((bed: number): ActiveEvent => {
     const pool = catastropheRef.current.events;
-    const def = pool[Math.floor(Math.random() * pool.length)] ?? pool[0]!;
+    const def = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
+    if (!def) throw new Error("Catastrophe has no patient problems registered");
     avocadoTally.current.generated += 1;
     const heat = Math.min(1, gameT.current / SHIFT_MS);
     const u = URGENCY_META[urgencyOf(def)];
