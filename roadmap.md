@@ -1,5 +1,10 @@
 # Roadmap
 
+- [ ] Register Goosepocalypse with supplied isolated-frame artwork and 25 patient problems.
+- [ ] Add staggered door entry, path roaming, flights, physical attacks and nurse/staff shooing.
+- [ ] Add paused sequential exit, DON outcomes and unresolved-call preservation.
+- [ ] Run focused rules tests and live Goosepocalypse/Avocado checks.
+
 - [x] Protect the summary from presentation errors and verify shift-to-shop recovery without changing saved rewards.
 
 - [x] Create reusable animated pixel nurse renderer and sprite state model (sprite sheets cropped from the supplied nurse artwork).
