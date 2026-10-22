@@ -20,6 +20,8 @@ Summary rendering is isolated by a local error boundary after rewards are commit
 
 Automatic catastrophe timing is decided only by the pure scheduler in src/game/catastrophes.ts (gap, rotation, eligibility) and persisted in the save; each catastrophe definition owns its own gameplay and duration, and Dev Mode launches never advance the schedule, so new events only need registering.
 
+Goosepocalypse uses a bounded pure goose runtime with shared ward routes and door holds; completed physical melee interactions feed the existing patient factory, while sequential exit uses a separate clock to freeze all other gameplay and preserve unresolved calls. Supplied goose poses are component-separated into padded, baseline-aligned cells to avoid adjacent-frame bleed.
+
 DON visits end their gameplay reactions when departure starts, but retain the ward sprite until its shared navigation route reaches the top doors; this prevents timed visits from removing her mid-walk.
 
 Hired staff spawn behind the top doors and walk to their station chair via the shared staff runtime (enterAt/attendUntil in StaffRuntime); character art (e.g. BarrySprite) only renders that runtime, so new staff sprites need no movement logic.

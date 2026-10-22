@@ -13,6 +13,9 @@ import { loadEastWestCollisionMap, eastWestCollisionAt } from "@/game/eastWestCo
 import { rollingHazardPosition } from "./rollingHazardMotion";
 import { WardHud } from "./WardHud";
 import { WardScene } from "./WardScene";
+import { Button } from "@/components/ui/button";
+import { isGooseEvent } from "@/game/gooseProblems";
+import { blockingGoose, gooseExitComplete, gooseNeedsDoor, newGooseWorld, shooGoose, startGooseExit, stepGooseWorld, type GooseWorld } from "@/game/gooseRuntime";
 import type { DonPose } from "./DonSprite";
 import { PatientActionPanel } from "./PatientActionPanel";
 import { CatastropheConclusion, CatastropheIntro, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, RewardCalloutOverlay, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
@@ -240,6 +243,9 @@ export function WardScreen({
   const [avocadoPhase, setAvocadoPhase] = useState<CatastrophePhase>(null);
   const [avocadoDevRequested, setAvocadoDevRequested] = useState<string | null>(null);
   const [avocados, setAvocados] = useState<RollingHazard[]>([]);
+  const gooseWorld = useRef<GooseWorld | null>(null);
+  const gooseDoor = useRef(Symbol("goose-flock"));
+  const [blockedGoose, setBlockedGoose] = useState<number | null>(null);
   const avocadoStarted = useRef(false);
   const avocadoStartT = useRef(0);
   const avocadoTriggerT = useRef(12_000 + Math.random() * 34_000);
@@ -385,7 +391,7 @@ export function WardScreen({
   /* reading a patient issue at the bedside slows the ward to ~30% until a response is chosen */
   const readingEvent = atBed !== null && selected === atBed ? events.find((e) => e.bed === atBed) : undefined;
   const rate =
-    manualPause || settingsOpen || phase !== "play" || miniOffer || tutPause || avocadoPhase === "intro" || avocadoPhase === "wave" || avocadoPhase === "conclusion"
+    manualPause || settingsOpen || phase !== "play" || miniOffer || tutPause || avocadoPhase === "intro" || avocadoPhase === "wave" || avocadoPhase === "exit" || avocadoPhase === "conclusion"
       ? 0
       : mini
         ? 1 / 3
@@ -468,7 +474,8 @@ export function WardScreen({
       level, including bed upgrades, gear and shift heat. */
   const makeAvocadoEvent = useCallback((bed: number): ActiveEvent => {
     const pool = catastropheRef.current.events;
-    const def = pool[Math.floor(Math.random() * pool.length)] ?? pool[0]!;
+    const def = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
+    if (!def) throw new Error("Catastrophe has no patient problems registered");
     avocadoTally.current.generated += 1;
     const heat = Math.min(1, gameT.current / SHIFT_MS);
     const u = URGENCY_META[urgencyOf(def)];
@@ -484,7 +491,7 @@ export function WardScreen({
         u.mult *
         cfg.timeMult *
         (1 - heat * 0.18),
-      scores: rollOutcomes(def),
+      scores: isGooseEvent(def) ? Object.fromEntries(Object.keys(def.options).map((key, index) => [key, key === def.correct ? 1 : index === 1 ? 0.5 : 0])) : rollOutcomes(def),
       actionOrder: shuffledActions(def),
     };
   }, [upgrades, mods, cfg]);
@@ -518,6 +525,13 @@ export function WardScreen({
      Everything freezes — characters, timers, bells — and the music cuts out. */
   const startAvocadoWave = useCallback(() => {
     if (avocadoPhaseRef.current !== "intro") return;
+    if (catastropheRef.current.id === "goosepocalypse") {
+      avocadoTally.current = emptyTally();
+      avocadoStartT.current = gameT.current;
+      gooseWorld.current = newGooseWorld();
+      setAvocadoPhase("active");
+      return;
+    }
     setAvocadoPhase("wave");
     pauseMusic("ward");
     buzz([40, 60, 40, 80, 50, 90, 40]);
@@ -556,7 +570,7 @@ export function WardScreen({
   /* Dense opening wave, easing to a lighter stream. Movement remains a small
      positional effect rather than a physics system. */
   useEffect(() => {
-    if (avocadoPhase !== "active") return undefined;
+    if (avocadoPhase !== "active" || catastropheRef.current.id !== "avocado-avalanche") return undefined;
     let cancelled = false;
     let interval: number | undefined;
     void loadEastWestCollisionMap().then((collisionMap) => {
@@ -622,6 +636,13 @@ export function WardScreen({
     if (avocadoPhase !== "active") return;
     const def = catastropheRef.current;
     if (gameT.current - avocadoStartT.current < def.durationMs) return;
+    if (def.id === "goosepocalypse") {
+      if (gooseWorld.current) startGooseExit(gooseWorld.current);
+      setBlockedGoose(null);
+      setAvocadoPhase("exit");
+      pauseMusic("ward");
+      return;
+    }
     setEvents(suspendedEvents.current.map((event) => ({ ...event, born: event.born + def.durationMs })));
     suspendedEvents.current = [];
     setSelected(null);
@@ -637,10 +658,50 @@ export function WardScreen({
     playForwardClick();
     setAvocadoPhase(null);
     setAvocados([]);
+    gooseWorld.current = null;
+    releaseDoor(gooseDoor.current);
+    setBlockedGoose(null);
+    resumeMusic("ward");
     setAvocadoResult(null);
     setAvocadoDevRequested(null);
     avocadoTally.current = emptyTally();
   }, []);
+
+  // Goose gameplay has its own bounded runtime; the shared clock and outcome flow stay authoritative.
+  useEffect(() => {
+    if (catastrophe.id !== "goosepocalypse" || (avocadoPhase !== "active" && avocadoPhase !== "exit")) return;
+    let last = performance.now();
+    let lastGame = gameT.current;
+    const id = window.setInterval(() => {
+      const w = gooseWorld.current;
+      if (!w) return;
+      const realNow = performance.now();
+      const dt = avocadoPhase === "exit" ? Math.min(100, realNow - last) : gameT.current - lastGame;
+      last = realNow; lastGame = gameT.current;
+      if (gooseNeedsDoor(w)) holdDoor(gooseDoor.current); else releaseDoor(gooseDoor.current);
+      if (dt <= 0) return;
+      const busy = eventsRef.current.map(e => e.bed);
+      const attacks = stepGooseWorld(w, dt, beds.filter(b => !b.locked).map(b => b.id), busy, doorPhase() === "open");
+      if (attacks.length) {
+        const created = attacks.filter(bed => !eventsRef.current.some(e => e.bed === bed)).map(makeAvocadoEvent);
+        eventsRef.current = [...eventsRef.current, ...created];
+        setEvents(eventsRef.current);
+        if (created.length) playCallBell();
+      }
+      if (avocadoPhase === "exit" && gooseExitComplete(w)) {
+        const def = catastropheRef.current;
+        const outcome = def.grade(avocadoTally.current);
+        stats.current.catastrophe = outcome;
+        setAvocadoResult({ outcome, ...def.conclusion(outcome) });
+        gooseWorld.current = null;
+        releaseDoor(gooseDoor.current);
+        setAvocadoPhase("conclusion");
+      }
+      force(n => n + 1);
+    }, 70);
+    return () => window.clearInterval(id);
+  }, [avocadoPhase, catastrophe.id, activeBeds, makeAvocadoEvent]);
+  useEffect(() => () => releaseDoor(gooseDoor.current), []);
 
   /** re-check the shift objectives and pay out any that just completed */
   const checkObjectives = useCallback(() => {
@@ -818,7 +879,7 @@ export function WardScreen({
       /* timeouts behave exactly as before; they are only also tallied */
       if (isCatastropheEvent(e.def)) {
         avocadoTally.current.missed++;
-        if (avocadoPhaseRef.current === "active") {
+        if (avocadoPhaseRef.current === "active" && catastropheRef.current.id === "avocado-avalanche") {
           const bed = e.bed;
           scheduleAvocado(() => {
             if (avocadoPhaseRef.current !== "active") return;
@@ -924,6 +985,16 @@ export function WardScreen({
 
   useEffect(() => {
     if (rate === 0 || !journey.current.length) return;
+    const targetAhead = journey.current[0];
+    const blocker = targetAhead ? blockingGoose(gooseWorld.current, nurseRef.current, targetAhead) : undefined;
+    if (blocker) {
+      lastMoveT.current = gameT.current;
+      setBlockedGoose(blocker.id);
+      setWalking(true);
+      setNurseAction(blocker.shooBy === "nurse" ? "interact" : "idle");
+      return;
+    }
+    if (blockedGoose !== null) { setBlockedGoose(null); setWalking(true); lastMoveT.current = gameT.current; }
     let remaining =
       (gameT.current - lastMoveT.current) /
       (msPerUnit(upgrades) * mods.travelMult * (returning.current ? 1.9 : 1));
@@ -1033,6 +1104,9 @@ export function WardScreen({
         continue;
       }
       if (!rt.path.length && rt.attendUntil === undefined) continue;
+      const ahead = rt.path[0];
+      const blocker = ahead ? blockingGoose(gooseWorld.current, staffPosRef.current[key] ?? staffHome(key), ahead) : undefined;
+      if (blocker) { if (gooseWorld.current) shooGoose(gooseWorld.current, blocker.id, key); rt.lastT = now; continue; }
       let remaining = (now - rt.lastT) / (msPerUnit(upgrades) * (rt.entering ? 4 : 3.2));
       rt.lastT = now;
       let cur = staffPosRef.current[key] ?? staffHome(key);
@@ -1078,6 +1152,7 @@ export function WardScreen({
           stats.current.staffAssists++;
           stats.current.xp += 2;
           if (target.def.callBell) stats.current.callBells++;
+          if (isGooseEvent(target.def) && avocadoPhaseRef.current === "active") avocadoTally.current.best++;
           setStability((s) => Math.min(100, s + 2));
           setStaffFlash(key);
           window.setTimeout(() => setStaffFlash((s) => (s === key ? null : s)), 900);
@@ -1170,7 +1245,7 @@ export function WardScreen({
       if (correct) avocadoTally.current.best++;
       else if (mult > 0) avocadoTally.current.sortOf++;
       else avocadoTally.current.worst++;
-      if (avocadoPhaseRef.current === "active") {
+      if (avocadoPhaseRef.current === "active" && catastropheRef.current.id === "avocado-avalanche") {
         const bed = ev.bed;
         scheduleAvocado(() => {
           if (avocadoPhaseRef.current !== "active") return;
@@ -1347,7 +1422,7 @@ export function WardScreen({
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      <div ref={wardRef} className={`ward-viewport terrazzo relative flex-1 select-none overflow-hidden${avocadoPhase === "wave" ? " earthquake-shake ward-frozen" : ""}`}>
+      <div ref={wardRef} className={`ward-viewport terrazzo relative flex-1 select-none overflow-hidden${avocadoPhase === "wave" ? " earthquake-shake ward-frozen" : avocadoPhase === "exit" ? " ward-frozen" : ""}`}>
       <WardScene
         don={don && phase === "play" ? don : null}
         onDonExit={finishDonExit}
@@ -1375,9 +1450,14 @@ export function WardScreen({
         hazards={avocados}
         hazardSprites={catastrophe.hazardSprites}
         now={gameT.current}
-        frozen={avocadoPhase === "wave"}
+        frozen={avocadoPhase === "wave" || avocadoPhase === "exit"}
+        gooseWorld={gooseWorld.current}
+        nurseObstructed={blockedGoose !== null}
       />
 
+      {blockedGoose !== null && avocadoPhase === "active" && (
+        <Button disabled={rate === 0 || !!gooseWorld.current?.geese.find(g => g.id === blockedGoose)?.shooBy} onClick={() => { const w = gooseWorld.current; if (w && shooGoose(w, blockedGoose, "nurse")) setNurseAction("interact"); }} className="chunky chunky-press absolute top-[22%] left-1/2 z-[60] h-14 -translate-x-1/2 border-2 border-border bg-alarm px-8 font-display text-2xl font-black text-alarm-foreground">SHOO!</Button>
+      )}
       <div className="pointer-events-none absolute inset-0">
         {/* banner */}
         {banner && (
@@ -1408,7 +1488,7 @@ export function WardScreen({
           <CatastropheIntro catastrophe={catastrophe} buttonLabel={avocadoIntroLabel} onStart={() => { playForwardClick(); startAvocadoWave(); }} />
         )}
         {avocadoPhase === "conclusion" && avocadoResult && (
-          <CatastropheConclusion result={avocadoResult} tally={avocadoTally.current} onContinue={finishCatastrophe} />
+          <CatastropheConclusion result={avocadoResult} tally={avocadoTally.current} outcomeSprites={catastrophe.outcomeSprites} onContinue={finishCatastrophe} />
         )}
         {phase === "ready" && !briefing && <ReadyCue cue={cue} />}
         {tutorial && phase === "play" && tutStep === 0 && <TutorialOverlay step={0} onNext={() => setTutStep(1)} />}
