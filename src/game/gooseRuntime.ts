@@ -5,8 +5,8 @@ export const GOOSE_MELEE_MS=1120;
 export const NURSE_SHOO_MS=1500;
 export const STAFF_SHOO_MS=1000;
 export const GOOSE_SAFE_MS=5000;
-export type GooseMode='waiting'|'walk'|'honk'|'block'|'fly'|'attackWalk'|'melee'|'exit'|'gone';
-export type Goose={id:number; pos:Point; path:Point[]; mode:GooseMode; since:number; until:number; arriveAt:number; faceLeft:boolean; bed:number|null; safeUntil:number; desk:boolean; flightFrom?:Point; flightTo?:Point; shooBy?:string | undefined; attackUntil?:number;};
+export type GooseMode='waiting'|'walk'|'honk'|'block'|'fly'|'attackWalk'|'melee'|'exit'|'exitRun'|'gone';
+export type Goose={id:number; pos:Point; path:Point[]; mode:GooseMode; since:number; until:number; arriveAt:number; faceLeft:boolean; bed:number|null; safeUntil:number; desk:boolean; flightFrom?:Point; flightTo?:Point; shooBy?:string | undefined; attackUntil?:number; exitSpeed?:number;};
 export type GooseWorld={geese:Goose[]; time:number; nextAttack:number; attacks:number; target:number; bedHits:Record<number,number>; exiting:boolean; exitIndex:number; nextExit:number; exitStarted?:number;};
 const FLOOR:Point[]=[...BED_ARRIVAL,{x:.485,y:.32},{x:.485,y:.465},{x:.485,y:.62},{x:.5,y:.76},{x:.52,y:.92}];
 const DESK:Point[]=[{x:.35,y:.19},{x:.5,y:.19},{x:.65,y:.19}];
@@ -29,11 +29,20 @@ function walk(g:Goose,dt:number,speed:number){let left=dt*speed;while(left>0&&g.
 export function stepGooseWorld(w:GooseWorld,dt:number,occupied:number[],busy:number[],doorOpen:boolean,rng=Math.random):number[]{
  w.time+=Math.max(0,dt);const now=w.time;const completed:number[]=[];
  if(w.exiting){
-  const g=w.geese[w.exitIndex];if(!g)return completed;
-  if(g.mode==='gone'){w.exitIndex++;w.nextExit=now+180;return completed;}
-  if(now<w.nextExit||!doorOpen)return completed;
-  if(g.mode!=='exit')fly(g,DOOR_POINT,now,true);
-  advanceFlight(g,now);if(now>=g.until){g.mode='gone';w.exitIndex++;w.nextExit=now+250;}return completed;
+  if(!w.exitIndex){
+   if(!doorOpen)return completed;
+   // Everyone sets off together; arrival times are staggered so they reach the door one after another.
+   const active=w.geese.filter(g=>g.mode!=='gone').sort((a,b)=>gooseDistance(a.pos,DOOR_POINT)-gooseDistance(b.pos,DOOR_POINT));
+   active.forEach((g,rank)=>{const arrive=now+1100+rank*550;
+    if(!g.desk&&g.id%2===0){g.path=routeTo(DOOR_POINT,g.pos);g.mode='exitRun';g.since=now;g.until=arrive;let len=0,p=g.pos;for(const q of g.path){len+=gooseDistance(p,q);p=q;}g.exitSpeed=len/Math.max(1,arrive-now);}
+    else{fly(g,DOOR_POINT,now,true);g.until=arrive;}});
+   w.exitIndex=1;
+  }
+  for(const g of w.geese){
+   if(g.mode==='exitRun'){walk(g,dt,g.exitSpeed??.0006);if(!g.path.length||now>=g.until){g.pos={...DOOR_POINT};g.mode='gone';}}
+   else if(g.mode==='exit'){advanceFlight(g,now);if(now>=g.until)g.mode='gone';}
+  }
+  return completed;
  }
  for(const g of w.geese){
   if(g.mode==='waiting'){if(now<g.arriveAt||!doorOpen)continue;const dest=FLOOR[g.id%FLOOR.length];if(dest)travel(g,dest,'walk',now);}

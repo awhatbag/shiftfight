@@ -14,7 +14,7 @@ export function GooseLayer({world}:{world:GooseWorld|null}){
   const flying=g.mode==='fly'||g.mode==='exit';
    const src=flying?fly.url:g.mode==='honk'||g.mode==='block'?honk.url:g.mode==='attackWalk'||g.mode==='melee'?attack.url:walk.url;
    const scale=GOOSE_SCALE[g.mode]??1;
-   const animationTime=world.exiting&&g.mode!=='exit'?(world.exitStarted??world.time):world.time;
+   const animationTime=world.exiting&&g.mode!=='exit'&&g.mode!=='exitRun'?(world.exitStarted??world.time):world.time;
    const frame=Math.floor((animationTime-g.since)/160)%6;
    return <div key={g.id} data-goose={g.id} data-mode={g.mode} data-frame={frame} className="pointer-events-none absolute" style={{left:`${g.pos.x*100}%`,top:`${g.pos.y*100}%`,width:'16%',aspectRatio:'600 / 660',transform:'translate(-50%,-94%)',zIndex:g.pos.y<.12?8:flying?80:g.desk?34:Math.round(g.pos.y*100)+2}}>
     <div className="h-full w-full overflow-hidden [image-rendering:pixelated]" style={{backgroundImage:`url(${src})`,backgroundSize:'600% 100%',backgroundPosition:`${frame/5*100}% 0%`,transformOrigin:'50% 100%',transform:`scale(${scale}) scaleX(${g.faceLeft?(src===walk.url?1:-1):(src===walk.url?-1:1)})`}}/>
