@@ -5,6 +5,8 @@ import attack from '@/assets/goose-attack_goose.png.asset.json';
 import cloud from '@/assets/goose-melee_cloud.png.asset.json';
 import { BED_SLOTS } from '@/game/wardNav';
 import { GOOSE_MELEE_MS, type GooseWorld } from '@/game/gooseRuntime';
+// Option 2: attack/flying geese are boosted so their visual presence matches the standing walker.
+const GOOSE_SCALE: Record<string, number> = { walk: 1, honk: 1, block: 1, attackWalk: 1.28, melee: 1.28, fly: 1.25, exit: 1.25 };
 export function GooseLayer({world}:{world:GooseWorld|null}){
  if(!world)return null;
  return <>{world.geese.map(g=>{
