@@ -29,7 +29,10 @@ import { GooseLayer } from "./GooseLayer";
 import type { GooseWorld } from "@/game/gooseRuntime";
 import type { ActiveEvent, RollingHazard, StaffRuntime } from "./wardTypes";
 
-export function WardScene({ level, levelName, beds, events, flash, selected, nurseHereBed, onTapBed, onGoStation, staff, staffRuntime, staffPositions, staffHome, staffFlash, redAlert, onTapStaff, character, nurse, walking, nurseAction, nurseDirection, hazards, hazardSprites, now, don, onDonExit, frozen = false, gooseWorld = null, nurseObstructed = false }: {
+export function WardScene({ level, levelName, beds, events, flash, selected, nurseHereBed, onTapBed, onGoStation, staff, staffRuntime, staffPositions, staffHome, staffFlash, redAlert, onTapStaff, character, nurse, walking, nurseAction, nurseDirection, hazards, hazardSprites, now, don, onDonExit, frozen = false, gooseWorld = null, nurseObstructed = false, blockedGoose = null, shooDisabled = false, onShoo }: {
+  blockedGoose?: number | null;
+  shooDisabled?: boolean;
+  onShoo?: () => void;
   nurseObstructed?: boolean;
   gooseWorld?: GooseWorld | null;
   don?: { line: string; pose: DonPose; key: number; leaving?: boolean } | null;
@@ -77,9 +80,10 @@ export function WardScene({ level, levelName, beds, events, flash, selected, nur
     })}
     {beds.map((bed) => { const slot = BED_SLOTS[bed.id]; if (!slot) return null; const event = events.find((candidate) => candidate.bed === bed.id); const urgency = event ? urgencyOf(event.def) : null; const critical = urgency === "critical" && nurseHereBed !== bed.id; return <div key={bed.id} className="absolute h-[14%] w-[26%]" style={{ left: `${slot.x * 100}%`, top: `${slot.y * 100}%`, transform: "translate(-50%,-50%)", zIndex: Math.round(slot.y * 100) }}>{critical && <img src={criticalMarkAsset.url} alt="Critical!" aria-hidden="true" draggable={false} className="animate-alert-hop pointer-events-none absolute top-1/2 -translate-y-1/2 left-1/2 z-30 h-[35%] w-auto -translate-x-1/2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)]"/>}{urgency && urgency !== "routine" && level <= 3 && <span className={cn("font-display pointer-events-none absolute -top-2 z-40 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider shadow-md", bed.id % 2 === 0 ? "right-1" : "left-1", URGENCY_META[urgency].chip, urgency === "critical" && "animate-throb")}>{URGENCY_META[urgency].label}</span>}<Bed bed={bed} event={event?.def} progress={event ? 1 - (now - event.born) / event.ttl : 0} flash={flash[bed.id] ?? null} active={selected === bed.id} nurseHere={nurseHereBed === bed.id} revealed={nurseHereBed === bed.id} onTap={() => onTapBed(bed.id)}/></div>; })}
     <CatastropheHazardLayer hazards={hazards} sprites={hazardSprites} now={now}/>
-    <GooseLayer world={gooseWorld}/>
+    <GooseLayer world={gooseWorld} blockedGoose={blockedGoose} shooDisabled={shooDisabled} onShoo={onShoo}/>
     <div className="pointer-events-none absolute inset-0 z-[4]">{beds.map((bed) => { const slot = BED_SLOTS[bed.id]; if (!slot) return null; return <div key={`sh-bed-${bed.id}`} className="absolute rounded-[50%] bg-black/45 blur-[5px]" style={{ left: `${slot.x * 100}%`, top: `${(slot.y + 0.042) * 100}%`, width: "25%", height: "6%", transform: "translate(-50%,-50%)" }}/>; })}{GATES.map((gate) => <div key={`sh-curtain-${gate.y}`} className="absolute rounded-[50%] bg-black/45 blur-[5px]" style={{ left: `${(gate.box.left + gate.box.width / 2) * 100}%`, top: `${(gate.box.top + gate.box.height - 0.02) * 100}%`, width: `${gate.box.width * 88}%`, height: "4.5%", transform: "translate(-50%,-50%)" }}/>)}</div>
     {don && <DonSprite line={don.line} pose={don.pose} poseKey={don.key} leaving={don.leaving ?? false} frozen={frozen} onExit={onDonExit}/>}
     <div className={cn("pointer-events-none absolute h-[84px] w-[62px] transition-all ease-linear", !walking && nurseHereBed === null && "invisible")} style={{ left: `${nurse.x * 100}%`, top: `${nurse.y * 100}%`, transform: "translate(-50%,-80%)", transitionDuration: "80ms", zIndex: Math.round(nurse.y * 100) + 1 }}><Nurse character={character} moving={walking && !nurseObstructed} action={nurseAction} direction={nurseDirection} expression={selectedEvent && nurseHereBed !== null ? "concerned" : "neutral"} frozen={frozen}/></div>
+    {nurseObstructed&&!gooseWorld?.exiting&&<div role="status" className="pointer-events-none absolute z-[85] -translate-x-1/2 -translate-y-full" style={{left:`${nurse.x*100}%`,top:`${nurse.y*100}%`,marginTop:'-70px'}}><span className="pixel-count block border-2 border-border bg-card px-2 py-1 text-center text-xs font-black text-card-foreground"><span aria-hidden="true" className="block text-xl">! 💦</span>{nurseAction==='interact'?'SHOO!':'BLOCKED!'}</span></div>}
   </div>;
 }
