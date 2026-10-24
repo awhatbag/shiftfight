@@ -8,7 +8,7 @@ import { GOOSE_MELEE_MS, type GooseWorld } from '@/game/gooseRuntime';
 import { Button } from '@/components/ui/button';
 // Option 2: attack/flying geese are boosted so their visual presence matches the standing walker.
 const GOOSE_SCALE: Record<string, number> = { walk: 1, honk: 1, block: 1, attackWalk: 1.28, melee: 1.28, fly: 1.25, exit: 1.25 };
-export function GooseLayer({world, blockedGoose = null, shooDisabled = false, onShoo}:{world:GooseWorld|null; blockedGoose?:number|null; shooDisabled?:boolean; onShoo?:()=>void}){
+export function GooseLayer({world, blockedGoose = null, shooDisabled = false, onShoo}:{world:GooseWorld|null; blockedGoose?:number|null; shooDisabled?:boolean; onShoo?:(()=>void)|undefined}){
  if(!world)return null;
  const blocker=!world.exiting?world.geese.find(g=>g.id===blockedGoose&&g.mode==='block'):undefined;
  const shooing=blocker?.shooBy==='nurse';
