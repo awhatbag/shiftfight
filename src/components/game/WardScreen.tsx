@@ -1453,11 +1453,10 @@ export function WardScreen({
         frozen={avocadoPhase === "wave" || avocadoPhase === "exit"}
         gooseWorld={gooseWorld.current}
         nurseObstructed={blockedGoose !== null}
+        blockedGoose={avocadoPhase === "active" ? blockedGoose : null}
+        shooDisabled={rate === 0}
+        onShoo={() => { const w = gooseWorld.current; if (w && blockedGoose !== null && shooGoose(w, blockedGoose, "nurse")) setNurseAction("interact"); }}
       />
-
-      {blockedGoose !== null && avocadoPhase === "active" && (
-        <Button disabled={rate === 0 || !!gooseWorld.current?.geese.find(g => g.id === blockedGoose)?.shooBy} onClick={() => { const w = gooseWorld.current; if (w && shooGoose(w, blockedGoose, "nurse")) setNurseAction("interact"); }} className="chunky chunky-press absolute top-[22%] left-1/2 z-[60] h-14 -translate-x-1/2 border-2 border-border bg-alarm px-8 font-display text-2xl font-black text-alarm-foreground">SHOO!</Button>
-      )}
       <div className="pointer-events-none absolute inset-0">
         {/* banner */}
         {banner && (
