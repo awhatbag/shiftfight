@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Make goose obstruction unmistakable with an anchored shoo button, tappable goose and nurse reaction; verify shoo/resume.
+- [x] Make goose obstruction unmistakable with an anchored shoo button, tappable goose and nurse reaction; live goose tap showed SHOOING, removed both cues and resumed travel; 17 goose/scheduler tests passed.
 
 - [x] Register Goosepocalypse with supplied isolated-frame artwork and 25 patient problems.
 - [x] Add staggered door entry, path roaming, flights, physical attacks and nurse/staff shooing.
