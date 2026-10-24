@@ -1495,7 +1495,7 @@ export function WardScreen({
         {endCountValue !== null && <EndCountdown count={endCountValue} />}
         {phase === "ending" && !stats.current.collapsed && <EndCountdown count="up" />}
         {miniOffer && <MiniOfferOverlay offer={miniOffer} onSkip={() => { lastMiniEnd.current = elapsed; setMiniOffer(null); }} onStart={startMini} />}
-        {manualPause && <PauseOverlay line={pauseLine} onResume={() => setManualPause(false)} />}
+        {manualPause && <PauseOverlay line={pauseLine} level={cfg.level} name={cfg.name} title={story.title} onResume={() => setManualPause(false)} />}
         {settingsOpen && (
           <SettingsOverlay
             soundOn={soundOn}
