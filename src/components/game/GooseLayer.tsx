@@ -15,14 +15,17 @@ export function GooseLayer({world}:{world:GooseWorld|null}){
    const src=flying?fly.url:g.mode==='honk'||g.mode==='block'?honk.url:g.mode==='attackWalk'||g.mode==='melee'?attack.url:walk.url;
    const scale=GOOSE_SCALE[g.mode]??1;
    const animationTime=world.exiting&&g.mode!=='exit'&&g.mode!=='exitRun'?(world.exitStarted??world.time):world.time;
-   const frame=Math.floor((animationTime-g.since)/160)%6;
+   const frame=Math.floor((animationTime-g.since)/210)%6;
    return <div key={g.id} data-goose={g.id} data-mode={g.mode} data-frame={frame} className="pointer-events-none absolute" style={{left:`${g.pos.x*100}%`,top:`${g.pos.y*100}%`,width:'16%',aspectRatio:'600 / 660',transform:'translate(-50%,-94%)',zIndex:g.pos.y<.12?8:flying?80:g.desk?34:Math.round(g.pos.y*100)+2}}>
     <div className="h-full w-full overflow-hidden [image-rendering:pixelated]" style={{backgroundImage:`url(${src})`,backgroundSize:'600% 100%',backgroundPosition:`${frame/5*100}% 0%`,transformOrigin:'50% 100%',transform:`scale(${scale}) scaleX(${g.faceLeft?(src===walk.url?1:-1):(src===walk.url?-1:1)})`}}/>
    {!world.exiting&&g.mode==='honk'&&g.id%2===0&&world.time-g.since<650&&<span className="pixel-count absolute bottom-full left-1/2 -translate-x-1/2 text-sm">HONK!</span>}
   </div>;
- })}{!world.exiting&&world.geese.filter(g=>g.mode==='melee'&&g.bed!==null).map(g=>{
-  const slot=g.bed===null?undefined:BED_SLOTS[g.bed];if(!slot)return null;
-  const frame=Math.min(7,Math.floor((world.time-g.since)/GOOSE_MELEE_MS*8));
-  return <div key={`cloud-${g.id}`} data-melee-bed={g.bed} className="pointer-events-none absolute overflow-hidden [image-rendering:pixelated]" style={{left:`${slot.x*100}%`,top:`${slot.y*100}%`,width:'25%',aspectRatio:'560 / 360',transform:'translate(-50%,-50%)',zIndex:Math.round(slot.y*100)+5,backgroundImage:`url(${cloud.url})`,backgroundSize:'800% 100%',backgroundPosition:`${frame/7*100}% 0%`}}/>;
- })}</>;
+  })}{!world.exiting&&world.geese.filter(g=>g.mode==='melee'&&g.bed!==null).map(g=>{
+   const slot=g.bed===null?undefined:BED_SLOTS[g.bed];if(!slot)return null;
+   const t=Math.max(0,Math.min(1,(world.time-g.since)/GOOSE_MELEE_MS));
+   const frame=Math.min(7,Math.floor(t*8));
+   // Comic "poof": balloon in with a slight overshoot, hold full size, shrink away at the end.
+   const scale=t<.15?.2+(t/.15)*.85:t<.22?1.05-((t-.15)/.07)*.05:t>.85?Math.max(.2,1-((t-.85)/.15)*.8):1;
+   return <div key={`cloud-${g.id}`} data-melee-bed={g.bed} className="pointer-events-none absolute overflow-hidden [image-rendering:pixelated]" style={{left:`${slot.x*100}%`,top:`${slot.y*100}%`,width:'25%',aspectRatio:'560 / 360',transform:`translate(-50%,-50%) scale(${scale})`,zIndex:Math.round(slot.y*100)+5,backgroundImage:`url(${cloud.url})`,backgroundSize:'800% 100%',backgroundPosition:`${frame/7*100}% 0%`}}/>;
+  })}</>;
 }
