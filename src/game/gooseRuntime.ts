@@ -1,7 +1,7 @@
 import { BED_ARRIVAL, DOOR_POINT, routeTo, type Point } from './wardNav';
 export const GOOSE_COUNT=8;
 export const GOOSE_DURATION_MS=30_000;
-export const GOOSE_MELEE_MS=1120;
+export const GOOSE_MELEE_MS=2200;
 export const NURSE_SHOO_MS=1500;
 export const STAFF_SHOO_MS=1000;
 export const GOOSE_SAFE_MS=5000;
@@ -49,8 +49,8 @@ export function stepGooseWorld(w:GooseWorld,dt:number,occupied:number[],busy:num
   if(g.mode==='gone')continue;
   if(g.shooBy){if(now<g.until)continue;g.shooBy=undefined;g.safeUntil=now+GOOSE_SAFE_MS;const dest=choose(FLOOR.filter(p=>gooseDistance(g.pos,p)>.1),rng);if(dest)fly(g,dest,now);}
   if(g.mode==='fly'){advanceFlight(g,now);if(now>=g.until)roam(g,now,rng);continue;}
-  if(g.mode==='walk'||g.mode==='attackWalk'){
-   walk(g,dt,.00032);
+   if(g.mode==='walk'||g.mode==='attackWalk'){
+    walk(g,dt,.00022);
    if(!g.path.length){if(g.mode==='attackWalk'&&g.bed!==null&&occupied.includes(g.bed)&&!busy.includes(g.bed)&&gooseDistance(g.pos,BED_ARRIVAL[g.bed]??DOOR_POINT)<.008){g.mode='melee';g.since=now;g.until=now+GOOSE_MELEE_MS;}else roam(g,now,rng);}
   }else if(g.mode==='melee'&&now>=g.until){
    const bed=g.bed;g.bed=null;g.attackUntil=now+2000;
