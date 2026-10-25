@@ -33,11 +33,12 @@ import {
 import {
   combineEffects,
   gearEffects,
+  GEAR_ITEMS,
   normalizeEquipped,
   toggleEquipped,
 } from "@/game/gear";
-import { bedUpgradeEffects } from "@/game/bedUpgrades";
-import { unlocksBetween, type RewardPresentation } from "@/game/progressionRewards";
+import { BED_UPGRADES, bedUpgradeEffects } from "@/game/bedUpgrades";
+import { freshUnlockKeys, unlocksBetween, type RewardPresentation } from "@/game/progressionRewards";
 import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
 import { shiftTitle } from "@/game/shifts";
 import {
@@ -309,8 +310,10 @@ function Game() {
   const [gear, setGear] = useState<string[]>([]);
   const [equippedGear, setEquippedGear] = useState<string[]>([]);
   const [bedUpgrades, setBedUpgrades] = useState<string[]>([]);
-  const [last, setLast] = useState<ShiftStats | null>(null);
+  const [last, setLast] = useState<ShiftStats> | null>(null);
   const [lastReward, setLastReward] = useState<RewardPresentation | null>(null);
+  /** shop items unlocked by the latest rank-up; shown as NEW until bought or the next shift starts */
+  const [freshUnlocks, setFreshUnlocks] = useState<string[]>([]);
   const [review, setReview] = useState<ShiftReview | null>(null);
   const [jobSecurity, setJobSecurity] = useState(JOB_SECURITY_START);
   const [runKey, setRunKey] = useState(0);
