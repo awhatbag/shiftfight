@@ -258,6 +258,7 @@ export function UpgradeScreen({
                 const equipped = equippedGear.includes(g.key);
                 const locked = rank.level < (g.rank ?? 1);
                 const can = !owned && !locked && points >= g.cost;
+                const isNew = !owned && freshUnlocks.includes(g.key);
                 return (
                   <button
                     key={g.key}
@@ -268,6 +269,7 @@ export function UpgradeScreen({
                       "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
                       owned || can ? "chunky chunky-press" : "opacity-60",
                       equipped && "border-calm bg-calm/10",
+                      isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
                     )}
                   >
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
@@ -286,16 +288,20 @@ export function UpgradeScreen({
                         "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
                         equipped
                           ? "bg-calm text-calm-foreground"
-                          : "bg-primary text-primary-foreground",
+                          : isNew
+                            ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
+                            : "bg-primary text-primary-foreground",
                       )}
                     >
                       {equipped
                         ? "EQUIPPED"
                         : owned
                           ? "EQUIP"
-                          : locked
-                            ? `🔒 Lv${g.rank}`
-                            : `⭐${g.cost}`}
+                          : isNew
+                            ? "✨ NEW"
+                            : locked
+                              ? `🔒 Lv${g.rank}`
+                              : `⭐${g.cost}`}
                     </span>
                   </button>
                 );
