@@ -44,8 +44,7 @@ export function SummaryScreen({
           buzz(45);
         } else setStage(7);
       }, 3150),
-      window.setTimeout(() => setStage(levelledUp && reward.unlocks.length ? 6 : 7), 5150),
-      window.setTimeout(() => setStage(7), 6900),
+      // Level-up and unlock overlays now wait for the player's Continue tap.
     ];
     return () => timers.forEach(window.clearTimeout);
   }, [levelledUp, reward.afterXp, reward.unlocks.length]);
@@ -104,7 +103,7 @@ export function SummaryScreen({
         {achievement && stage >= 4 && <p className="reward-reveal mt-2 text-xs font-bold text-calm-foreground">{achievement}</p>}
       </div>
 
-      {stage === 5 && <div className="pointer-events-none fixed inset-0 z-[90] overflow-hidden" aria-live="assertive"><div className="level-up-flight"><div className="reward-flare" /><p className="pixel-count text-center text-6xl">Level up!</p><p className="pixel-count mt-2 text-center text-3xl">Nurse Lv {reward.afterRank.level}</p><p className="mt-2 text-center font-display text-sm font-black uppercase text-primary-foreground">{reward.afterRank.title}</p></div></div>}
+      {stage === 5 && <div className="pointer-events-auto fixed inset-0 z-[90] grid place-items-center bg-background/85 p-5 backdrop-blur-sm" aria-live="assertive"><div className="reward-unlock relative w-full max-w-sm border-y-4 border-gold bg-card py-5 text-center shadow-2xl"><p className="pixel-count text-center text-6xl">Level up!</p><p className="pixel-count mt-2 text-center text-3xl">Nurse Lv {reward.afterRank.level}</p><p className="mt-2 text-center font-display text-sm font-black uppercase">{reward.afterRank.title}</p><button onClick={() => setStage(reward.unlocks.length ? 6 : 7)} className="chunky chunky-press mt-4 rounded-2xl bg-primary px-6 py-3 font-display text-base font-black uppercase text-primary-foreground">Continue ▶</button></div></div>}
       {stage === 6 && reward.unlocks.length > 0 && <div className="pointer-events-auto fixed inset-0 z-[90] grid place-items-center bg-background/85 p-5 backdrop-blur-sm"><div className="reward-unlock w-full max-w-sm border-y-4 border-gold bg-card py-5 text-center shadow-2xl"><p className="pixel-count text-5xl">New unlock!</p><div className="mt-4 space-y-1 px-4">{reward.unlocks.map((unlock) => <p key={unlock} className="font-display text-base font-black uppercase">{unlock}</p>)}</div><button onClick={() => setStage(7)} className="chunky chunky-press mt-4 rounded-2xl bg-primary px-6 py-3 font-display text-base font-black uppercase text-primary-foreground">Nice! ▶</button></div></div>}
 
       <div className="grid grid-cols-2 gap-2">
