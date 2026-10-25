@@ -360,6 +360,7 @@ export function UpgradeScreen({
           const locked = rank.level < need;
           const full = seatsLeft <= 0;
           const can = !hired && !locked && !full && points >= s.cost;
+          const isNew = !hired && freshUnlocks.includes(s.key);
           return (
             <button
               key={s.key}
@@ -369,6 +370,7 @@ export function UpgradeScreen({
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
                 can ? "chunky chunky-press" : "opacity-60",
+                isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
             >
               <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-accent text-xl">
@@ -378,14 +380,23 @@ export function UpgradeScreen({
                 <p className="font-display truncate text-sm font-black uppercase">{s.name}</p>
                 <p className="text-[11px] leading-tight text-muted-foreground">{s.bonus}</p>
               </div>
-              <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
+              <span
+                className={cn(
+                  "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
+                  isNew
+                    ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
+                    : "bg-primary text-primary-foreground",
+                )}
+              >
                 {hired
                   ? "ON SHIFT"
-                  : locked
-                    ? `🔒 XP Lv${need}`
-                    : full
-                      ? "NO SEATS"
-                      : `⭐${s.cost}`}
+                  : isNew
+                    ? "✨ NEW"
+                    : locked
+                      ? `🔒 XP Lv${need}`
+                      : full
+                        ? "NO SEATS"
+                        : `⭐${s.cost}`}
               </span>
             </button>
           );
