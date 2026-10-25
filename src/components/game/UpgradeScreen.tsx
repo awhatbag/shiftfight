@@ -34,6 +34,7 @@ export function UpgradeScreen({
   gear,
   equippedGear,
   bedUpgrades,
+  freshUnlocks,
   onBuy,
   onHire,
   onBuyGear,
@@ -61,6 +62,8 @@ export function UpgradeScreen({
   gear: string[];
   equippedGear: string[];
   bedUpgrades: string[];
+  /** shop item keys unlocked by the latest rank-up, shown as NEW */
+  freshUnlocks: string[];
   onBuy: (k: keyof Upgrades, cost: number) => void;
   onHire: (k: string, cost: number) => void;
   onBuyGear: (k: string, cost: number) => void;
@@ -90,16 +93,28 @@ export function UpgradeScreen({
     ...GEAR_CATEGORIES.map((c) => ({ id: c.key as string, label: TAB_LABELS[c.key] ?? c.name })),
     { id: "staff", label: "👥 Staff" },
   ];
+  /** does this tab contain anything freshly unlocked? */
+  const tabHasNew = (id: string): boolean => {
+    if (id === "ward")
+      return freshUnlocks.includes("tier5") || BED_UPGRADES.some((b) => freshUnlocks.includes(b.key));
+    if (id === "staff") return STAFF.some((s) => freshUnlocks.includes(s.key));
+    return GEAR_ITEMS.some((g) => g.category === id && freshUnlocks.includes(g.key));
+  };
   const tabButton = (t: { id: string; label: string }) => (
     <button
       key={t.id}
       onClick={() => setTab(t.id)}
       className={cn(
-        "chunky chunky-press flex h-14 w-full items-center justify-center rounded-xl px-1 text-center font-display text-xs font-black uppercase leading-tight",
+        "chunky chunky-press relative flex h-14 w-full items-center justify-center rounded-xl px-1 text-center font-display text-xs font-black uppercase leading-tight",
         tab === t.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
       )}
     >
       {t.label}
+      {tabHasNew(t.id) && (
+        <span className="absolute -right-1 -top-1 animate-pulse rounded-full bg-[image:var(--gradient-gold)] px-1.5 py-0.5 font-display text-[9px] font-black text-gold-foreground shadow">
+          ✨NEW
+        </span>
+      )}
     </button>
   );
 
