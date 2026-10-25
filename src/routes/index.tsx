@@ -310,7 +310,7 @@ function Game() {
   const [gear, setGear] = useState<string[]>([]);
   const [equippedGear, setEquippedGear] = useState<string[]>([]);
   const [bedUpgrades, setBedUpgrades] = useState<string[]>([]);
-  const [last, setLast] = useState<ShiftStats> | null>(null);
+  const [last, setLast] = useState<ShiftStats | null>(null);
   const [lastReward, setLastReward] = useState<RewardPresentation | null>(null);
   /** shop items unlocked by the latest rank-up; shown as NEW until bought or the next shift starts */
   const [freshUnlocks, setFreshUnlocks] = useState<string[]>([]);
