@@ -2,18 +2,7 @@ import { describe, expect, it } from "vitest";
 import { freshUnlockKeys } from "./progressionRewards";
 import { BED_UPGRADES } from "./bedUpgrades";
 import { GEAR_ITEMS } from "./gear";
-import { STAFF } from "./config";
-
-/** smallest xp that reaches a given rank level, found by scanning */
-function xpForRank(level: number): number {
-  // nurseRank thresholds grow; scan upward until the rank matches
-  for (let xp = 0; xp <= 1_000_000; xp += 50) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-  }
-  return -1;
-}
-
-import { nurseRank } from "./config";
+import { nurseRank, STAFF } from "./config";
 
 function firstXpAtRank(level: number): number {
   for (let xp = 0; xp <= 2_000_000; xp += 10) {
