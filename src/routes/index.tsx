@@ -869,9 +869,11 @@ function Game() {
             gear={gear}
             equippedGear={equippedGear}
             bedUpgrades={bedUpgrades}
+            freshUnlocks={freshUnlocks}
             onBuy={(k, cost) => {
               setPoints((p) => p - cost);
               setUpgrades((u) => ({ ...u, [k]: u[k] + 1 }));
+              setFreshUnlocks((f) => f.filter((x) => x !== "tier5"));
             }}
             onHire={(k, cost) => {
               setStaff((s) => {
@@ -879,6 +881,7 @@ function Game() {
                 setPoints((p) => p - cost);
                 return [...s, k];
               });
+              setFreshUnlocks((f) => f.filter((x) => x !== k));
             }}
             onBuyGear={(k, cost) => {
               if (gear.includes(k)) return;
@@ -887,9 +890,11 @@ function Game() {
               setGear(owned);
               /* a new purchase is worn straight away, replacing its category slot */
               setEquippedGear((e) => toggleEquipped(owned, e, k));
+              setFreshUnlocks((f) => f.filter((x) => x !== k));
             }}
             onToggleGear={(k) => {
               setEquippedGear((e) => toggleEquipped(gear, e, k));
+              setFreshUnlocks((f) => f.filter((x) => x !== k));
             }}
             onBuyBedUpgrade={(k, cost) => {
               setBedUpgrades((b) => {
@@ -897,6 +902,7 @@ function Game() {
                 setPoints((p) => p - cost);
                 return [...b, k];
               });
+              setFreshUnlocks((f) => f.filter((x) => x !== k));
             }}
             onSave={saveProgress}
             saveNote={saveNote}
