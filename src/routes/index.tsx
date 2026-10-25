@@ -33,11 +33,10 @@ import {
 import {
   combineEffects,
   gearEffects,
-  GEAR_ITEMS,
   normalizeEquipped,
   toggleEquipped,
 } from "@/game/gear";
-import { BED_UPGRADES, bedUpgradeEffects } from "@/game/bedUpgrades";
+import { bedUpgradeEffects } from "@/game/bedUpgrades";
 import { freshUnlockKeys, unlocksBetween, type RewardPresentation } from "@/game/progressionRewards";
 import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
 import { shiftTitle } from "@/game/shifts";
@@ -553,6 +552,7 @@ function Game() {
       afterRank,
       unlocks: unlocksBetween(xp, nextXp, level, nextLevel),
     });
+    setFreshUnlocks(freshUnlockKeys(xp, nextXp));
     /** the DON reviews the shift using the stats the game already tracks */
     const r = reviewShift(
       {
@@ -733,6 +733,7 @@ function Game() {
     setScheduledCatastropheId(pickCatastrophe(catastropheSchedule, level));
     setRunKey((k) => k + 1);
     setShiftPatientNames(shuffledPatientNames(MAX_BEDS));
+    setFreshUnlocks([]);
     setPhase("shift");
   }
 
