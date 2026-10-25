@@ -43,6 +43,28 @@ export function unlocksBetween(
   return [...new Set(unlocks)];
 }
 
+/** keys of shop items whose rank requirement was just crossed; "tier5" flags ward upgrades */
+export function freshUnlockKeys(beforeXp: number, afterXp: number): string[] {
+  const beforeRank = nurseRank(beforeXp).level;
+  const afterRank = nurseRank(afterXp).level;
+  if (afterRank <= beforeRank) return [];
+  const keys: string[] = [];
+  for (const item of GEAR_ITEMS) {
+    const need = item.rank ?? 1;
+    if (need > beforeRank && need <= afterRank) keys.push(item.key);
+  }
+  for (const bed of BED_UPGRADES) {
+    const need = bed.rank ?? 1;
+    if (need > beforeRank && need <= afterRank) keys.push(bed.key);
+  }
+  for (const member of STAFF) {
+    const need = member.rank ?? 2;
+    if (need > beforeRank && need <= afterRank) keys.push(member.key);
+  }
+  if (beforeRank < 4 && afterRank >= 4) keys.push("tier5");
+  return keys;
+}
+
 export function notableAchievement(stats: {
   maxCombo: number;
   mistakes: number;

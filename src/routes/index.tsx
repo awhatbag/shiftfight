@@ -37,7 +37,7 @@ import {
   toggleEquipped,
 } from "@/game/gear";
 import { bedUpgradeEffects } from "@/game/bedUpgrades";
-import { unlocksBetween, type RewardPresentation } from "@/game/progressionRewards";
+import { freshUnlockKeys, unlocksBetween, type RewardPresentation } from "@/game/progressionRewards";
 import { updateWardProgress, wardForLevel, type WardProgress } from "@/game/wards";
 import { shiftTitle } from "@/game/shifts";
 import {
@@ -311,6 +311,8 @@ function Game() {
   const [bedUpgrades, setBedUpgrades] = useState<string[]>([]);
   const [last, setLast] = useState<ShiftStats | null>(null);
   const [lastReward, setLastReward] = useState<RewardPresentation | null>(null);
+  /** shop items unlocked by the latest rank-up; shown as NEW until bought or the next shift starts */
+  const [freshUnlocks, setFreshUnlocks] = useState<string[]>([]);
   const [review, setReview] = useState<ShiftReview | null>(null);
   const [jobSecurity, setJobSecurity] = useState(JOB_SECURITY_START);
   const [runKey, setRunKey] = useState(0);
@@ -550,6 +552,7 @@ function Game() {
       afterRank,
       unlocks: unlocksBetween(xp, nextXp, level, nextLevel),
     });
+    setFreshUnlocks(freshUnlockKeys(xp, nextXp));
     /** the DON reviews the shift using the stats the game already tracks */
     const r = reviewShift(
       {
@@ -730,6 +733,7 @@ function Game() {
     setScheduledCatastropheId(pickCatastrophe(catastropheSchedule, level));
     setRunKey((k) => k + 1);
     setShiftPatientNames(shuffledPatientNames(MAX_BEDS));
+    setFreshUnlocks([]);
     setPhase("shift");
   }
 
@@ -865,9 +869,11 @@ function Game() {
             gear={gear}
             equippedGear={equippedGear}
             bedUpgrades={bedUpgrades}
+            freshUnlocks={freshUnlocks}
             onBuy={(k, cost) => {
               setPoints((p) => p - cost);
               setUpgrades((u) => ({ ...u, [k]: u[k] + 1 }));
+              setFreshUnlocks((f) => f.filter((x) => x !== "tier5"));
             }}
             onHire={(k, cost) => {
               setStaff((s) => {
@@ -875,6 +881,7 @@ function Game() {
                 setPoints((p) => p - cost);
                 return [...s, k];
               });
+              setFreshUnlocks((f) => f.filter((x) => x !== k));
             }}
             onBuyGear={(k, cost) => {
               if (gear.includes(k)) return;
@@ -883,9 +890,11 @@ function Game() {
               setGear(owned);
               /* a new purchase is worn straight away, replacing its category slot */
               setEquippedGear((e) => toggleEquipped(owned, e, k));
+              setFreshUnlocks((f) => f.filter((x) => x !== k));
             }}
             onToggleGear={(k) => {
               setEquippedGear((e) => toggleEquipped(gear, e, k));
+              setFreshUnlocks((f) => f.filter((x) => x !== k));
             }}
             onBuyBedUpgrade={(k, cost) => {
               setBedUpgrades((b) => {
@@ -893,6 +902,7 @@ function Game() {
                 setPoints((p) => p - cost);
                 return [...b, k];
               });
+              setFreshUnlocks((f) => f.filter((x) => x !== k));
             }}
             onSave={saveProgress}
             saveNote={saveNote}

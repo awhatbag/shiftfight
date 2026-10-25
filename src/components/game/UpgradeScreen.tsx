@@ -34,6 +34,7 @@ export function UpgradeScreen({
   gear,
   equippedGear,
   bedUpgrades,
+  freshUnlocks,
   onBuy,
   onHire,
   onBuyGear,
@@ -61,6 +62,8 @@ export function UpgradeScreen({
   gear: string[];
   equippedGear: string[];
   bedUpgrades: string[];
+  /** shop item keys unlocked by the latest rank-up, shown as NEW */
+  freshUnlocks: string[];
   onBuy: (k: keyof Upgrades, cost: number) => void;
   onHire: (k: string, cost: number) => void;
   onBuyGear: (k: string, cost: number) => void;
@@ -90,16 +93,28 @@ export function UpgradeScreen({
     ...GEAR_CATEGORIES.map((c) => ({ id: c.key as string, label: TAB_LABELS[c.key] ?? c.name })),
     { id: "staff", label: "👥 Staff" },
   ];
+  /** does this tab contain anything freshly unlocked? */
+  const tabHasNew = (id: string): boolean => {
+    if (id === "ward")
+      return freshUnlocks.includes("tier5") || BED_UPGRADES.some((b) => freshUnlocks.includes(b.key));
+    if (id === "staff") return STAFF.some((s) => freshUnlocks.includes(s.key));
+    return GEAR_ITEMS.some((g) => g.category === id && freshUnlocks.includes(g.key));
+  };
   const tabButton = (t: { id: string; label: string }) => (
     <button
       key={t.id}
       onClick={() => setTab(t.id)}
       className={cn(
-        "chunky chunky-press flex h-14 w-full items-center justify-center rounded-xl px-1 text-center font-display text-xs font-black uppercase leading-tight",
+        "chunky chunky-press relative flex h-14 w-full items-center justify-center rounded-xl px-1 text-center font-display text-xs font-black uppercase leading-tight",
         tab === t.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
       )}
     >
       {t.label}
+      {tabHasNew(t.id) && (
+        <span className="absolute -right-1 -top-1 animate-pulse rounded-full bg-[image:var(--gradient-gold)] px-1.5 py-0.5 font-display text-[9px] font-black text-gold-foreground shadow">
+          ✨NEW
+        </span>
+      )}
     </button>
   );
 
@@ -162,6 +177,11 @@ export function UpgradeScreen({
       </div>
 
       <Section show={tab === "ward"} title="🩺 Ward upgrades">
+        {freshUnlocks.includes("tier5") && (
+          <p className="animate-pulse rounded-xl bg-[image:var(--gradient-gold)] px-3 py-2 text-center font-display text-xs font-black uppercase text-gold-foreground">
+            ✨ New tier unlocked — upgrades can go to tier 5!
+          </p>
+        )}
         {UPGRADE_INFO.map((u) => {
           const lvl = upgrades[u.key];
           const cost = u.cost(lvl);
@@ -243,6 +263,7 @@ export function UpgradeScreen({
                 const equipped = equippedGear.includes(g.key);
                 const locked = rank.level < (g.rank ?? 1);
                 const can = !owned && !locked && points >= g.cost;
+                const isNew = !owned && freshUnlocks.includes(g.key);
                 return (
                   <button
                     key={g.key}
@@ -253,6 +274,7 @@ export function UpgradeScreen({
                       "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
                       owned || can ? "chunky chunky-press" : "opacity-60",
                       equipped && "border-calm bg-calm/10",
+                      isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
                     )}
                   >
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
@@ -271,16 +293,20 @@ export function UpgradeScreen({
                         "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
                         equipped
                           ? "bg-calm text-calm-foreground"
-                          : "bg-primary text-primary-foreground",
+                          : isNew
+                            ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
+                            : "bg-primary text-primary-foreground",
                       )}
                     >
                       {equipped
                         ? "EQUIPPED"
                         : owned
                           ? "EQUIP"
-                          : locked
-                            ? `🔒 Lv${g.rank}`
-                            : `⭐${g.cost}`}
+                          : isNew
+                            ? "✨ NEW"
+                            : locked
+                              ? `🔒 Lv${g.rank}`
+                              : `⭐${g.cost}`}
                     </span>
                   </button>
                 );
@@ -296,6 +322,7 @@ export function UpgradeScreen({
           const owned = bedUpgrades.includes(b.key);
           const locked = rank.level < (b.rank ?? 1);
           const can = !owned && !locked && points >= b.cost;
+          const isNew = !owned && freshUnlocks.includes(b.key);
           return (
             <button
               key={b.key}
@@ -305,6 +332,7 @@ export function UpgradeScreen({
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
                 can ? "chunky chunky-press" : "opacity-60",
+                isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
             >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
@@ -314,8 +342,15 @@ export function UpgradeScreen({
                 <p className="font-display truncate text-sm font-black uppercase">{b.name}</p>
                 <p className="text-[11px] leading-tight text-muted-foreground">{b.blurb}</p>
               </div>
-              <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
-                {owned ? "FITTED" : locked ? `🔒 Lv${b.rank}` : `⭐${b.cost}`}
+              <span
+                className={cn(
+                  "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
+                  isNew
+                    ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
+                    : "bg-primary text-primary-foreground",
+                )}
+              >
+                {owned ? "FITTED" : isNew ? "✨ NEW" : locked ? `🔒 Lv${b.rank}` : `⭐${b.cost}`}
               </span>
             </button>
           );
@@ -330,6 +365,7 @@ export function UpgradeScreen({
           const locked = rank.level < need;
           const full = seatsLeft <= 0;
           const can = !hired && !locked && !full && points >= s.cost;
+          const isNew = !hired && freshUnlocks.includes(s.key);
           return (
             <button
               key={s.key}
@@ -339,6 +375,7 @@ export function UpgradeScreen({
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
                 can ? "chunky chunky-press" : "opacity-60",
+                isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
             >
               <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-accent text-xl">
@@ -348,14 +385,23 @@ export function UpgradeScreen({
                 <p className="font-display truncate text-sm font-black uppercase">{s.name}</p>
                 <p className="text-[11px] leading-tight text-muted-foreground">{s.bonus}</p>
               </div>
-              <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
+              <span
+                className={cn(
+                  "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
+                  isNew
+                    ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
+                    : "bg-primary text-primary-foreground",
+                )}
+              >
                 {hired
                   ? "ON SHIFT"
-                  : locked
-                    ? `🔒 XP Lv${need}`
-                    : full
-                      ? "NO SEATS"
-                      : `⭐${s.cost}`}
+                  : isNew
+                    ? "✨ NEW"
+                    : locked
+                      ? `🔒 XP Lv${need}`
+                      : full
+                        ? "NO SEATS"
+                        : `⭐${s.cost}`}
               </span>
             </button>
           );
