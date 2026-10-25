@@ -317,6 +317,7 @@ export function UpgradeScreen({
           const owned = bedUpgrades.includes(b.key);
           const locked = rank.level < (b.rank ?? 1);
           const can = !owned && !locked && points >= b.cost;
+          const isNew = !owned && freshUnlocks.includes(b.key);
           return (
             <button
               key={b.key}
@@ -326,6 +327,7 @@ export function UpgradeScreen({
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
                 can ? "chunky chunky-press" : "opacity-60",
+                isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
             >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
@@ -335,8 +337,15 @@ export function UpgradeScreen({
                 <p className="font-display truncate text-sm font-black uppercase">{b.name}</p>
                 <p className="text-[11px] leading-tight text-muted-foreground">{b.blurb}</p>
               </div>
-              <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
-                {owned ? "FITTED" : locked ? `🔒 Lv${b.rank}` : `⭐${b.cost}`}
+              <span
+                className={cn(
+                  "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
+                  isNew
+                    ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
+                    : "bg-primary text-primary-foreground",
+                )}
+              >
+                {owned ? "FITTED" : isNew ? "✨ NEW" : locked ? `🔒 Lv${b.rank}` : `⭐${b.cost}`}
               </span>
             </button>
           );
