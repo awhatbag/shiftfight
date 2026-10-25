@@ -177,6 +177,11 @@ export function UpgradeScreen({
       </div>
 
       <Section show={tab === "ward"} title="🩺 Ward upgrades">
+        {freshUnlocks.includes("tier5") && (
+          <p className="animate-pulse rounded-xl bg-[image:var(--gradient-gold)] px-3 py-2 text-center font-display text-xs font-black uppercase text-gold-foreground">
+            ✨ New tier unlocked — upgrades can go to tier 5!
+          </p>
+        )}
         {UPGRADE_INFO.map((u) => {
           const lvl = upgrades[u.key];
           const cost = u.cost(lvl);
