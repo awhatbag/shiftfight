@@ -11,6 +11,7 @@ type Props = {
 const COLS = 36;
 const ROWS = 54;
 const TARGET = 0.95;
+const PIXEL = 6; // CSS px per art pixel
 
 type Sparkle = { id: number; x: number; y: number; d: number };
 
@@ -45,11 +46,13 @@ export function VomitGame({ level, paused, onDone }: Props) {
     const cv = canvasRef.current;
     if (!el || !cv) return;
     const box = el.getBoundingClientRect();
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    // Chunky arcade pixels: draw at a low internal resolution, upscale crisply.
+    const dpr = 1 / PIXEL;
     cv.width = Math.max(1, Math.floor(box.width * dpr));
     cv.height = Math.max(1, Math.floor(box.height * dpr));
     const ctx = cv.getContext("2d");
     if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
     ctx.scale(dpr, dpr);
 
     playVomit();
