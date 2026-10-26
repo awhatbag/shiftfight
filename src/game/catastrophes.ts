@@ -38,6 +38,8 @@ export type CatastropheDef = {
   devLabel: string;
   /** automatic trigger: only on this level, once per shift */
   level?: number;
+  /** automatic trigger: never before this level (later levels all eligible) */
+  minLevel?: number;
   outcomeSprites?: Record<CatastropheOutcome, string>;
   /** false keeps a registered catastrophe out of automatic scheduling */
   available?: boolean;
@@ -83,7 +85,7 @@ export const AVOCADO_AVALANCHE: CatastropheDef = {
 
 export const GOOSEPOCALYPSE: CatastropheDef = {
   id: "goosepocalypse", devCommand: "goosepocalypse", devLabel: "🪿 Trigger Goosepocalypse",
-  available: true, minRemainingMs: 40_000, durationMs: GOOSE_DURATION_MS, respawnMs: 0,
+  minLevel: 4, available: true, minRemainingMs: 40_000, durationMs: GOOSE_DURATION_MS, respawnMs: 0,
   events: GOOSE_EVENTS, isEvent: isGooseEvent, grade: gradeAvalanche, conclusion: gooseConclusion,
   nextIntroLabel: () => "Let's get this flock out ▶", defaultIntroLabel: "Let's get this flock out ▶",
   intro: { title: "Goosepocalypse", lines: ["The geese are loose! Eight have escaped from the administration office.", "Why were they there? Apparently the new management team took 'winging it' literally."], closing: "Protect the patients. Do not negotiate with the honks." },
@@ -110,6 +112,7 @@ export const CATASTROPHE_GAP_MAX = 6;
 export type SchedulableCatastrophe = {
   id: string;
   level?: number;
+  minLevel?: number;
   available?: boolean;
 };
 
@@ -125,7 +128,8 @@ export const newSchedule = (): CatastropheSchedule => ({ shiftsUntilNext: 0, com
 export const isEligible = (c: SchedulableCatastrophe, level: number) =>
   c.available !== false &&
   level >= CATASTROPHE_MIN_LEVEL &&
-  (c.level === undefined || c.level === level);
+  (c.level === undefined || c.level === level) &&
+  (c.minLevel === undefined || level >= c.minLevel);
 
 /** id of the catastrophe for this shift, or null if none should run */
 export function pickCatastrophe(
