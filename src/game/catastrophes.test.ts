@@ -87,9 +87,11 @@ describe("catastrophe scheduler", () => {
     expect(normalizeSchedule(undefined)).toEqual(newSchedule());
   });
 
-  it("Avocado Avalanche is still Level 3 only alongside the new eligible goose event", () => {
+  it("Level 3 always runs Avocado Avalanche; Goosepocalypse starts at Level 4", () => {
     expect(pickCatastrophe(newSchedule(), 3, () => 0)).toBe(AVOCADO_AVALANCHE.id);
+    expect(pickCatastrophe(newSchedule(), 3)).toBe(AVOCADO_AVALANCHE.id);
     expect(pickCatastrophe(newSchedule(), 4)).toBe("goosepocalypse");
+    expect(pickCatastrophe(newSchedule(), 5)).toBe("goosepocalypse");
     expect(pickCatastrophe(newSchedule(), 2)).toBeNull();
   });
 });
