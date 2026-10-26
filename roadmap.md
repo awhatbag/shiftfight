@@ -3,6 +3,7 @@
 - [x] Make goose obstruction unmistakable with an anchored shoo button, tappable goose and nurse reaction; live goose tap showed SHOOING, removed both cues and resumed travel; 17 goose/scheduler tests passed.
 
 - [x] Register Goosepocalypse with supplied isolated-frame artwork and 25 patient problems.
+- [x] Add 15 more goose patient problems including eggs and feathers (40 total).
 - [x] Add staggered door entry, path roaming, flights, physical attacks and nurse/staff shooing.
 - [x] Add paused sequential exit, DON outcomes and unresolved-call preservation.
 - [x] Run focused rules tests and live Goosepocalypse/Avocado checks; staff obstruction is covered by pure tests rather than a hired-staff live run.
