@@ -501,6 +501,44 @@
   100% { transform: scale(0.6) rotate(-15deg); opacity: 0; }
 }
 
+/* Sick Bowl Sprint: pixel paper towel, pixel sparkles, big spotless title */
+.vomit-paper {
+  width: 64px;
+  height: 52px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 6px, oklch(0.9 0.01 90) 6px 8px),
+    repeating-linear-gradient(0deg, oklch(0.99 0.005 90) 0 10px, oklch(0.93 0.01 90) 10px 12px);
+  box-shadow:
+    0 0 0 3px oklch(0.75 0.02 90),
+    4px 4px 0 3px oklch(0.3 0.03 250 / 0.35);
+  clip-path: polygon(0 4px, 6px 0, 12px 4px, 18px 0, 24px 4px, 30px 0, 36px 4px, 42px 0, 48px 4px, 54px 0, 64px 4px, 64px 100%, 0 100%);
+  image-rendering: pixelated;
+}
+.pixel-sparkle {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: oklch(1 0 0);
+  box-shadow:
+    0 -6px 0 oklch(0.95 0.12 95), 0 6px 0 oklch(0.95 0.12 95),
+    -6px 0 0 oklch(0.95 0.12 95), 6px 0 0 oklch(0.95 0.12 95),
+    0 -12px 0 oklch(0.85 0.1 200), 0 12px 0 oklch(0.85 0.1 200),
+    -12px 0 0 oklch(0.85 0.1 200), 12px 0 0 oklch(0.85 0.1 200);
+}
+.pixel-spotless {
+  font-family: "Press Start 2P", var(--font-display, monospace);
+  font-weight: 900;
+  color: oklch(0.97 0.1 100);
+  text-shadow:
+    3px 0 0 oklch(0.55 0.15 160), -3px 0 0 oklch(0.55 0.15 160),
+    0 3px 0 oklch(0.55 0.15 160), 0 -3px 0 oklch(0.55 0.15 160),
+    6px 6px 0 oklch(0.25 0.05 250);
+  animation: spotless-flash 500ms steps(2) infinite;
+}
+@keyframes spotless-flash {
+  50% { color: oklch(0.92 0.14 200); }
+}
+
 
 /* End-of-shift countdown: red smooth hi-bit pixel lettering (stepped ramp + selective dark outline) */
 .pixel-count {

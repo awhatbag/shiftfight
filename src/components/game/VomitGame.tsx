@@ -11,6 +11,7 @@ type Props = {
 const COLS = 36;
 const ROWS = 54;
 const TARGET = 0.95;
+const PIXEL = 6; // CSS px per art pixel
 
 type Sparkle = { id: number; x: number; y: number; d: number };
 
@@ -45,11 +46,13 @@ export function VomitGame({ level, paused, onDone }: Props) {
     const cv = canvasRef.current;
     if (!el || !cv) return;
     const box = el.getBoundingClientRect();
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    // Chunky arcade pixels: draw at a low internal resolution, upscale crisply.
+    const dpr = 1 / PIXEL;
     cv.width = Math.max(1, Math.floor(box.width * dpr));
     cv.height = Math.max(1, Math.floor(box.height * dpr));
     const ctx = cv.getContext("2d");
     if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
     ctx.scale(dpr, dpr);
 
     playVomit();
@@ -171,7 +174,7 @@ export function VomitGame({ level, paused, onDone }: Props) {
   }
 
   function burstSparkles() {
-    const list: Sparkle[] = Array.from({ length: 18 }, (_, i) => ({
+    const list: Sparkle[] = Array.from({ length: 30 }, (_, i) => ({
       id: i,
       x: 8 + Math.random() * 84,
       y: 8 + Math.random() * 84,
@@ -200,6 +203,8 @@ export function VomitGame({ level, paused, onDone }: Props) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
+    // Clear anti-aliased fringe pixels so wiped edges stay blocky.
+    ctx.globalAlpha = 1;
     ctx.restore();
 
     let gained = 0;
@@ -287,35 +292,37 @@ export function VomitGame({ level, paused, onDone }: Props) {
         onPointerCancel={onUp}
         className="relative flex-1 touch-none overflow-hidden rounded-3xl border-4 border-border bg-floor shadow-[inset_0_0_0_2px_var(--color-border)]"
       >
-        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 h-full w-full"
+          style={{ imageRendering: "pixelated" }}
+        />
 
         {cloth && (
           <span
-            className="pointer-events-none absolute grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-2xl bg-sheet/80 text-3xl shadow-md"
+            className="vomit-paper pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 -rotate-6"
             style={{ left: `${cloth.x * 100}%`, top: `${cloth.y * 100}%` }}
-          >
-            🧻
-          </span>
+          />
         )}
 
         {sparkles.map((s) => (
           <span
             key={s.id}
-            className="pointer-events-none absolute text-2xl"
+            className="pixel-sparkle pointer-events-none absolute"
             style={{
               left: `${s.x}%`,
               top: `${s.y}%`,
-              animation: `sparkle 900ms ease-out ${s.d}ms both`,
+              animation: `sparkle 900ms steps(6) ${s.d}ms infinite`,
             }}
-          >
-            ✨
-          </span>
+          />
         ))}
 
         {phase === "done" && pctRef.current >= TARGET && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <p className="font-display animate-pop text-3xl font-black uppercase text-calm-foreground">
-              Spotless! ✨
+            <p className="pixel-spotless animate-pop text-center text-6xl leading-none">
+              SPOT
+              <br />
+              LESS!
             </p>
           </div>
         )}
