@@ -174,7 +174,7 @@ export function VomitGame({ level, paused, onDone }: Props) {
   }
 
   function burstSparkles() {
-    const list: Sparkle[] = Array.from({ length: 18 }, (_, i) => ({
+    const list: Sparkle[] = Array.from({ length: 30 }, (_, i) => ({
       id: i,
       x: 8 + Math.random() * 84,
       y: 8 + Math.random() * 84,
