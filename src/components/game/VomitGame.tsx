@@ -319,10 +319,11 @@ export function VomitGame({ level, paused, onDone }: Props) {
 
         {phase === "done" && pctRef.current >= TARGET && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <p className="pixel-spotless animate-pop text-center text-6xl leading-none">
-              SPOT
-              <br />
-              LESS!
+            <p
+              className="pixel-spotless animate-pop whitespace-nowrap text-center leading-none"
+              style={{ fontSize: "min(2.75rem, 9.5vw)" }}
+            >
+              SPOTLESS!
             </p>
           </div>
         )}
