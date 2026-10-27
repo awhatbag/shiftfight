@@ -182,7 +182,7 @@ export function SutureGame({ level, paused, onDone }: Props) {
         </p>
         <h2 className="font-display text-2xl font-black leading-none">WOUND SUTURING</h2>
         <p className="text-[11px] text-muted-foreground">
-          Follow the gold zigzag, starting at the needle.
+          Drag the needle to the flashing target. Each stitch pulls the wound shut!
         </p>
       </div>
 
@@ -293,7 +293,7 @@ export function SutureGame({ level, paused, onDone }: Props) {
               </svg>
               <svg
                 aria-hidden="true"
-                className="pointer-events-none absolute h-16 w-16 -translate-x-1/2 -translate-y-1/2 drop-shadow-md"
+                className="pointer-events-none absolute h-16 w-16 drop-shadow-md"
                 style={{
                   left: `${needle.x * 100}%`,
                   top: `${needle.y * 100}%`,
