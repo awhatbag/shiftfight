@@ -222,93 +222,119 @@ export function SutureGame({ level, paused, onDone }: Props) {
         <svg
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full"
-          viewBox="0 0 100 100"
+          viewBox="0 0 50 100"
           preserveAspectRatio="none"
+          shapeRendering="crispEdges"
         >
-          <path
-            d="M50 10 C48 18 52 25 49 34 C47 44 53 53 50 63 C47 72 52 82 50 90"
-            fill="none"
-            stroke="var(--suture-wound-shadow)"
-            strokeLinecap="round"
-            strokeWidth="8"
-            opacity="0.28"
-          />
-          <path
-            d="M50 10 C48 18 52 25 49 34 C47 44 53 53 50 63 C47 72 52 82 50 90"
-            fill="none"
-            stroke="var(--suture-wound-edge)"
-            strokeLinecap="round"
-            strokeWidth="5.5"
-          />
-          <path
-            d="M50 10 C48 18 52 25 49 34 C47 44 53 53 50 63 C47 72 52 82 50 90"
-            fill="none"
-            stroke="var(--suture-wound-depth)"
-            strokeLinecap="round"
-            strokeWidth="2.4"
-            opacity={Math.max(0.32, 1 - idx / count)}
-          />
+          {(() => {
+            // Chunky pixel wound: each finished stitch pulls the edges closer.
+            const open = Math.max(0, 1 - idx / count);
+            const rows = [];
+            for (let y = 8; y < 92; y += 2) {
+              const cx = Math.round(25 + Math.sin(y / 9) * 1.5);
+              const taper = Math.sin(((y - 8) / 84) * Math.PI);
+              const half = Math.round(taper * 5 * open);
+              rows.push(
+                <g key={y}>
+                  <rect x={cx - half - 1} y={y} width={half * 2 + 2} height={2} fill="var(--suture-wound-edge)" opacity={open > 0 ? 1 : 0.55} />
+                  {half > 0 && (
+                    <rect x={cx - half} y={y} width={half * 2} height={2} fill="var(--suture-wound-shadow)" />
+                  )}
+                  {half > 1 && (
+                    <rect x={cx - half + 1} y={y} width={half * 2 - 2} height={2} fill="var(--suture-wound-depth)" />
+                  )}
+                </g>,
+              );
+            }
+            return rows;
+          })()}
           {stitches.map((stitch, i) => {
-            const path = stitchPoints(stitch);
-            const active = i === idx && !stitch.done;
+            if (!stitch.done) return null;
+            const p = stitchPoints(stitch);
             return (
-              <g key={i} opacity={!active && !stitch.done ? 0.26 : 1}>
-                <line
-                  x1={path.startX * 100}
-                  y1={path.startY * 100}
-                  x2={path.endX * 100}
-                  y2={path.endY * 100}
-                  stroke={
-                    stitch.done
-                      ? stitch.good
-                        ? "var(--suture-thread)"
-                        : "var(--suture-thread-wobbly)"
-                      : "var(--suture-guide)"
-                  }
-                  strokeDasharray={stitch.done ? undefined : "3 2"}
-                  strokeLinecap="round"
-                  strokeWidth={stitch.done ? 1.4 : active ? 1.1 : 0.8}
-                />
-                <circle
-                  cx={path.startX * 100}
-                  cy={path.startY * 100}
-                  r={active ? 2.4 : 1.5}
-                  fill={active ? "var(--suture-guide)" : "var(--suture-marker)"}
-                />
-                <circle
-                  cx={path.endX * 100}
-                  cy={path.endY * 100}
-                  r={active ? 2.4 : 1.5}
-                  fill={active ? "var(--suture-guide)" : "var(--suture-marker)"}
-                />
-              </g>
+              <line
+                key={i}
+                x1={p.startX * 50}
+                y1={p.startY * 100}
+                x2={p.endX * 50}
+                y2={p.endY * 100}
+                stroke={stitch.good ? "var(--suture-thread)" : "var(--suture-thread-wobbly)"}
+                strokeWidth={1.6}
+              />
             );
           })}
         </svg>
 
         {stitches[idx] && !stitches[idx].done && (() => {
           const path = stitchPoints(stitches[idx]);
+          const needle = trail && startedRef.current ? trail : { x: path.startX, y: path.startY };
           return (
-            <span
-              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 text-2xl drop-shadow-md"
-              style={{ left: `${path.startX * 100}%`, top: `${path.startY * 100}%` }}
-            >
-              🪡
-            </span>
+            <>
+              <span
+                className="suture-target pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${path.endX * 100}%`, top: `${path.endY * 100}%` }}
+              />
+              <svg
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+              >
+                <line
+                  x1={path.startX * 100}
+                  y1={path.startY * 100}
+                  x2={needle.x * 100}
+                  y2={needle.y * 100}
+                  stroke="var(--suture-thread)"
+                  strokeWidth={0.9}
+                  vectorEffect="non-scaling-stroke"
+                  style={{ strokeWidth: 3 }}
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                className="pointer-events-none absolute h-16 w-16 -translate-x-1/2 -translate-y-1/2 drop-shadow-md"
+                style={{
+                  left: `${needle.x * 100}%`,
+                  top: `${needle.y * 100}%`,
+                  transform: `translate(-50%,-50%) scaleX(${stitches[idx].fromLeft ? 1 : -1})`,
+                }}
+                viewBox="0 0 16 16"
+                shapeRendering="crispEdges"
+              >
+                {/* Pixel curved surgical needle with swaged thread */}
+                <rect x="1" y="9" width="2" height="1" fill="var(--suture-thread)" />
+                <rect x="3" y="10" width="2" height="1" fill="oklch(0.55 0.02 250)" />
+                <rect x="5" y="11" width="3" height="1" fill="oklch(0.85 0.01 250)" />
+                <rect x="8" y="10" width="2" height="1" fill="oklch(0.92 0.01 250)" />
+                <rect x="10" y="9" width="1" height="1" fill="oklch(0.92 0.01 250)" />
+                <rect x="11" y="7" width="1" height="2" fill="oklch(0.85 0.01 250)" />
+                <rect x="12" y="5" width="1" height="2" fill="oklch(0.75 0.01 250)" />
+                <rect x="12" y="4" width="1" height="1" fill="oklch(0.98 0 0)" />
+                <rect x="6" y="12" width="2" height="1" fill="oklch(0.45 0.02 250)" />
+              </svg>
+            </>
           );
         })()}
 
-        {trail && (
-          <span
-            className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/70"
-            style={{ left: `${trail.x * 100}%`, top: `${trail.y * 100}%` }}
-          />
-        )}
-
         {won && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <p className="font-display animate-pop rounded-2xl bg-calm px-5 py-3 text-2xl font-black uppercase text-calm-foreground">
-              Wound closed!
+            {Array.from({ length: 30 }, (_, i) => (
+              <span
+                key={i}
+                className="pixel-sparkle absolute"
+                style={{
+                  left: `${(i * 37) % 95}%`,
+                  top: `${(i * 53) % 92}%`,
+                  animation: `sparkle 900ms steps(6) ${(i * 70) % 900}ms infinite`,
+                }}
+              />
+            ))}
+            <p
+              className="pixel-spotless animate-pop whitespace-nowrap text-center leading-none"
+              style={{ fontSize: "min(2.2rem, 7.5vw)" }}
+            >
+              WOUND CLOSED!
             </p>
           </div>
         )}
