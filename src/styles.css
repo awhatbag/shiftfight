@@ -460,11 +460,22 @@
 
 .suture-skin-texture {
   background-image:
-    radial-gradient(circle at 18% 23%, var(--suture-skin-detail) 0 1px, transparent 1.5px),
-    radial-gradient(circle at 77% 68%, var(--suture-skin-detail) 0 1px, transparent 1.5px),
-    linear-gradient(95deg, transparent 0 48%, var(--suture-skin-detail) 50%, transparent 52%);
-  background-size: 31px 29px, 37px 35px, 100% 100%;
-  opacity: 0.55;
+    linear-gradient(var(--suture-skin-detail) 0 2px, transparent 2px),
+    linear-gradient(90deg, var(--suture-skin-detail) 0 2px, transparent 2px);
+  background-size: 8px 8px, 8px 8px;
+  opacity: 0.35;
+}
+
+.suture-target {
+  width: 30px;
+  height: 30px;
+  border: 4px solid var(--suture-guide);
+  box-shadow: 0 0 0 3px var(--suture-thread), inset 0 0 0 3px var(--suture-thread);
+  animation: suture-target 700ms steps(2) infinite;
+}
+@keyframes suture-target {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.35); }
 }
 
 @keyframes pill-fly {
