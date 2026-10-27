@@ -989,11 +989,13 @@ export function WardScreen({
     const blocker = targetAhead ? blockingGoose(gooseWorld.current, nurseRef.current, targetAhead) : undefined;
     if (blocker) {
       lastMoveT.current = gameT.current;
+      if (gooseWorld.current) gooseWorld.current.heldGoose = blocker.id;
       setBlockedGoose(blocker.id);
       setWalking(true);
       setNurseAction(blocker.shooBy === "nurse" ? "interact" : "idle");
       return;
     }
+    if (gooseWorld.current) gooseWorld.current.heldGoose = null;
     if (blockedGoose !== null) { setBlockedGoose(null); setWalking(true); lastMoveT.current = gameT.current; }
     let remaining =
       (gameT.current - lastMoveT.current) /

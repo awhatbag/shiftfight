@@ -33,8 +33,8 @@ export function GooseLayer({world, blockedGoose = null, shooDisabled = false, on
    return <div key={`cloud-${g.id}`} data-melee-bed={g.bed} className="pointer-events-none absolute overflow-hidden [image-rendering:pixelated]" style={{left:`${slot.x*100}%`,top:`${slot.y*100}%`,width:'25%',aspectRatio:'560 / 360',transform:`translate(-50%,-50%) scale(${scale})`,zIndex:Math.round(slot.y*100)+5,backgroundImage:`url(${cloud.url})`,backgroundSize:'800% 100%',backgroundPosition:`${frame/7*100}% 0%`}}/>;
    })}{blocker&&onShoo&&<div className="pointer-events-none absolute z-[90] -translate-x-1/2 -translate-y-full" style={{left:`${Math.max(.22,Math.min(.78,blocker.pos.x))*100}%`,top:`${Math.max(.16,blocker.pos.y-.13)*100}%`}}>
     <div className={shooing?'':'motion-safe:animate-bounce'}>
-     <Button aria-label="Tap to shoo goose" disabled={shooDisabled||shooing} onClick={onShoo} className="chunky pointer-events-auto h-12 min-w-40 border-4 border-border bg-alarm px-3 font-display text-base font-black text-alarm-foreground hover:bg-alarm/90 active:scale-95 disabled:opacity-100"><span aria-hidden="true">👋</span>{shooing?'SHOOING…':'TAP TO SHOO!'}</Button>
-     <span aria-hidden="true" className="mx-auto block h-3 w-3 rotate-45 border-b-4 border-r-4 border-border bg-alarm"/>
+      <Button aria-label="Tap to shoo goose" disabled={shooDisabled||shooing} onClick={onShoo} className="chunky pointer-events-auto h-24 min-w-80 border-4 border-border bg-alarm px-6 font-display text-3xl font-black text-alarm-foreground hover:bg-alarm/90 active:scale-95 disabled:opacity-100"><span aria-hidden="true" className="text-4xl">👋</span>{shooing?'SHOOING…':'TAP TO SHOO!'}</Button>
+      <span aria-hidden="true" className="mx-auto -mt-1 block h-6 w-6 rotate-45 border-b-4 border-r-4 border-border bg-alarm"/>
     </div>
    </div>}</>;
 }

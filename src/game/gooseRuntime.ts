@@ -7,7 +7,7 @@ export const STAFF_SHOO_MS=1000;
 export const GOOSE_SAFE_MS=5000;
 export type GooseMode='waiting'|'walk'|'honk'|'block'|'fly'|'attackWalk'|'melee'|'exit'|'exitRun'|'gone';
 export type Goose={id:number; pos:Point; path:Point[]; mode:GooseMode; since:number; until:number; arriveAt:number; faceLeft:boolean; bed:number|null; safeUntil:number; desk:boolean; flightFrom?:Point; flightTo?:Point; shooBy?:string | undefined; attackUntil?:number; exitSpeed?:number;};
-export type GooseWorld={geese:Goose[]; time:number; nextAttack:number; attacks:number; target:number; bedHits:Record<number,number>; exiting:boolean; exitIndex:number; nextExit:number; exitStarted?:number;};
+export type GooseWorld={geese:Goose[]; time:number; nextAttack:number; attacks:number; target:number; bedHits:Record<number,number>; exiting:boolean; exitIndex:number; nextExit:number; exitStarted?:number; /** Goose currently obstructing the nurse: it waits for SHOO instead of timing out. */ heldGoose?:number|null;};
 const FLOOR:Point[]=[...BED_ARRIVAL,{x:.485,y:.32},{x:.485,y:.465},{x:.485,y:.62},{x:.5,y:.76},{x:.52,y:.92}];
 const DESK:Point[]=[{x:.35,y:.19},{x:.5,y:.19},{x:.65,y:.19}];
 export const gooseDistance=(a:Point,b:Point)=>Math.hypot((a.x-b.x)*.8,a.y-b.y);
@@ -56,14 +56,14 @@ export function stepGooseWorld(w:GooseWorld,dt:number,occupied:number[],busy:num
    const bed=g.bed;g.bed=null;g.attackUntil=now+2000;
    if(bed!==null&&occupied.includes(bed)&&!busy.includes(bed)){completed.push(bed);busy=[...busy,bed];w.attacks++;w.bedHits[bed]=(w.bedHits[bed]??0)+1;}
    g.safeUntil=now+1500;roam(g,now,rng);
-  }else if((g.mode==='honk'||g.mode==='block')&&now>=g.until)roam(g,now,rng);
+  }else if((g.mode==='honk'||g.mode==='block')&&now>=g.until&&!(g.mode==='block'&&g.id===w.heldGoose))roam(g,now,rng);
  }
  if(now>=w.nextAttack&&now<GOOSE_DURATION_MS-2000&&w.attacks+w.geese.filter(g=>g.bed!==null).length<w.target){
   const reserved=w.geese.flatMap(g=>g.bed===null?[]:[g.bed]);
   const beds=occupied.filter(b=>!busy.includes(b)&&!reserved.includes(b));
   beds.sort((a,b)=>(w.bedHits[a]??0)-(w.bedHits[b]??0));
   const bed=beds[0];const dest=bed===undefined?undefined:BED_ARRIVAL[bed];
-  const candidates=w.geese.filter(g=>!g.desk&&!g.shooBy&&now>=(g.attackUntil??0)&&['walk','honk','block'].includes(g.mode));
+  const candidates=w.geese.filter(g=>!g.desk&&!g.shooBy&&g.id!==w.heldGoose&&now>=(g.attackUntil??0)&&['walk','honk','block'].includes(g.mode));
   if(dest&&bed!==undefined){candidates.sort((a,b)=>gooseDistance(a.pos,dest)-gooseDistance(b.pos,dest));const g=candidates[0];if(g){g.bed=bed;travel(g,dest,'attackWalk',now);w.nextAttack=now+2700;}}
  }
  return completed;
