@@ -28,3 +28,5 @@ DON visits end their gameplay reactions when departure starts, but retain the wa
 Hired staff spawn behind the top doors and walk to their station chair via the shared staff runtime (enterAt/attendUntil in StaffRuntime); character art (e.g. BarrySprite) only renders that runtime, so new staff sprites need no movement logic.
 Hired staff animation uses runtime path presence for walking and position deltas only for facing; shared frame selection excludes the terminal standing cell so stationary ticks cannot interrupt a journey with an action pose.
 - Shop staff portraits are CSS crops of each staff member's supplied sprite sheet, registered in src/components/game/StaffPortrait.tsx; staff without artwork fall back to their emoji, so new artwork only needs a registry entry.
+
+Ward camera tracking translates the complete scene in presentation only, measuring the existing answer panel and preserving all world coordinates, navigation and stacking; camera motion freezes with gameplay and respects reduced motion.

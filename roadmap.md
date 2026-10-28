@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Add smooth southward ward camera tracking without changing the answer tray or inventing southern artwork; live patient views checked at 606x958 and 390x844, and 23 movement/catastrophe tests passed.
+
 - [x] Make goose obstruction unmistakable with an anchored shoo button, tappable goose and nurse reaction; live goose tap showed SHOOING, removed both cues and resumed travel; 17 goose/scheduler tests passed.
 
 - [x] Register Goosepocalypse with supplied isolated-frame artwork and 25 patient problems.

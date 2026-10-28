@@ -13,6 +13,7 @@ import { loadEastWestCollisionMap, eastWestCollisionAt } from "@/game/eastWestCo
 import { rollingHazardPosition } from "./rollingHazardMotion";
 import { WardHud } from "./WardHud";
 import { WardScene } from "./WardScene";
+import { WardCamera } from "./WardCamera";
 import { Button } from "@/components/ui/button";
 import { isGooseEvent } from "@/game/gooseProblems";
 import { blockingGoose, gooseExitComplete, gooseNeedsDoor, newGooseWorld, shooGoose, startGooseExit, stepGooseWorld, type GooseWorld } from "@/game/gooseRuntime";
@@ -272,6 +273,7 @@ export function WardScreen({
 
   /* nurse */
   const wardRef = useRef<HTMLDivElement | null>(null);
+  const actionPanelRef = useRef<HTMLDivElement | null>(null);
   const [nurse, setNurse] = useState<Point>({ ...STATION });
   const [walking, setWalking] = useState(false);
   const [nurseDirection, setNurseDirection] = useState<NurseDirection>("north");
@@ -1425,6 +1427,7 @@ export function WardScreen({
       />
 
       <div ref={wardRef} className={`ward-viewport terrazzo relative flex-1 select-none overflow-hidden${avocadoPhase === "wave" ? " earthquake-shake ward-frozen" : avocadoPhase === "exit" ? " ward-frozen" : ""}`}>
+      <WardCamera nurseY={nurse.y} viewportRef={wardRef} panelRef={actionPanelRef} frozen={rate === 0 || avocadoPhase === "exit"}>
       <WardScene
         don={don && phase === "play" ? don : null}
         onDonExit={finishDonExit}
@@ -1459,6 +1462,7 @@ export function WardScreen({
         shooDisabled={rate === 0}
         onShoo={() => { const w = gooseWorld.current; if (w && blockedGoose !== null && shooGoose(w, blockedGoose, "nurse")) setNurseAction("interact"); }}
       />
+      </WardCamera>
       <div className="pointer-events-none absolute inset-0">
         {/* banner */}
         {banner && (
@@ -1522,6 +1526,7 @@ export function WardScreen({
       </div>
 
       <PatientActionPanel
+        panelRef={actionPanelRef}
         event={selectedEvent}
         beds={beds}
         nurseHereBed={nurseHereBed}
