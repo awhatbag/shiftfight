@@ -14,10 +14,10 @@ import { Nurse } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { useState, type ReactNode } from "react";
 
-function Section({ title, children, show }: { title: string; children: ReactNode; show: boolean }) {
+function Section({ title, children, show, cork }: { title: string; children: ReactNode; show: boolean; cork?: boolean }) {
   if (!show) return null;
   return (
-    <div className="store-shelf">
+    <div className={cn("store-shelf", cork && "store-cork")}>
       <p className="store-shelf-label mx-2 -mt-1 mb-2 inline-block px-2 py-1 font-display text-xs font-black uppercase">{title}</p>
       <div className="space-y-2 px-2 pb-3">{children}</div>
     </div>
@@ -207,7 +207,7 @@ export function UpgradeScreen({
               data-sfx="equip"
               onClick={() => onBuy(u.key, cost)}
               className={cn(
-                "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition-transform",
+                "store-bin flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition-transform",
                 can ? "chunky chunky-press" : "opacity-60",
               )}
             >
@@ -308,7 +308,9 @@ export function UpgradeScreen({
                           ? "bg-calm text-calm-foreground"
                           : isNew
                             ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
-                            : "bg-primary text-primary-foreground",
+                            : locked && !owned
+                              ? "store-stamp"
+                              : "bg-primary text-primary-foreground",
                       )}
                     >
                       {equipped
@@ -363,7 +365,7 @@ export function UpgradeScreen({
                     : "bg-primary text-primary-foreground",
                 )}
               >
-                {owned ? "FITTED" : isNew ? "✨ NEW" : locked ? `🔒 Lv${b.rank}` : `⭐${b.cost}`}
+                {owned ? "FITTED" : isNew ? "✨ NEW" : locked ? `RESTRICTED · Lv${b.rank}` : `⭐${b.cost}`}
               </span>
             </button>
           );
@@ -371,7 +373,7 @@ export function UpgradeScreen({
       </Section>
 
       {/* ---------- staff ---------- */}
-      <Section show={tab === "staff"} title={`📌 Staff Roster · ${staff.length}/${MAX_STAFF}`}>
+      <Section cork show={tab === "staff"} title={`📌 Staff Roster · ${staff.length}/${MAX_STAFF}`}>
         {STAFF.map((s) => {
           const hired = staff.includes(s.key);
           const need = s.rank ?? 2;
@@ -403,7 +405,9 @@ export function UpgradeScreen({
                   "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
                   isNew
                     ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
-                    : "bg-primary text-primary-foreground",
+                    : locked && !hired
+                      ? "store-stamp"
+                      : "bg-primary text-primary-foreground",
                 )}
               >
                 {hired
