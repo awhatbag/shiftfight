@@ -14,12 +14,12 @@ import { Nurse } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { useState, type ReactNode } from "react";
 
-function Section({ title, children, show }: { title: string; children: ReactNode; show: boolean }) {
+function Section({ title, children, show, cork }: { title: string; children: ReactNode; show: boolean; cork?: boolean }) {
   if (!show) return null;
   return (
-    <div className="rounded-2xl border-2 border-border bg-card/70">
-      <p className="p-3 font-display text-xs font-black uppercase">{title}</p>
-      <div className="space-y-2 px-2 pb-2">{children}</div>
+    <div className={cn("store-shelf", cork && "store-cork")}>
+      <p className="store-shelf-label mx-2 -mt-1 mb-2 inline-block px-2 py-1 font-display text-xs font-black uppercase">{title}</p>
+      <div className="space-y-2 px-2 pb-3">{children}</div>
     </div>
   );
 }
@@ -119,7 +119,7 @@ export function UpgradeScreen({
   );
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
+    <div className="store-room flex h-full flex-col gap-3 overflow-y-auto p-4">
       <div className="rounded-2xl border-2 border-border bg-card p-3">
         <div className="flex items-center justify-between gap-2">
           <p className="font-display text-sm font-black uppercase">
@@ -138,17 +138,30 @@ export function UpgradeScreen({
         <p className="mt-1 text-[11px] text-muted-foreground">{rank.perk}</p>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-        <h2 className="font-display truncate text-2xl font-black uppercase">Ward Shop</h2>
+        <div className="store-sign min-w-0 px-3 pb-3 pt-1.5">
+          <h2 className="font-display truncate text-lg font-black uppercase leading-tight">Ward Supply Cupboard</h2>
+          <p className="font-display text-[10px] font-black uppercase text-destructive">⚠ Authorised access only</p>
+        </div>
         <span className="font-display shrink-0 rounded-xl bg-[image:var(--gradient-gold)] px-3 py-1.5 text-base font-black text-gold-foreground">
           ⭐ {points}
         </span>
       </div>
 
-      <div className="rounded-2xl border-2 border-gold bg-card p-2 shadow-lg">
+      <div className="store-locker p-2">
         <div className="flex flex-col items-center gap-2">
-          <div className="relative h-80 w-48 rounded-xl bg-[image:var(--gradient-gold)] p-1">
+          <p className="store-shelf-label px-2 py-0.5 font-display text-[10px] font-black uppercase">🔑 Staff locker</p>
+          <button
+            type="button"
+            onClick={onCustomise}
+            disabled={!onCustomise}
+            aria-label="Customise nurse"
+            className={cn(
+              "relative h-80 w-48 rounded-sm border-4 border-[var(--store-ink)] bg-[image:var(--gradient-gold)] p-1",
+              onCustomise && "chunky-press cursor-pointer",
+            )}
+          >
             <Nurse character={character} variant="preview" className="h-full" />
-          </div>
+          </button>
           {onCustomise && (
             <button
               onClick={onCustomise}
@@ -161,7 +174,7 @@ export function UpgradeScreen({
         <div className="mt-2 grid grid-cols-4 gap-2">
           {tabs.map((t) => tabButton(t))}
         </div>
-        <div className="mt-2 flex flex-wrap justify-center gap-1">
+        <div className="mt-2 flex flex-wrap justify-center gap-1 rounded-sm bg-card/90 p-1">
           {equippedGear.length === 0 && (
             <span className="text-[11px] text-muted-foreground">Nothing equipped yet</span>
           )}
@@ -176,7 +189,7 @@ export function UpgradeScreen({
         </div>
       </div>
 
-      <Section show={tab === "ward"} title="🩺 Ward upgrades">
+      <Section show={tab === "ward"} title="🧴 Clean Utility · Ward kit">
         {freshUnlocks.includes("tier5") && (
           <p className="animate-pulse rounded-xl bg-[image:var(--gradient-gold)] px-3 py-2 text-center font-display text-xs font-black uppercase text-gold-foreground">
             ✨ New tier unlocked — upgrades can go to tier 5!
@@ -194,7 +207,7 @@ export function UpgradeScreen({
               data-sfx="equip"
               onClick={() => onBuy(u.key, cost)}
               className={cn(
-                "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition-transform",
+                "store-bin flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition-transform",
                 can ? "chunky chunky-press" : "opacity-60",
               )}
             >
@@ -257,7 +270,7 @@ export function UpgradeScreen({
           const items = GEAR_ITEMS.filter((g) => g.category === cat.key);
           if (!items.length) return null;
           return (
-            <Section key={cat.key} show={tab === cat.key} title={`${cat.icon} ${cat.name}`}>
+            <Section key={cat.key} show={tab === cat.key} title={`${cat.icon} Uniform Stores · ${cat.name}`}>
               {items.map((g) => {
                 const owned = gear.includes(g.key);
                 const equipped = equippedGear.includes(g.key);
@@ -271,7 +284,7 @@ export function UpgradeScreen({
                     data-sfx="equip"
                     onClick={() => (owned ? onToggleGear(g.key) : onBuyGear(g.key, g.cost))}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
+                      "store-bin flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
                       owned || can ? "chunky chunky-press" : "opacity-60",
                       equipped && "border-calm bg-calm/10",
                       isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
@@ -295,7 +308,9 @@ export function UpgradeScreen({
                           ? "bg-calm text-calm-foreground"
                           : isNew
                             ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
-                            : "bg-primary text-primary-foreground",
+                            : locked && !owned
+                              ? "store-stamp"
+                              : "bg-primary text-primary-foreground",
                       )}
                     >
                       {equipped
@@ -305,7 +320,7 @@ export function UpgradeScreen({
                           : isNew
                             ? "✨ NEW"
                             : locked
-                              ? `🔒 Lv${g.rank}`
+                              ? `RESTRICTED · Lv${g.rank}`
                               : `⭐${g.cost}`}
                     </span>
                   </button>
@@ -317,7 +332,7 @@ export function UpgradeScreen({
       </>
 
       {/* ---------- bed upgrades ---------- */}
-      <Section show={tab === "ward"} title="🛏️ Bed upgrades">
+      <Section show={tab === "ward"} title="🛏️ Equipment Bay · Beds">
         {BED_UPGRADES.map((b) => {
           const owned = bedUpgrades.includes(b.key);
           const locked = rank.level < (b.rank ?? 1);
@@ -330,7 +345,7 @@ export function UpgradeScreen({
               data-sfx="equip"
               onClick={() => onBuyBedUpgrade(b.key, b.cost)}
               className={cn(
-                "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
+                "store-bin flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
                 can ? "chunky chunky-press" : "opacity-60",
                 isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
@@ -350,7 +365,7 @@ export function UpgradeScreen({
                     : "bg-primary text-primary-foreground",
                 )}
               >
-                {owned ? "FITTED" : isNew ? "✨ NEW" : locked ? `🔒 Lv${b.rank}` : `⭐${b.cost}`}
+                {owned ? "FITTED" : isNew ? "✨ NEW" : locked ? `RESTRICTED · Lv${b.rank}` : `⭐${b.cost}`}
               </span>
             </button>
           );
@@ -358,7 +373,7 @@ export function UpgradeScreen({
       </Section>
 
       {/* ---------- staff ---------- */}
-      <Section show={tab === "staff"} title={`👥 Hire the team · ${staff.length}/${MAX_STAFF}`}>
+      <Section cork show={tab === "staff"} title={`📌 Staff Roster · ${staff.length}/${MAX_STAFF}`}>
         {STAFF.map((s) => {
           const hired = staff.includes(s.key);
           const need = s.rank ?? 2;
@@ -373,7 +388,7 @@ export function UpgradeScreen({
               data-sfx="equip"
               onClick={() => onHire(s.key, s.cost)}
               className={cn(
-                "flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
+                "store-bin flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
                 can ? "chunky chunky-press" : "opacity-60",
                 isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
@@ -390,7 +405,9 @@ export function UpgradeScreen({
                   "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
                   isNew
                     ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
-                    : "bg-primary text-primary-foreground",
+                    : locked && !hired
+                      ? "store-stamp"
+                      : "bg-primary text-primary-foreground",
                 )}
               >
                 {hired
@@ -398,7 +415,7 @@ export function UpgradeScreen({
                   : isNew
                     ? "✨ NEW"
                     : locked
-                      ? `🔒 XP Lv${need}`
+                      ? `RESTRICTED · Lv${need}`
                       : full
                         ? "NO SEATS"
                         : `⭐${s.cost}`}
