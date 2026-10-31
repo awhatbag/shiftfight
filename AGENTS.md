@@ -30,3 +30,5 @@ Hired staff animation uses runtime path presence for walking and position deltas
 - Shop staff portraits are CSS crops of each staff member's supplied sprite sheet, registered in src/components/game/StaffPortrait.tsx; staff without artwork fall back to their emoji, so new artwork only needs a registry entry.
 
 Ward camera tracking translates the complete scene in presentation only, measuring the existing answer panel and preserving all world coordinates, navigation and stacking; camera motion freezes with gameplay and respects reduced motion.
+
+Ward and shop rendering failures unmount locally and return to the title without awarding a shift or resetting progression; audio recovery cancels active playback, fades and autoplay retries. Sound effects use bounded cleanup pools so failed or interrupted playback cannot accumulate nodes.

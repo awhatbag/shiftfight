@@ -5,12 +5,24 @@ import levelCompleteAsset from "@/assets/level_complete.wav.asset.json";
 import bellsAsset from "@/assets/boxing_bell_x3.m4a.asset.json";
 import whistleAsset from "@/assets/shift_end_steam_whistle.m4a.asset.json";
 
+import { AudioPool, clampAudioVolume } from "./audioGuards";
+
+const voices = new AudioPool(24);
+const samples = new AudioPool(8);
+const sampleByUrl = new Map<string, () => void>();
+
+export function stopAllSounds() {
+  voices.clear();
+  samples.clear();
+}
+
 let ctx: AudioContext | null = null;
 let soundOn = true;
 let hapticsOn = true;
 
 export function setSoundEnabled(on: boolean) {
   soundOn = on;
+  if (!on) stopAllSounds();
 }
 export function setHapticsEnabled(on: boolean) {
   hapticsOn = on;
@@ -29,16 +41,16 @@ export function buzz(pattern: number | number[]) {
 
 function audio(): AudioContext | null {
   if (typeof window === "undefined") return null;
-  if (!ctx) {
-    const Ctor =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!Ctor) return null;
-    ctx = new Ctor();
-  }
-  if (ctx.state === "suspended") void ctx.resume();
-  return ctx;
+  try {
+    if (!ctx || ctx.state === "closed") {
+      const Ctor = window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctor) return null;
+      ctx = new Ctor();
+    }
+    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+    return ctx;
+  } catch { return null; }
 }
 
 /** Unlock audio on the first user gesture (mobile browsers). */
@@ -56,17 +68,25 @@ function tone(
   if (!soundOn) return;
   const c = audio();
   if (!c) return;
+  try {
   const t = c.currentTime + at;
   const osc = c.createOscillator();
   const g = c.createGain();
   osc.type = type;
   osc.frequency.setValueAtTime(freq, t);
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(gain, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0001, clampAudioVolume(gain)), t + 0.012);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   osc.connect(g).connect(c.destination);
-  osc.start(t);
-  osc.stop(t + dur + 0.05);
+  const release = voices.add(() => {
+    osc.onended = null;
+    try { osc.stop(); } catch { /* already stopped */ }
+    osc.disconnect();
+    g.disconnect();
+  });
+  osc.onended = release;
+  try { osc.start(t); osc.stop(t + dur + 0.05); } catch { release(); }
+  } catch { /* unsupported audio must not interrupt play */ }
 }
 
 /** Classic two-tone ding-dong nurse call bell. Noticeable, not obnoxious. */
@@ -100,6 +120,7 @@ export function playVomit() {
   if (!soundOn) return;
   const c = audio();
   if (!c) return;
+  try {
   const t = c.currentTime;
   const dur = 1.1;
 
@@ -133,13 +154,22 @@ export function playVomit() {
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
   noise.connect(lp).connect(g).connect(c.destination);
+  const release = voices.add(() => {
+    noise.onended = null;
+    for (const source of [noise, lfo]) { try { source.stop(); } catch { /* stopped */ } }
+    for (const node of [noise, lp, lfo, lfoGain, g]) node.disconnect();
+  });
+  noise.onended = release;
+  try {
   noise.start(t);
   noise.stop(t + dur + 0.05);
   lfo.start(t);
   lfo.stop(t + dur + 0.05);
+  } catch { release(); }
 
   tone(120, 0.05, 0.5, 0.06, "sawtooth");
   buzz([40, 30, 90]);
+  } catch { /* unsupported audio must not interrupt play */ }
 }
 
 
@@ -147,10 +177,28 @@ export function playVomit() {
 function sample(url: string, volume = 0.9): HTMLAudioElement | null {
   if (!soundOn) return null;
   if (typeof Audio === "undefined") return null;
-  const el = new Audio(url);
-  el.volume = volume;
-  void el.play().catch(() => {});
-  return el;
+  try {
+    sampleByUrl.get(url)?.();
+    const el = new Audio(url);
+    el.volume = clampAudioVolume(volume);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const release = samples.add(() => {
+      if (timer !== undefined) clearTimeout(timer);
+      el.removeEventListener("ended", release);
+      el.removeEventListener("error", release);
+      if (sampleByUrl.get(url) === release) sampleByUrl.delete(url);
+      el.pause();
+      el.dispatchEvent(new Event("sfxstop"));
+      el.removeAttribute("src");
+      el.load();
+    });
+    sampleByUrl.set(url, release);
+    el.addEventListener("ended", release);
+    el.addEventListener("error", release);
+    timer = setTimeout(release, 15000);
+    try { void el.play().catch(release); } catch { release(); }
+    return el;
+  } catch { return null; }
 }
 
 /** Three bells to start the round (supplied boxing-bell recording). */
@@ -174,7 +222,7 @@ export function playWhistle() {
  */
 export function whistleEnded(): Promise<void> {
   const el = whistleEl;
-  if (!el || el.ended) return Promise.resolve();
+  if (!el || el.ended || el.paused) return Promise.resolve();
   return new Promise<void>((resolve) => {
     let done = false;
     const finish = () => {
@@ -182,6 +230,7 @@ export function whistleEnded(): Promise<void> {
       done = true;
       el.removeEventListener("ended", finish);
       el.removeEventListener("error", finish);
+      el.removeEventListener("sfxstop", finish);
       window.clearTimeout(guard);
       resolve();
     };
@@ -189,8 +238,9 @@ export function whistleEnded(): Promise<void> {
     const guard = window.setTimeout(finish, 8000);
     el.addEventListener("ended", finish);
     el.addEventListener("error", finish);
+    el.addEventListener("sfxstop", finish);
     /* if it can't play at all (codec/autoplay), don't stall the music */
-    void el.play().catch(finish);
+    try { void el.play().catch(finish); } catch { finish(); }
   });
 }
 
