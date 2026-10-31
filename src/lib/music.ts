@@ -9,6 +9,7 @@
  * Adding a new track: add an entry to MUSIC_TRACKS with its asset url and
  * volume. Everything else (mute, fades, no-overlap) works automatically.
  */
+import { clampAudioVolume } from "./audioGuards";
 import titleTrack from "@/assets/shift-fight-title.mp3.asset.json";
 import savePointTrack from "@/assets/save-point.mp3.asset.json";
 import wardTrack from "@/assets/pixel-triage.mp3.asset.json";
@@ -64,7 +65,7 @@ export function nextWardSong() {
   } catch {
     /* ignore */
   }
-  MUSIC_TRACKS.ward.url = WARD_PLAYLIST[next]!;
+  MUSIC_TRACKS.ward.url = WARD_PLAYLIST[next] ?? wardTrack.url;
 }
 
 const FADE_MS = 450;
@@ -78,9 +79,45 @@ type Playing = {
   fade: ReturnType<typeof setInterval> | null;
   target: number;
   url: string;
+  active: boolean;
+  revision: number;
 };
 
 const players = new Map<MusicKey, Playing>();
+const autoplay = new Map<MusicKey, () => void>();
+
+function disarmAutoplay(key: MusicKey) {
+  autoplay.get(key)?.();
+}
+
+/** Silence recovery immediately; invalidate pending play promises as well. */
+export function stopAllMusic() {
+  for (const [key, p] of players) {
+    disarmAutoplay(key);
+    p.active = false;
+    p.target = 0;
+    p.revision += 1;
+    if (p.fade) clearInterval(p.fade);
+    p.fade = null;
+    p.el.pause();
+  }
+}
+
+function startPlayback(key: MusicKey, p: Playing) {
+  const revision = ++p.revision;
+  try {
+    void p.el.play().then(() => {
+      if (p.revision !== revision || !p.active || !musicOn) {
+        if (!p.active || !musicOn) p.el.pause();
+        return;
+      }
+      fadeTo(p, p.target);
+      disarmAutoplay(key);
+    }).catch(() => {
+      if (p.revision === revision && p.active && musicOn) armAutoplay(key);
+    });
+  } catch { if (p.active && musicOn) armAutoplay(key); }
+}
 
 export function isMusicOn() {
   return musicOn;
@@ -93,13 +130,14 @@ export function subscribeMusic(fn: (on: boolean) => void) {
 
 export function setMusicEnabled(on: boolean) {
   musicOn = on;
-  for (const [, p] of players) {
+  for (const [key, p] of players) {
     if (!on) {
-      fadeTo(p, 0, () => p.el.pause());
-    } else if (p.target > 0) {
-      void p.el.play().catch(() => {});
-      fadeTo(p, p.target);
-    }
+      disarmAutoplay(key);
+      p.revision += 1;
+      if (p.fade) clearInterval(p.fade);
+      p.fade = null;
+      p.el.pause();
+    } else if (p.active) startPlayback(key, p);
   }
   listeners.forEach((l) => l(on));
 }
@@ -107,8 +145,10 @@ export function setMusicEnabled(on: boolean) {
 const VOL_KEY = "shift-fight-music-volume";
 let musicVolume = (() => {
   if (typeof window === "undefined") return 1;
-  const v = Number(window.localStorage.getItem(VOL_KEY));
-  return Number.isFinite(v) && window.localStorage.getItem(VOL_KEY) !== null ? Math.max(0, Math.min(1, v)) : 1;
+  try {
+    const raw = window.localStorage.getItem(VOL_KEY);
+    return raw === null ? 1 : clampAudioVolume(Number(raw));
+  } catch { return 1; }
 })();
 const volListeners = new Set<(v: number) => void>();
 
@@ -123,15 +163,15 @@ export function subscribeMusicVolume(fn: (v: number) => void) {
 
 /** User music volume (0–1). Scales every track; mute still wins. */
 export function setMusicVolume(v: number) {
-  musicVolume = Math.max(0, Math.min(1, v));
+  musicVolume = clampAudioVolume(v, musicVolume);
   try {
     window.localStorage.setItem(VOL_KEY, String(musicVolume));
   } catch {
     /* ignore */
   }
   for (const [key, p] of players) {
-    if (p.target <= 0) continue;
-    p.target = MUSIC_TRACKS[key].volume * musicVolume;
+    if (!p.active) continue;
+    p.target = clampAudioVolume(MUSIC_TRACKS[key].volume) * musicVolume;
     if (p.fade) clearInterval(p.fade);
     p.fade = null;
     if (musicOn) p.el.volume = p.target;
@@ -151,7 +191,7 @@ function fadeTo(p: Playing, to: number, done?: () => void) {
   p.fade = setInterval(() => {
     i += 1;
     const v = from + (to - from) * (i / steps);
-    p.el.volume = Math.max(0, Math.min(1, v));
+    p.el.volume = clampAudioVolume(v, 0);
     if (i >= steps) {
       if (p.fade) clearInterval(p.fade);
       p.fade = null;
@@ -168,20 +208,17 @@ const GESTURES = ["pointerdown", "touchstart", "keydown", "click"] as const;
  */
 function armAutoplay(key: MusicKey) {
   if (typeof window === "undefined") return;
+  disarmAutoplay(key);
   const retry = () => {
     const p = players.get(key);
-    if (!p || !musicOn || p.target <= 0) return disarm();
-    void p.el
-      .play()
-      .then(() => {
-        fadeTo(p, p.target);
-        disarm();
-      })
-      .catch(() => {});
+    if (!p || !musicOn || !p.active) return disarm();
+    startPlayback(key, p);
   };
   const disarm = () => {
     for (const g of GESTURES) window.removeEventListener(g, retry);
+    autoplay.delete(key);
   };
+  autoplay.set(key, disarm);
   for (const g of GESTURES) window.addEventListener(g, retry);
 }
 
@@ -189,34 +226,39 @@ function armAutoplay(key: MusicKey) {
 export function playMusic(key: MusicKey) {
   if (typeof window === "undefined") return;
   const def = MUSIC_TRACKS[key];
+  disarmAutoplay(key);
   let p = players.get(key);
   if (p && p.url !== def.url) {
     if (p.fade) clearInterval(p.fade);
+    p.active = false;
+    p.revision += 1;
     p.el.pause();
+    p.el.removeAttribute("src");
+    p.el.load();
     players.delete(key);
     p = undefined;
   }
   if (!p) {
-    const el = new Audio(def.url);
+    let el: HTMLAudioElement;
+    try { el = new Audio(def.url); } catch { return; }
     el.loop = true;
     el.preload = "auto";
     el.volume = 0;
-    p = { el, fade: null, target: def.volume * musicVolume, url: def.url };
+    p = { el, fade: null, target: clampAudioVolume(def.volume) * musicVolume, url: def.url, active: true, revision: 0 };
     players.set(key, p);
   }
-  p.target = def.volume * musicVolume;
-  if (!musicOn) return;
-  const player = p;
-  void player.el
-    .play()
-    .then(() => fadeTo(player, player.target))
-    .catch(() => armAutoplay(key));
+  p.target = clampAudioVolume(def.volume) * musicVolume;
+  p.active = true;
+  if (musicOn) startPlayback(key, p);
 }
 
 /** Pause instantly, keeping the play position (e.g. catastrophe earthquake). */
 export function pauseMusic(key: MusicKey) {
   const p = players.get(key);
   if (!p) return;
+  disarmAutoplay(key);
+  p.active = false;
+  p.revision += 1;
   if (p.fade) clearInterval(p.fade);
   p.fade = null;
   p.el.pause();
@@ -225,22 +267,21 @@ export function pauseMusic(key: MusicKey) {
 /** Resume from the paused position with a quick fade back in. */
 export function resumeMusic(key: MusicKey) {
   const p = players.get(key);
-  if (!p || p.target <= 0 || !musicOn) return;
-  const player = p;
-  player.el.volume = 0;
-  void player.el
-    .play()
-    .then(() => fadeTo(player, player.target))
-    .catch(() => armAutoplay(key));
+  if (!p) return;
+  p.active = true;
+  if (musicOn) startPlayback(key, p);
 }
 
 /** Fade out quickly and pause. */
 export function stopMusic(key: MusicKey) {
   const p = players.get(key);
   if (!p) return;
+  disarmAutoplay(key);
+  p.active = false;
+  p.revision += 1;
   p.target = 0;
   fadeTo(p, 0, () => {
     p.el.pause();
-    p.el.currentTime = 0;
+    try { p.el.currentTime = 0; } catch { /* media not loaded */ }
   });
 }
