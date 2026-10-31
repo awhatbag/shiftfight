@@ -6,6 +6,7 @@ import { WardScreen, type ShiftStats } from "@/components/game/WardScreen";
 import { AdBanner } from "@/components/game/AdBanner";
 import { SummaryScreen } from "@/components/game/SummaryScreen";
 import { SummaryErrorBoundary } from "@/components/game/SummaryErrorBoundary";
+import { GameErrorBoundary } from "@/components/game/GameErrorBoundary";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
 import { LadderScreen } from "@/components/game/LadderScreen";
@@ -808,6 +809,7 @@ function Game() {
           />
         )}
         {phase === "shift" && (
+          <GameErrorBoundary key={runKey} screen="ward" onReturn={() => setPhase("intro")}>
           <WardScreen
             key={runKey}
             patientNames={shiftPatientNames}
@@ -834,6 +836,7 @@ function Game() {
             onTutorialDone={completeTutorial}
             scheduledCatastropheId={scheduledCatastropheId}
           />
+          </GameErrorBoundary>
         )}
         {phase === "summary" && last && lastReward && (
           <SummaryErrorBoundary onContinue={() => setPhase(review?.fired ? "fired" : "shop")}>
@@ -858,6 +861,7 @@ function Game() {
           />
         )}
         {phase === "shop" && (
+          <GameErrorBoundary screen="shop" onReturn={() => setPhase("intro")}>
           <UpgradeScreen
             character={character}
             points={points}
@@ -912,6 +916,7 @@ function Game() {
               setPhase("character");
             }}
           />
+          </GameErrorBoundary>
         )}
 
         </div>
