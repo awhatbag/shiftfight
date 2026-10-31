@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Add local ward/shop error recovery and bounded, failure-safe audio; run tests and live checks.
+- [x] Add local ward/shop error recovery and bounded, failure-safe audio; all 36 tests passed, build OK, and both boundaries handled intentional browser render failures with working recovery controls (isolated probes, not a naturally occurring crash).
 
 - [x] Add smooth southward ward camera tracking without changing the answer tray or inventing southern artwork; live patient views checked at 606x958 and 390x844, and 23 movement/catastrophe tests passed.
 
