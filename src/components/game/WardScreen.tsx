@@ -34,6 +34,7 @@ import {
   playRoundBells,
   playWhistle,
   primeAudio,
+  playGooseHonk, playGooseArrival, playGooseAttack, playGooseShoo, playGooseExit, stopGooseHonks,
 } from "@/lib/sfx";
 import { isMusicOn, nextWardSong, pauseMusic, playMusic, resumeMusic, setMusicEnabled, stopMusic, subscribeMusic, toggleMusic } from "@/lib/music";
 import {
@@ -249,6 +250,8 @@ export function WardScreen({
   const gooseWorld = useRef<GooseWorld | null>(null);
   const gooseDoor = useRef(Symbol("goose-flock"));
   const [blockedGoose, setBlockedGoose] = useState<number | null>(null);
+  const gooseArrivalHonked = useRef(false);
+  const gooseHonkT = useRef(0);
   const avocadoStarted = useRef(false);
   const avocadoStartT = useRef(0);
   const avocadoTriggerT = useRef(12_000 + Math.random() * 34_000);
@@ -533,6 +536,7 @@ export function WardScreen({
       avocadoTally.current = emptyTally();
       avocadoStartT.current = gameT.current;
       gooseWorld.current = newGooseWorld();
+      gooseArrivalHonked.current = false;
       setAvocadoPhase("active");
       return;
     }
@@ -642,6 +646,7 @@ export function WardScreen({
     if (gameT.current - avocadoStartT.current < def.durationMs) return;
     if (def.id === "goosepocalypse") {
       if (gooseWorld.current) startGooseExit(gooseWorld.current);
+      playGooseExit();
       setBlockedGoose(null);
       setAvocadoPhase("exit");
       pauseMusic("ward");
@@ -666,6 +671,7 @@ export function WardScreen({
     gooseWorld.current = null;
     releaseDoor(gooseDoor.current);
     setBlockedGoose(null);
+    stopGooseHonks();
     resumeMusic("ward");
     setAvocadoResult(null);
     setAvocadoDevRequested(null);
@@ -686,8 +692,14 @@ export function WardScreen({
       if (gooseNeedsDoor(w)) holdDoor(gooseDoor.current); else releaseDoor(gooseDoor.current);
       if (dt <= 0) return;
       const busy = eventsRef.current.map(e => e.bed);
+      const before = w.geese.map(g => g.mode);
       const attacks = stepGooseWorld(w, dt, beds.filter(b => !b.locked).map(b => b.id), busy, doorPhase() === "open");
+      if (!w.exiting) {
+        if (!gooseArrivalHonked.current && w.geese.some((g, i) => before[i] === "waiting" && g.mode !== "waiting")) { gooseArrivalHonked.current = true; gooseHonkT.current = realNow + 1500; playGooseArrival(); }
+        else if (realNow >= gooseHonkT.current && w.geese.some((g, i) => g.mode === "honk" && before[i] !== "honk")) { gooseHonkT.current = realNow + 700; playGooseHonk(); }
+      }
       if (attacks.length) {
+        playGooseAttack();
         const created = attacks.filter(bed => !eventsRef.current.some(e => e.bed === bed)).map(makeAvocadoEvent);
         eventsRef.current = [...eventsRef.current, ...created];
         setEvents(eventsRef.current);
@@ -1114,7 +1126,7 @@ export function WardScreen({
       if (!rt.path.length && rt.attendUntil === undefined) continue;
       const ahead = rt.path[0];
       const blocker = ahead ? blockingGoose(gooseWorld.current, staffPosRef.current[key] ?? staffHome(key), ahead) : undefined;
-      if (blocker) { if (gooseWorld.current) shooGoose(gooseWorld.current, blocker.id, key); rt.lastT = now; continue; }
+      if (blocker) { if (gooseWorld.current && !blocker.shooBy && shooGoose(gooseWorld.current, blocker.id, key)) playGooseShoo(); rt.lastT = now; continue; }
       let remaining = (now - rt.lastT) / (msPerUnit(upgrades) * (rt.entering ? 4 : 3.2));
       rt.lastT = now;
       let cur = staffPosRef.current[key] ?? staffHome(key);
@@ -1464,7 +1476,7 @@ export function WardScreen({
         nurseObstructed={blockedGoose !== null}
         blockedGoose={avocadoPhase === "active" ? blockedGoose : null}
         shooDisabled={rate === 0}
-        onShoo={() => { const w = gooseWorld.current; if (w && blockedGoose !== null && shooGoose(w, blockedGoose, "nurse")) setNurseAction("interact"); }}
+        onShoo={() => { const w = gooseWorld.current; const wasShooing = w?.geese.find(g => g.id === blockedGoose)?.shooBy; if (w && blockedGoose !== null && shooGoose(w, blockedGoose, "nurse")) { if (!wasShooing) playGooseShoo(); setNurseAction("interact"); } }}
       />
       </WardCamera>
       <div className="pointer-events-none absolute inset-0">

@@ -267,3 +267,87 @@ export function playLevelComplete() {
   sample(levelCompleteAsset.url, 0.9);
   buzz([20, 60, 20]);
 }
+
+/* ---------- Goosepocalypse honks (supplied recordings) ---------- */
+import honkAsset from "@/assets/honk-sound.mp3.asset.json";
+import untitledHonkAsset from "@/assets/untitled-goose-honk.mp3.asset.json";
+import babyHonkAsset from "@/assets/baby-goose-honk.mp3.asset.json";
+import canadaHonkAsset from "@/assets/canada-goose-honk.mp3.asset.json";
+
+const HONKS = [honkAsset.url, untitledHonkAsset.url, babyHonkAsset.url];
+const ALL_HONKS = [...HONKS, canadaHonkAsset.url];
+const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)]!;
+const honkTimers = new Set<ReturnType<typeof setTimeout>>();
+
+/** Overlapping honk voice (unlike sample(), repeats of one file may overlap). */
+function honkNow(url: string, volume = 0.8) {
+  if (!soundOn || typeof Audio === "undefined") return;
+  try {
+    const el = new Audio(url);
+    el.volume = clampAudioVolume(volume);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const release = samples.add(() => {
+      if (timer !== undefined) clearTimeout(timer);
+      el.removeEventListener("ended", release);
+      el.removeEventListener("error", release);
+      el.pause();
+      el.removeAttribute("src");
+      el.load();
+    });
+    el.addEventListener("ended", release);
+    el.addEventListener("error", release);
+    timer = setTimeout(release, 6000);
+    try { void el.play().catch(release); } catch { release(); }
+  } catch { /* ignore */ }
+}
+
+function honkSequence(seq: Array<[string, number]>) {
+  for (const [url, at] of seq) {
+    if (at <= 0) { honkNow(url); continue; }
+    const t = setTimeout(() => { honkTimers.delete(t); honkNow(url); }, at);
+    honkTimers.add(t);
+  }
+}
+
+export function stopGooseHonks() {
+  for (const t of honkTimers) clearTimeout(t);
+  honkTimers.clear();
+}
+
+/** A roaming goose honks once or twice. */
+export function playGooseHonk() {
+  const url = pick(HONKS);
+  honkSequence(Math.random() < 0.5 ? [[url, 0]] : [[url, 0], [url, 260]]);
+}
+
+/** Geese burst through the doors: quick flurry, pause, one more. */
+export function playGooseArrival() {
+  const n = 3 + Math.floor(Math.random() * 2);
+  const seq: Array<[string, number]> = Array.from({ length: n }, (_, i) => [pick(HONKS), i * 160]);
+  seq.push([pick(HONKS), n * 160 + 550]);
+  honkSequence(seq);
+}
+
+/** Patient attacked: three honks from any recording. */
+export function playGooseAttack() {
+  honkSequence([0, 180, 360].map((at) => [pick(ALL_HONKS), at]));
+}
+
+/** Shooing a goose: one Canada goose honk only. */
+export function playGooseShoo() {
+  honkNow(canadaHonkAsset.url, 0.85);
+}
+
+/** Geese leaving: every recording, doubled/tripled honks, Canada goose at most once. */
+export function playGooseExit() {
+  const seq: Array<[string, number]> = [];
+  let at = 0;
+  const order = [...HONKS].sort(() => Math.random() - 0.5);
+  for (const url of order) {
+    const reps = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < reps; i++) { seq.push([url, at]); at += 170; }
+    at += 220;
+  }
+  if (Math.random() < 0.75) seq.splice(1 + Math.floor(Math.random() * (seq.length - 1)), 0, [canadaHonkAsset.url, Math.floor(Math.random() * at)]);
+  honkSequence(seq);
+}
