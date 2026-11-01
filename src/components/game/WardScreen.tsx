@@ -654,7 +654,7 @@ export function WardScreen({
     const outcome = def.grade(avocadoTally.current);
     stats.current.catastrophe = outcome;
     stats.current.catastropheSummary = { name: def.intro.title, outcome, ...def.conclusion(outcome), tally: { ...avocadoTally.current } };
-    setAvocadoResult({ outcome, ...stats.current.catastropheSummary });
+    setAvocadoResult({ ...stats.current.catastropheSummary });
     setAvocadoPhase("conclusion");
     /* the closing card waits for the player's "Continue shift" tap */
   }, [tick, avocadoPhase]);
@@ -698,7 +698,7 @@ export function WardScreen({
         const outcome = def.grade(avocadoTally.current);
         stats.current.catastrophe = outcome;
         stats.current.catastropheSummary = { name: def.intro.title, outcome, ...def.conclusion(outcome), tally: { ...avocadoTally.current } };
-        setAvocadoResult({ outcome, ...stats.current.catastropheSummary });
+        setAvocadoResult({ ...stats.current.catastropheSummary });
         gooseWorld.current = null;
         releaseDoor(gooseDoor.current);
         setAvocadoPhase("conclusion");
