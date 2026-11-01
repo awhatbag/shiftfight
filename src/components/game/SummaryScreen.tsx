@@ -172,6 +172,20 @@ export function SummaryScreen({
           <JobSecurityBar value={review.after} delta={review.delta} />
         </div>
       )}
+      {stats.catastropheSummary && (() => {
+        const c = stats.catastropheSummary;
+        const tone = c.outcome === "positive" ? "border-calm" : c.outcome === "neutral" ? "border-gold" : "border-alarm";
+        return (
+          <div className={`space-y-1.5 rounded-2xl border-2 bg-card p-3 ${tone}`}>
+            <p className="font-display text-xs font-black uppercase text-alarm">🚨 Catastrophe: {c.name}</p>
+            <p className="font-display text-lg font-black uppercase leading-none">{c.title}</p>
+            <p className="text-sm font-bold leading-snug">DON: “{c.line}”</p>
+            <p className="text-[11px] font-bold uppercase text-muted-foreground">
+              {c.tally.generated} problems · {c.tally.best} best · {c.tally.sortOf} sort of · {c.tally.worst} worst · {c.tally.missed} missed
+            </p>
+          </div>
+        );
+      })()}
 
 
       <div className="space-y-1.5 rounded-2xl border-2 border-border bg-card p-3">

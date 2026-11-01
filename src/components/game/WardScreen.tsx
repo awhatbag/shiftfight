@@ -122,6 +122,8 @@ export type ShiftStats = {
   /** which catastrophe ran and whether the scheduler or Dev Mode started it */
   catastropheId?: string | undefined;
   catastropheSource?: "auto" | "dev" | undefined;
+  /** shift-summary recap, filled for any registered catastrophe that concluded */
+  catastropheSummary?: { name: string; outcome: CatastropheOutcome; title: string; line: string; tally: CatastropheTally } | undefined;
 };
 
 
@@ -651,7 +653,8 @@ export function WardScreen({
     /* grade the catastrophe from the outcomes normal gameplay produced */
     const outcome = def.grade(avocadoTally.current);
     stats.current.catastrophe = outcome;
-    setAvocadoResult({ outcome, ...def.conclusion(outcome) });
+    stats.current.catastropheSummary = { name: def.intro.title, outcome, ...def.conclusion(outcome), tally: { ...avocadoTally.current } };
+    setAvocadoResult({ ...stats.current.catastropheSummary });
     setAvocadoPhase("conclusion");
     /* the closing card waits for the player's "Continue shift" tap */
   }, [tick, avocadoPhase]);
@@ -694,7 +697,8 @@ export function WardScreen({
         const def = catastropheRef.current;
         const outcome = def.grade(avocadoTally.current);
         stats.current.catastrophe = outcome;
-        setAvocadoResult({ outcome, ...def.conclusion(outcome) });
+        stats.current.catastropheSummary = { name: def.intro.title, outcome, ...def.conclusion(outcome), tally: { ...avocadoTally.current } };
+        setAvocadoResult({ ...stats.current.catastropheSummary });
         gooseWorld.current = null;
         releaseDoor(gooseDoor.current);
         setAvocadoPhase("conclusion");
