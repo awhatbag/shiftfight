@@ -351,3 +351,10 @@ export function playGooseExit() {
   if (Math.random() < 0.75) seq.splice(1 + Math.floor(Math.random() * (seq.length - 1)), 0, [canadaHonkAsset.url, Math.floor(Math.random() * at)]);
   honkSequence(seq);
 }
+
+/* ---------- Great Pillow Shortage ---------- */
+import pillowPopAsset from "@/assets/pillow-pop.mp3.asset.json";
+/** a pillow pops into existence */
+export function playPillowPop() {
+  honkNow(pillowPopAsset.url, 0.7);
+}

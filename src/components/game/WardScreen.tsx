@@ -16,6 +16,8 @@ import { WardScene } from "./WardScene";
 import { WardCamera } from "./WardCamera";
 import { Button } from "@/components/ui/button";
 import { isGooseEvent } from "@/game/gooseProblems";
+import { isPillowEvent, PILLOW_GIVE_TEXT } from "@/game/pillowProblems";
+import { PILLOW_LIFE_MS, PILLOW_SPRITES, type FloorPillow } from "./PillowLayer";
 import { blockingGoose, gooseExitComplete, gooseNeedsDoor, newGooseWorld, shooGoose, startGooseExit, stepGooseWorld, type GooseWorld } from "@/game/gooseRuntime";
 import type { DonPose } from "./DonSprite";
 import { PatientActionPanel } from "./PatientActionPanel";
@@ -34,7 +36,7 @@ import {
   playRoundBells,
   playWhistle,
   primeAudio,
-  playGooseHonk, playGooseArrival, playGooseAttack, playGooseShoo, playGooseExit, stopGooseHonks,
+  playPillowPop, playGooseHonk, playGooseArrival, playGooseAttack, playGooseShoo, playGooseExit, stopGooseHonks,
 } from "@/lib/sfx";
 import { isMusicOn, nextWardSong, pauseMusic, playMusic, resumeMusic, setMusicEnabled, stopMusic, subscribeMusic, toggleMusic } from "@/lib/music";
 import {
@@ -258,6 +260,18 @@ export function WardScreen({
   const avocadoNextSpawnT = useRef(0);
   const avocadoUid = useRef(1);
   const suspendedEvents = useRef<ActiveEvent[]>([]);
+  /* Great Pillow Shortage: floor pillows, the one the nurse carries, pending respawns */
+  const [pillows, setPillows] = useState<FloorPillow[]>([]);
+  const pillowsRef = useRef<FloorPillow[]>([]);
+  pillowsRef.current = pillows;
+  const [carrying, setCarrying] = useState<number | null>(null);
+  const carryingRef = useRef<number | null>(null);
+  carryingRef.current = carrying;
+  const [nurseStanding, setNurseStanding] = useState(false);
+  const pillowTarget = useRef<number | null>(null);
+  const pillowPending = useRef<number[]>([]);
+  const pillowUid = useRef(1);
+  const nextPillowComplaintT = useRef(0);
   const avocadoPhaseRef = useRef<CatastrophePhase>(null);
   avocadoPhaseRef.current = avocadoPhase;
   /** temporary tally used only to grade the catastrophe */
@@ -532,6 +546,23 @@ export function WardScreen({
      Everything freezes — characters, timers, bells — and the music cuts out. */
   const startAvocadoWave = useCallback(() => {
     if (avocadoPhaseRef.current !== "intro") return;
+    if (catastropheRef.current.id === "pillow-shortage") {
+      const now = gameT.current;
+      suspendedEvents.current = eventsRef.current;
+      avocadoTally.current = emptyTally();
+      avocadoStartT.current = now;
+      const bedsFree = Array.from({ length: activeBeds }, (_, b) => b).sort(() => Math.random() - 0.5).slice(0, 3);
+      setEvents(bedsFree.map((b) => makeAvocadoEvent(b)));
+      pillowPending.current = [];
+      pillowTarget.current = null;
+      setCarrying(null);
+      setPillows([newPillow(now), newPillow(now), newPillow(now)]);
+      playPillowPop();
+      nextPillowComplaintT.current = now + 4000;
+      setAvocadoPhase("active");
+      playCallBell();
+      return;
+    }
     if (catastropheRef.current.id === "goosepocalypse") {
       avocadoTally.current = emptyTally();
       avocadoStartT.current = gameT.current;
@@ -543,7 +574,35 @@ export function WardScreen({
     setAvocadoPhase("wave");
     pauseMusic("ward");
     buzz([40, 60, 40, 80, 50, 90, 40]);
-  }, []);
+  }, [activeBeds, makeAvocadoEvent]);
+
+  /* pillow spawning, timeouts and new pillow complaints (game clock, so pauses freeze it) */
+  useEffect(() => {
+    if (avocadoPhase !== "active" || catastropheRef.current.id !== "pillow-shortage" || rate === 0) return;
+    const now = gameT.current;
+    const before = pillowsRef.current;
+    let list = before.filter((p) => now - p.born <= PILLOW_LIFE_MS);
+    for (let i = list.length; i < before.length; i++) pillowPending.current.push(now + 1000 + Math.random() * 2000);
+    const due = pillowPending.current.filter((t) => t <= now);
+    pillowPending.current = pillowPending.current.filter((t) => t > now);
+    let spawned = due.length;
+    while (list.length + spawned < 2) spawned++;
+    if (spawned) {
+      list = [...list, ...Array.from({ length: spawned }, () => newPillow(now))];
+      playPillowPop();
+    }
+    if (list.length !== before.length || spawned) setPillows(list);
+    if (now >= nextPillowComplaintT.current) {
+      nextPillowComplaintT.current = now + 3500 + Math.random() * 1500;
+      const cur = eventsRef.current;
+      const free = Array.from({ length: activeBeds }, (_, b) => b).filter((b) => !cur.some((e) => e.bed === b));
+      const bed = free[Math.floor(Math.random() * free.length)];
+      if (cur.length < 4 && bed !== undefined) {
+        setEvents((c) => [...c, makeAvocadoEvent(bed)]);
+        playCallBell();
+      }
+    }
+  }, [tick, avocadoPhase, rate, activeBeds, makeAvocadoEvent]);
   useEffect(() => {
     if (avocadoPhase !== "wave") return undefined;
     const id = window.setTimeout(startAvocadoAvalanche, 3200);
@@ -653,6 +712,7 @@ export function WardScreen({
       return;
     }
     setEvents(suspendedEvents.current.map((event) => ({ ...event, born: event.born + def.durationMs })));
+    clearPillows();
     suspendedEvents.current = [];
     setSelected(null);
     /* grade the catastrophe from the outcomes normal gameplay produced */
@@ -668,6 +728,7 @@ export function WardScreen({
     playForwardClick();
     setAvocadoPhase(null);
     setAvocados([]);
+    clearPillows();
     gooseWorld.current = null;
     releaseDoor(gooseDoor.current);
     setBlockedGoose(null);
@@ -985,6 +1046,7 @@ export function WardScreen({
     (dest: Point, bed: number | null, slow = false) => {
       returning.current = slow;
       setAtBed(null);
+      setNurseStanding(false);
       journey.current = routeTo(dest, nurseRef.current);
       journeyBed.current = bed;
       if (!journey.current.length) {
@@ -1044,7 +1106,8 @@ export function WardScreen({
     stats.current.steps++;
     if (!journey.current.length) {
       setWalking(false);
-      setNurseAction(journeyBed.current === null ? "sit" : "idle");
+      setNurseAction(journeyBed.current === null && pillowTarget.current === null ? "sit" : "idle");
+      if (pillowTarget.current !== null) collectPillow();
       setAtBed(journeyBed.current);
       journeyBed.current = null;
     }
@@ -1083,6 +1146,7 @@ export function WardScreen({
         if (now < rt.cooldownUntil) continue;
         const target = events.find((e) => {
           if (now - e.born < b.responseMs) return false;
+          if (isPillowEvent(e.def)) return false; // pillows must be found and delivered by the nurse
           return e.def.severity <= b.maxSeverity;
         });
         if (!target) continue;
@@ -1227,8 +1291,67 @@ export function WardScreen({
 
 
 
+  /** a random spot on the walkable network (never inside beds, walls or furniture) */
+  function newPillow(now: number): FloorPillow {
+    let spot: Point = BED_ARRIVAL[0]!;
+    for (let tries = 0; tries < 12; tries++) {
+      const a = BED_ARRIVAL[Math.floor(Math.random() * BED_ARRIVAL.length)]!;
+      const b = BED_ARRIVAL[Math.floor(Math.random() * BED_ARRIVAL.length)]!;
+      const path = [a, ...routeTo(b, a)];
+      const i = Math.floor(Math.random() * Math.max(1, path.length - 1));
+      const p = path[i]!, q = path[i + 1] ?? p, t = Math.random();
+      const c = { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t };
+      if (c.y < 0.34 || c.y > 0.95) continue;
+      if (pillowsRef.current.some((o) => Math.hypot(o.x - c.x, o.y - c.y) < 0.06)) continue;
+      spot = c;
+      break;
+    }
+    return { id: pillowUid.current++, x: spot.x, y: spot.y, born: now, art: Math.floor(Math.random() * PILLOW_SPRITES.length) };
+  }
+
+  function clearPillows() {
+    setPillows([]);
+    setCarrying(null);
+    pillowTarget.current = null;
+    pillowPending.current = [];
+  }
+
+  function collectPillow() {
+    const id = pillowTarget.current;
+    pillowTarget.current = null;
+    setNurseStanding(true);
+    const p = pillowsRef.current.find((x) => x.id === id);
+    if (!p || gameT.current - p.born > PILLOW_LIFE_MS || carryingRef.current !== null) {
+      say("TOO LATE", "That pillow has vanished", false);
+      return;
+    }
+    setPillows((c) => c.filter((x) => x.id !== p.id));
+    pillowPending.current.push(gameT.current + 1000 + Math.random() * 2000);
+    setCarrying(p.art);
+    carryingRef.current = p.art;
+    buzz(15);
+    say("PILLOW GET!", "Tap a patient who needs a pillow", true);
+  }
+
+  function tapPillow(id: number) {
+    if (rate === 0) return;
+    primeAudio();
+    if (carryingRef.current !== null) {
+      say("HANDS FULL", "You can only carry one pillow", false);
+      return;
+    }
+    const p = pillowsRef.current.find((x) => x.id === id);
+    if (!p) return;
+    buzz(10);
+    setSelected(null);
+    walkTo({ x: p.x, y: p.y }, null);
+    pillowTarget.current = id;
+    if (!journey.current.length) collectPillow();
+  }
+
   function tapBed(bed: number) {
     if (rate === 0 || beds[bed]?.locked) return;
+    pillowTarget.current = null;
     primeAudio();
     buzz(10);
     if (tutStep === 1) setTutStep(2);
@@ -1243,6 +1366,7 @@ export function WardScreen({
   function goStation() {
     if (rate === 0) return;
     setSelected(null);
+    pillowTarget.current = null;
     walkTo(STATION, null);
   }
 
@@ -1250,6 +1374,16 @@ export function WardScreen({
   function doAction(action: ActionKind) {
     const ev = selectedEvent;
     if (!ev || rate === 0 || nurseHereBed !== ev.bed) return;
+    /* pillow request: without a pillow, the nurse goes searching and the request stays open */
+    if (isPillowEvent(ev.def) && action === ev.def.correct) {
+      if (carryingRef.current === null) {
+        setSelected(null);
+        say("FIND A PILLOW", "Tap a pillow on the floor, then bring it back", true);
+        return;
+      }
+      setCarrying(null);
+      carryingRef.current = null;
+    }
     setNurseAction(action === "ASSESS" ? "check" : "interact");
     window.setTimeout(() => setNurseAction("idle"), 620);
     if (tutStep >= 0) {
@@ -1476,6 +1610,10 @@ export function WardScreen({
         nurseObstructed={blockedGoose !== null}
         blockedGoose={avocadoPhase === "active" ? blockedGoose : null}
         shooDisabled={rate === 0}
+        pillows={pillows}
+        carryingPillow={carrying}
+        nurseStanding={nurseStanding}
+        onTapPillow={catastrophe.id === "pillow-shortage" && avocadoPhase === "active" ? tapPillow : undefined}
         onShoo={() => { const w = gooseWorld.current; const wasShooing = w?.geese.find(g => g.id === blockedGoose)?.shooBy; if (w && blockedGoose !== null && shooGoose(w, blockedGoose, "nurse")) { if (!wasShooing) playGooseShoo(); setNurseAction("interact"); } }}
       />
       </WardCamera>
@@ -1547,6 +1685,7 @@ export function WardScreen({
         beds={beds}
         nurseHereBed={nurseHereBed}
         onAction={doAction}
+        optionOverride={selectedEvent && carrying !== null && isPillowEvent(selectedEvent.def) ? { FETCH: PILLOW_GIVE_TEXT } : undefined}
       />
 
       {/* mini-game overlay + controls */}

@@ -90,8 +90,8 @@ describe("catastrophe scheduler", () => {
   it("Level 3 always runs Avocado Avalanche; Goosepocalypse starts at Level 4", () => {
     expect(pickCatastrophe(newSchedule(), 3, () => 0)).toBe(AVOCADO_AVALANCHE.id);
     expect(pickCatastrophe(newSchedule(), 3)).toBe(AVOCADO_AVALANCHE.id);
-    expect(pickCatastrophe(newSchedule(), 4)).toBe("goosepocalypse");
-    expect(pickCatastrophe(newSchedule(), 5)).toBe("goosepocalypse");
+    expect(["goosepocalypse", "pillow-shortage"]).toContain(pickCatastrophe(newSchedule(), 4));
+    expect(pickCatastrophe({ shiftsUntilNext: 0, completed: ["goosepocalypse"] }, 5)).toBe("pillow-shortage");
     expect(pickCatastrophe(newSchedule(), 2)).toBeNull();
   });
 });

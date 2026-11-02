@@ -749,3 +749,10 @@
   transform: rotate(-8deg);
   letter-spacing: 0.05em;
 }
+
+/* Great Pillow Shortage: golden star pop, then the pillow drops to the floor */
+@keyframes pillow-star { 0% { transform: translate(-50%, -60%) scale(0.2) rotate(0deg); opacity: 1; } 60% { transform: translate(-50%, -110%) scale(1.6) rotate(72deg); opacity: 1; } 100% { transform: translate(-50%, -120%) scale(2) rotate(144deg); opacity: 0; } }
+@keyframes pillow-drop { 0% { transform: translateY(-160%) scale(0.6); } 25% { transform: translateY(-160%) scale(1.1); } 80% { transform: translateY(0) scale(1); } 90% { transform: translateY(-10%); } 100% { transform: translateY(0); } }
+.pillow-star { animation: pillow-star 0.6s steps(6) forwards; text-shadow: 0 0 6px var(--gold, gold); }
+.pillow-drop { animation: pillow-drop 0.8s steps(8) both; }
+@media (prefers-reduced-motion: reduce) { .pillow-star, .pillow-drop { animation-duration: 0.01s; } }

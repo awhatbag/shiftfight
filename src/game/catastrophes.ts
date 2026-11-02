@@ -12,6 +12,11 @@ import { GOOSE_DURATION_MS } from "./gooseRuntime";
 import gooseGood from "@/assets/don-goose-good.png.asset.json";
 import gooseAverage from "@/assets/don-goose-average.png.asset.json";
 import gooseBad from "@/assets/don-goose-bad.png.asset.json";
+import pillowGood from "@/assets/don-pillow-good.png.asset.json";
+import pillowAverage from "@/assets/don-pillow-average.png.asset.json";
+import pillowBad from "@/assets/don-pillow-bad.png.asset.json";
+import pillowIntro from "@/assets/don-pillow-intro.png.asset.json";
+import { PILLOW_EVENTS, gradePillows, isPillowEvent, pillowConclusion } from "./pillowProblems";
 import avocado1Asset from "@/assets/avocado1.png.asset.json";
 import avocado2Asset from "@/assets/avocado2.png.asset.json";
 import avocado3Asset from "@/assets/avocado3.png.asset.json";
@@ -54,6 +59,8 @@ export type CatastropheDef = {
   nextIntroLabel: () => string;
   defaultIntroLabel: string;
   intro: { title: string; lines: string[]; closing: string };
+  /** optional opener artwork shown on the intro card */
+  introSprite?: string;
   /** sprites for the on-screen rolling hazard */
   hazardSprites: string[];
 };
@@ -91,7 +98,24 @@ export const GOOSEPOCALYPSE: CatastropheDef = {
   intro: { title: "Goosepocalypse", lines: ["The geese are loose! Eight have escaped from the administration office.", "Why were they there? Apparently the new management team took 'winging it' literally."], closing: "Protect the patients. Do not negotiate with the honks." },
   hazardSprites: [], outcomeSprites: { positive: gooseGood.url, neutral: gooseAverage.url, negative: gooseBad.url },
 };
-export const CATASTROPHES: CatastropheDef[] = [AVOCADO_AVALANCHE, GOOSEPOCALYPSE];
+export const PILLOW_SHORTAGE_MS = 30_000;
+export const GREAT_PILLOW_SHORTAGE: CatastropheDef = {
+  id: "pillow-shortage", devCommand: "pillowShortage", devLabel: "🛏️ Trigger Great Pillow Shortage",
+  minLevel: 4, available: true, minRemainingMs: 40_000, durationMs: PILLOW_SHORTAGE_MS, respawnMs: 0,
+  events: PILLOW_EVENTS, isEvent: isPillowEvent, grade: gradePillows, conclusion: pillowConclusion,
+  nextIntroLabel: () => "Find those pillows ▶", defaultIntroLabel: "Find those pillows ▶",
+  intro: {
+    title: "THE GREAT PILLOW SHORTAGE!",
+    lines: [
+      "Administration has announced new cost-saving measures. Pillows have officially been cut from the hospital budget!",
+      "Patients are furious, and nurses must now source their own pillows.",
+    ],
+    closing: "Find the missing pillows and deliver them to patients before the complaints get out of hand!",
+  },
+  introSprite: pillowIntro.url,
+  hazardSprites: [], outcomeSprites: { positive: pillowGood.url, neutral: pillowAverage.url, negative: pillowBad.url },
+};
+export const CATASTROPHES: CatastropheDef[] = [AVOCADO_AVALANCHE, GOOSEPOCALYPSE, GREAT_PILLOW_SHORTAGE];
 
 export const isCatastropheEvent = (event: EventDef) =>
   CATASTROPHES.some((c) => c.isEvent(event));
