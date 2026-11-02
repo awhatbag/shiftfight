@@ -30,7 +30,8 @@ import { PillowLayer, PILLOW_SPRITES, type FloorPillow } from "./PillowLayer";
 import type { GooseWorld } from "@/game/gooseRuntime";
 import type { ActiveEvent, RollingHazard, StaffRuntime } from "./wardTypes";
 
-export function WardScene({ level, levelName, beds, events, flash, selected, nurseHereBed, onTapBed, onGoStation, staff, staffRuntime, staffPositions, staffHome, staffFlash, redAlert, onTapStaff, character, nurse, walking, nurseAction, nurseDirection, hazards, hazardSprites, now, don, onDonExit, frozen = false, gooseWorld = null, nurseObstructed = false, blockedGoose = null, shooDisabled = false, onShoo, pillows = [], carryingPillow = null, nurseStanding = false, onTapPillow }: {
+export function WardScene({ level, levelName, beds, events, flash, selected, nurseHereBed, onTapBed, onGoStation, onDismissPatient, staff, staffRuntime, staffPositions, staffHome, staffFlash, redAlert, onTapStaff, character, nurse, walking, nurseAction, nurseDirection, hazards, hazardSprites, now, don, onDonExit, frozen = false, gooseWorld = null, nurseObstructed = false, blockedGoose = null, shooDisabled = false, onShoo, pillows = [], carryingPillow = null, nurseStanding = false, onTapPillow }: {
+  onDismissPatient: () => void;
   pillows?: FloorPillow[]; carryingPillow?: number | null; nurseStanding?: boolean; onTapPillow?: ((id: number) => void) | undefined;
   blockedGoose?: number | null;
   shooDisabled?: boolean;
@@ -49,7 +50,7 @@ export function WardScene({ level, levelName, beds, events, flash, selected, nur
   nurseAction: NurseAction; nurseDirection: NurseDirection; hazards: RollingHazard[]; hazardSprites: string[]; now: number;
 }) {
   const selectedEvent = events.find((event) => event.bed === selected);
-  return <div className="ward-world">
+  return <div className="ward-world" onClick={(event) => { if (event.target instanceof Element && !event.target.closest("button, [role='button']")) onDismissPatient(); }}>
     <img src={wardBackgroundAsset.url} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover" draggable={false}/>
     <WardDoorRoom/>
     <WardDoor/>

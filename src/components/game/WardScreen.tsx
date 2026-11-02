@@ -1590,6 +1590,7 @@ export function WardScreen({
         nurseHereBed={nurseHereBed}
         onTapBed={tapBed}
         onGoStation={goStation}
+        onDismissPatient={() => setSelected(null)}
         staff={staff}
         staffRuntime={staffRt.current}
         staffPositions={staffPos}
@@ -1685,6 +1686,8 @@ export function WardScreen({
         beds={beds}
         nurseHereBed={nurseHereBed}
         onAction={doAction}
+        onDismiss={() => setSelected(null)}
+        carryingPillow={carrying !== null}
         optionOverride={selectedEvent && carrying !== null && isPillowEvent(selectedEvent.def) ? { FETCH: PILLOW_GIVE_TEXT } : undefined}
       />
 
