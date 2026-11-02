@@ -1146,6 +1146,7 @@ export function WardScreen({
         if (now < rt.cooldownUntil) continue;
         const target = events.find((e) => {
           if (now - e.born < b.responseMs) return false;
+          if (isPillowEvent(e.def)) return false; // pillows must be found and delivered by the nurse
           return e.def.severity <= b.maxSeverity;
         });
         if (!target) continue;
