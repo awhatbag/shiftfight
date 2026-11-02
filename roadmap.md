@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Split rear desk/front counter layering without changing walking paths or other ward furniture; live mobile shift verified nurse fully visible in the front lane (depth 33 above desk layers 18/28), no runtime errors, build OK.
+
 - [x] Add pillow-search card dismissal, close control and empty-floor dismissal; mobile browser verified search leaves the request active, collection and delivery resolve it, and both dismissal controls work; pillow tests passed and build OK.
 
 - [x] Add local ward/shop error recovery and bounded, failure-safe audio; all 36 tests passed, build OK, and both boundaries handled intentional browser render failures with working recovery controls (isolated probes, not a naturally occurring crash).
