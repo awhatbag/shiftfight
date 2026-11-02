@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Split rear desk/front counter layering and verify front-lane visibility without changing walking paths or other ward furniture.
+- [x] Split rear desk/front counter layering without changing walking paths or other ward furniture; live mobile shift verified nurse fully visible in the front lane (depth 33 above desk layers 18/28), no runtime errors, build OK.
 
 - [x] Add pillow-search card dismissal, close control and empty-floor dismissal; mobile browser verified search leaves the request active, collection and delivery resolve it, and both dismissal controls work; pillow tests passed and build OK.
 
