@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Add pillow-search card dismissal, close control and empty-floor dismissal; verify collection and return to the unresolved patient.
+- [x] Add pillow-search card dismissal, close control and empty-floor dismissal; mobile browser verified search leaves the request active, collection and delivery resolve it, and both dismissal controls work; pillow tests passed and build OK.
 
 - [x] Add local ward/shop error recovery and bounded, failure-safe audio; all 36 tests passed, build OK, and both boundaries handled intentional browser render failures with working recovery controls (isolated probes, not a naturally occurring crash).
 
