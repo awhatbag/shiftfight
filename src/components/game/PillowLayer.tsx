@@ -24,7 +24,7 @@ export function PillowLayer({ pillows, now, onTap, disabled }: { pillows: FloorP
     const fading = age > PILLOW_WAIT_MS;
     const fade = fading ? 1 - (age - PILLOW_WAIT_MS) / (PILLOW_LIFE_MS - PILLOW_WAIT_MS) : 1;
     const flicker = fading && Math.floor(age / 90) % 2 === 0;
-    return <button key={p.id} type="button" disabled={disabled} onClick={() => onTap(p.id)} aria-label="Collect pillow" className="pointer-events-auto absolute grid h-[7%] w-[13%] -translate-x-1/2 -translate-y-1/2 place-items-center" style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, zIndex: 87 }}>
+    return <button key={p.id} type="button" disabled={disabled} onClick={() => onTap(p.id)} aria-label="Collect pillow" className="pointer-events-auto absolute grid h-[5%] w-[10%] -translate-x-1/2 -translate-y-1/2 place-items-center" style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, zIndex: 87 }}>
       <span aria-hidden="true" className="pillow-star pointer-events-none absolute left-1/2 top-0 text-3xl text-gold">★</span>
       <img src={PILLOW_SPRITES[p.art % PILLOW_SPRITES.length]} alt="" draggable={false} className="pillow-drop pointer-events-none h-full w-full object-contain [image-rendering:pixelated] drop-shadow-[0_2px_1px_rgba(0,0,0,0.5)]" style={{ opacity: flicker ? 0.15 : Math.max(0.2, fade) }}/>
     </button>;
