@@ -31,6 +31,8 @@ Hired staff animation uses runtime path presence for walking and position deltas
 
 Ward camera tracking translates the complete scene in presentation only, measuring the existing answer panel and preserving all world coordinates, navigation and stacking; camera motion freezes with gameplay and respects reduced motion.
 
+Nurses' station occlusion uses separate rear-desk and front-counter clips of the supplied artwork; walking characters (including staff without sprites) share floor-position depth so front-lane walkers remain visible without altering navigation or other ward layers.
+
 Patient-card dismissal only clears WardScreen selection, leaving calls and journeys intact; the scene ignores bubbled interactive-control taps so closing the card cannot interfere with bed, pillow, staff or goose actions.
 
 Ward and shop rendering failures unmount locally and return to the title without awarding a shift or resetting progression; audio recovery cancels active playback, fades and autoplay retries. Sound effects use bounded cleanup pools so failed or interrupted playback cannot accumulate nodes.
