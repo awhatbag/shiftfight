@@ -31,7 +31,7 @@ import type { GooseWorld } from "@/game/gooseRuntime";
 import type { ActiveEvent, RollingHazard, StaffRuntime } from "./wardTypes";
 
 export function WardScene({ level, levelName, beds, events, flash, selected, nurseHereBed, onTapBed, onGoStation, staff, staffRuntime, staffPositions, staffHome, staffFlash, redAlert, onTapStaff, character, nurse, walking, nurseAction, nurseDirection, hazards, hazardSprites, now, don, onDonExit, frozen = false, gooseWorld = null, nurseObstructed = false, blockedGoose = null, shooDisabled = false, onShoo, pillows = [], carryingPillow = null, nurseStanding = false, onTapPillow }: {
-  pillows?: FloorPillow[]; carryingPillow?: number | null; nurseStanding?: boolean; onTapPillow?: (id: number) => void;
+  pillows?: FloorPillow[]; carryingPillow?: number | null; nurseStanding?: boolean; onTapPillow?: ((id: number) => void) | undefined;
   blockedGoose?: number | null;
   shooDisabled?: boolean;
   onShoo?: () => void;

@@ -5,7 +5,7 @@ import type { BedState } from "./Bed";
 import type { ActiveEvent } from "./wardTypes";
 import type { Ref } from "react";
 
-export function PatientActionPanel({ event, beds, nurseHereBed, onAction, panelRef, optionOverride }: { optionOverride?: Partial<Record<ActionKind, string>>; event: ActiveEvent | undefined; beds: BedState[]; nurseHereBed: number | null; onAction: (action: ActionKind) => void; panelRef?: Ref<HTMLDivElement> }) {
+export function PatientActionPanel({ event, beds, nurseHereBed, onAction, panelRef, optionOverride }: { optionOverride?: Partial<Record<ActionKind, string>> | undefined; event: ActiveEvent | undefined; beds: BedState[]; nurseHereBed: number | null; onAction: (action: ActionKind) => void; panelRef?: Ref<HTMLDivElement> }) {
   return <div ref={panelRef} className={cn("absolute inset-x-0 bottom-0 z-30", event ? "max-h-[58%] overflow-y-auto rounded-t-3xl border-t-2 border-border bg-card px-3 pb-4 pt-3 shadow-[0_-10px_24px_-16px_oklch(0_0_0/0.5)]" : "pointer-events-none px-2 pb-1")}>
     {event ? <div className="animate-slide-up space-y-1.5">{(() => {
       const here = nurseHereBed === event.bed;
