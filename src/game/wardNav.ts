@@ -45,7 +45,8 @@ export const BED_ARRIVAL: Point[] = [
   { x: 0.238, y: 0.92 }, { x: 0.763, y: 0.92 },
 ];
 
-const DESK_TOP_Y = 0.13;
+const DESK_TOP_Y = 0.1;
+const CHAIR_LANE_Y = 0.2;
 type NavNode = { p: Point; edges: number[] };
 const NAV: NavNode[] = [];
 
@@ -62,14 +63,21 @@ function navChain(...ids: number[]) {
 }
 
 /* Staff walkways traced from the supplied v2 ward path map (red strokes). */
-// Top loop around the back of the nurses' station, fed by the double doors.
-const deskTopL = navAdd({ x: 0.24, y: DESK_TOP_Y });
-const deskTopC = navAdd({ x: 0.5, y: DESK_TOP_Y });
-const deskTopR = navAdd({ x: 0.74, y: DESK_TOP_Y });
+// Nurses' station: solid counters (horseshoe + middle island) are never crossed.
+// Rear lane runs BEHIND the counters (below the doors); gaps between the arms and the
+// island lead into the chair lane; side lanes pass outside the arms to the front lane.
+const deskTopL = navAdd({ x: 0.18, y: DESK_TOP_Y });
+const gapL = navAdd({ x: 0.345, y: DESK_TOP_Y });
+const deskTopC = navAdd({ x: 0.44, y: DESK_TOP_Y });
+const gapR = navAdd({ x: 0.655, y: DESK_TOP_Y });
+const deskTopR = navAdd({ x: 0.82, y: DESK_TOP_Y });
+const innerL = navAdd({ x: 0.345, y: CHAIR_LANE_Y });
+const innerR = navAdd({ x: 0.655, y: CHAIR_LANE_Y });
 const door = navAdd({ x: 0.44, y: 0.08 });
-const sideL = navAdd({ x: 0.21, y: 0.21 });
-const sideR = navAdd({ x: 0.79, y: 0.21 });
-navChain(deskTopL, deskTopC, deskTopR);
+const sideL = navAdd({ x: 0.18, y: 0.21 });
+const sideR = navAdd({ x: 0.82, y: 0.21 });
+navChain(deskTopL, gapL, deskTopC, gapR, deskTopR);
+navChain(gapL, innerL, innerR, gapR);
 navLink(door, deskTopC);
 // Front lane below the desk, serving the top bays.
 const frontL = navAdd(BED_ARRIVAL[0] ?? { x: 0.236, y: 0.315 });
