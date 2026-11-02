@@ -151,8 +151,8 @@ const pFallback: Point = { x: 0.5, y: 0.5 };
 
 /** Top double doors (centre of the painted doorway) and the spot straight in front of them, clear of the frame. */
 export const DOOR_POINT: Point = { x: 0.44, y: 0.08 };
-const DOOR_CLEAR: Point = { x: 0.44, y: 0.16 };
-const inDoorway = (p: Point) => p.y < 0.11 && Math.abs(p.x - DOOR_POINT.x) < 0.08;
+const DOOR_CLEAR: Point = { x: 0.44, y: DESK_TOP_Y };
+const inDoorway = (p: Point) => p.y < 0.095 && Math.abs(p.x - DOOR_POINT.x) < 0.08;
 
 /** Anyone using the top doors walks straight through them before/after joining the walkways. */
 export function routeTo(dest: Point, from: Point): Point[] {
@@ -162,15 +162,17 @@ export function routeTo(dest: Point, from: Point): Point[] {
 }
 
 function routeOnFloor(dest: Point, from: Point): Point[] {
-  const atStation = (point: Point) => point.y < 0.3;
+  // Chairs sit inside the horseshoe counter: reach them only via the chair lane.
+  const atStation = (point: Point) => point.y > 0.15 && point.y < 0.27 && point.x > 0.28 && point.x < 0.72;
+  const innerNode = (point: Point) => (point.x < 0.5 ? innerL : innerR);
   const points: Point[] = [];
   const startNode = atStation(from)
-    ? (points.push({ x: from.x, y: DESK_TOP_Y }), from.x < 0.5 ? deskTopL : deskTopR)
+    ? (points.push({ x: from.x, y: CHAIR_LANE_Y }), innerNode(from))
     : nearestNavNode(from);
   if (atStation(from)) points.push(NAV[startNode]?.p ?? from);
-  const endNode = atStation(dest) ? (dest.x < 0.5 ? deskTopL : deskTopR) : nearestNavNode(dest);
+  const endNode = atStation(dest) ? innerNode(dest) : nearestNavNode(dest);
   points.push(...navPath(startNode, endNode));
-  if (atStation(dest)) points.push({ x: dest.x, y: DESK_TOP_Y });
+  if (atStation(dest)) points.push({ x: dest.x, y: CHAIR_LANE_Y });
   points.push(dest);
 
   const result: Point[] = [];
