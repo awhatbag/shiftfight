@@ -13,13 +13,36 @@ import { StaffPortrait } from "./StaffPortrait";
 import { Nurse } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { useState, type ReactNode } from "react";
+import lockerBg from "@/assets/locker-room-bg.jpg";
 
-function Section({ title, children, show, cork }: { title: string; children: ReactNode; show: boolean; cork?: boolean }) {
+function Section({
+  title,
+  children,
+  show,
+  open = true,
+  onToggle,
+}: {
+  title: string;
+  children: ReactNode;
+  show: boolean;
+  cork?: boolean;
+  open?: boolean;
+  onToggle?: () => void;
+}) {
   if (!show) return null;
   return (
-    <div className={cn("store-shelf", cork && "store-cork")}>
-      <p className="store-shelf-label mx-2 -mt-1 mb-2 inline-block px-2 py-1 font-display text-xs font-black uppercase">{title}</p>
-      <div className="space-y-2 px-2 pb-3">{children}</div>
+    <div className="locker-panel overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={!onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left font-display text-base font-black uppercase"
+      >
+        <span className="truncate">{title}</span>
+        {onToggle && <span className="text-lg leading-none">{open ? "▲" : "▼"}</span>}
+      </button>
+      {open && <div className="space-y-2 px-2 pb-3">{children}</div>}
     </div>
   );
 }
@@ -79,7 +102,7 @@ export function UpgradeScreen({
   const nextBedLevel = Array.from({ length: 10 }, (_, i) => i + 1).find(
     (l) => l > level && bedsForLevel(l) > bedCount,
   );
-  const [tab, setTab] = useState<string>("ward");
+  const [tab, setTab] = useState<string>("locker");
   const TAB_LABELS: Record<string, string> = {
     shoes: "👟 Shoes",
     ppe: "🥽 PPE",
@@ -119,95 +142,95 @@ export function UpgradeScreen({
   );
 
   const gearTabs = tabs.filter((t) => t.id !== "ward" && t.id !== "staff");
-  const isGearTab = gearTabs.some((t) => t.id === tab);
+  const isGearTab = tab === "locker" || gearTabs.some((t) => t.id === tab);
   const mainTabs = [
-    { id: "locker", label: "🔐 Your Locker", active: isGearTab, go: gearTabs[0]?.id ?? "ward", hasNew: gearTabs.some((t) => tabHasNew(t.id)) },
-    { id: "ward", label: "🩺 Ward Supplies", active: tab === "ward", go: "ward", hasNew: tabHasNew("ward") },
-    { id: "staff", label: "👥 Staff Roster", active: tab === "staff", go: "staff", hasNew: tabHasNew("staff") },
+    { id: "locker", icon: "👕", label: "Your Locker", active: isGearTab, go: gearTabs[0]?.id ?? "ward", hasNew: gearTabs.some((t) => tabHasNew(t.id)) },
+    { id: "ward", icon: "🛏️", label: "Ward Supplies", active: tab === "ward", go: "ward", hasNew: tabHasNew("ward") },
+    { id: "staff", icon: "👥", label: "Staff Roster", active: tab === "staff", go: "staff", hasNew: tabHasNew("staff") },
   ];
 
   return (
-    <div className="store-room flex h-full flex-col gap-3 overflow-y-auto p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="locker-sign truncate px-3 py-1.5 font-display text-base font-black uppercase leading-tight">
-          🔑 Staff Locker Room
-        </h2>
-        <span className="locker-card shrink-0 bg-[image:var(--gradient-gold)] px-3 py-1 font-display text-base font-black text-gold-foreground">
-          ⭐ {points}
-        </span>
-      </div>
-
+    <div className="locker-page flex h-full flex-col overflow-y-auto">
       <div className="locker-stage shrink-0">
-        <div className="relative z-10 grid grid-cols-[minmax(0,1fr)_minmax(0,8.5rem)] items-end gap-2 p-2">
+        <img
+          src={lockerBg}
+          alt=""
+          width={1024}
+          height={768}
+          className="absolute inset-0 h-full w-full object-cover object-left"
+          style={{ imageRendering: "pixelated" }}
+        />
+        <div className="relative z-10 flex justify-center pt-2">
+          <h2 className="locker-sign px-3 py-1 font-display text-base font-black uppercase leading-tight">
+            <span className="text-destructive">✚</span> Staff Locker Room
+          </h2>
+        </div>
+        <div className="relative z-10 grid grid-cols-[minmax(0,1fr)_minmax(0,11rem)] items-end gap-1 px-2 pb-3">
           <button
             type="button"
             onClick={onCustomise}
             disabled={!onCustomise}
             aria-label="Customise nurse"
-            className={cn("relative mx-auto h-[23rem] w-full max-w-60", onCustomise && "chunky-press cursor-pointer")}
+            className={cn("relative mx-auto h-[20rem] w-full max-w-56", onCustomise && "chunky-press cursor-pointer")}
           >
             <Nurse character={character} variant="preview" className="h-full" />
           </button>
-          <div className="mb-2 flex flex-col gap-2">
-            <div className="locker-card p-2">
-              <p className="font-display text-[10px] font-black uppercase text-muted-foreground">Your nurse</p>
-              <p className="font-display text-sm font-black uppercase leading-tight">Lv {rank.level} · {rank.title}</p>
-              <div className="mt-1 h-2 overflow-hidden rounded-sm border border-[var(--store-ink)] bg-muted">
-                <div className="h-full bg-[image:var(--gradient-calm)]" style={{ width: `${rank.progress * 100}%` }} />
+          <div className="mb-1 flex flex-col items-stretch gap-2">
+            <div className="locker-glass p-2.5">
+              <p className="font-display text-base font-black uppercase leading-none">Your nurse</p>
+              <p className="mt-1 text-[11px] leading-tight">{rank.title} · Level {rank.level}</p>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[var(--locker-navy)]">
+                <div className="h-full bg-[var(--locker-yellow)]" style={{ width: `${rank.progress * 100}%` }} />
               </div>
-              <p className="mt-1 text-[10px] leading-tight text-muted-foreground">
+              <p className="mt-1 text-[10px] leading-tight opacity-80">
                 {rank.next ? `Next: ${rank.next.title}` : "Max rank"}
               </p>
-              <p className="mt-1 text-[10px] leading-tight">{rank.perk}</p>
+              <p className="mt-2 font-display text-[11px] font-black uppercase">Equipped:</p>
+              <p className="text-[10px] leading-tight">
+                {equippedGear.length === 0
+                  ? "Nothing yet"
+                  : equippedGear
+                      .map((k) => GEAR_ITEMS.find((x) => x.key === k)?.name)
+                      .filter(Boolean)
+                      .join(", ")}
+              </p>
+              {onCustomise && (
+                <button
+                  onClick={onCustomise}
+                  className="locker-btn-yellow chunky-press mt-2 w-full py-1.5 font-display text-xs font-black uppercase"
+                >
+                  🎨 Customise
+                </button>
+              )}
             </div>
-            <div className="locker-card p-2">
-              <p className="font-display text-[10px] font-black uppercase text-muted-foreground">Equipped</p>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {equippedGear.length === 0 && <span className="text-[10px] text-muted-foreground">Nothing yet</span>}
-                {equippedGear.map((k) => {
-                  const g = GEAR_ITEMS.find((x) => x.key === k);
-                  return g ? (
-                    <span key={k} title={g.name} className="rounded-sm bg-secondary px-1 text-[11px]">
-                      {g.icon} <span className="text-[9px]">{g.name}</span>
-                    </span>
-                  ) : null;
-                })}
-              </div>
-            </div>
-            {onCustomise && (
-              <button
-                onClick={onCustomise}
-                className="locker-tab chunky-press bg-secondary py-2 font-display text-[11px] font-black uppercase text-secondary-foreground"
-              >
-                🎨 Customise
-              </button>
-            )}
+            <span className="locker-stars self-end px-3 py-1 font-display text-lg font-black">⭐ {points}</span>
           </div>
         </div>
       </div>
 
+      <div className="flex flex-col gap-3 p-3">
       <div className="grid grid-cols-3 gap-2">
         {mainTabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.go)}
             className={cn(
-              "locker-tab chunky-press relative flex h-14 items-center justify-center px-1 text-center font-display text-xs font-black uppercase leading-tight",
-              t.active ? "bg-primary text-primary-foreground" : "bg-card text-[var(--store-ink)]",
+              "locker-tab chunky-press relative flex h-[4.5rem] flex-col items-center justify-center gap-0.5 px-1 text-center font-display text-xs font-black uppercase leading-tight",
+              t.active && "locker-tab-active",
             )}
           >
+            <span className="text-xl leading-none">{t.icon}</span>
             {t.label}
             {t.hasNew && (
-              <span className="absolute -right-1 -top-1 animate-pulse rounded-full bg-[image:var(--gradient-gold)] px-1.5 py-0.5 font-display text-[9px] font-black text-gold-foreground shadow">
-                ✨NEW
+              <span className="absolute -right-1 -top-1 animate-pulse rounded-full bg-destructive px-1.5 py-0.5 font-display text-[9px] font-black text-destructive-foreground shadow">
+                NEW
               </span>
             )}
           </button>
         ))}
       </div>
-      {isGearTab && <div className="grid grid-cols-3 gap-2">{gearTabs.map((t) => tabButton(t))}</div>}
 
-      <Section show={tab === "ward"} title="🧴 Clean Utility · Ward kit">
+      <Section show={tab === "ward"} title="🧴 Ward Kit">
         {freshUnlocks.includes("tier5") && (
           <p className="animate-pulse rounded-xl bg-[image:var(--gradient-gold)] px-3 py-2 text-center font-display text-xs font-black uppercase text-gold-foreground">
             ✨ New tier unlocked — upgrades can go to tier 5!
@@ -225,7 +248,7 @@ export function UpgradeScreen({
               data-sfx="equip"
               onClick={() => onBuy(u.key, cost)}
               className={cn(
-                "store-bin flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition-transform",
+                "locker-row flex w-full items-center gap-3 p-2.5 text-left",
                 can ? "chunky chunky-press" : "opacity-60",
               )}
             >
@@ -236,7 +259,7 @@ export function UpgradeScreen({
                 <p className="font-display truncate text-sm font-black uppercase">
                   {u.name}
                 </p>
-                <p className="truncate text-[11px] text-muted-foreground">{u.blurb}</p>
+                <p className="truncate text-[11px] opacity-80">{u.blurb}</p>
                 <div className="mt-1 flex gap-1">
                   {Array.from({ length: maxTier }).map((_, i) => (
                     <span
@@ -249,13 +272,13 @@ export function UpgradeScreen({
                   ))}
                 </div>
               </div>
-              <span className="font-display shrink-0 rounded-lg bg-primary px-2 py-1 text-xs font-black text-primary-foreground">
+              <span className="locker-price font-display shrink-0 px-2.5 py-1 text-sm font-black">
                 {max ? "MAX" : `⭐${cost}`}
               </span>
             </button>
           );
         })}
-      <div className="rounded-2xl border-2 border-dashed border-border bg-card/70 p-3">
+      <div className="locker-row border-dashed p-3">
         <p className="font-display text-xs font-black uppercase text-muted-foreground">
           Ward expansion · unlocked by shift level
         </p>
@@ -288,7 +311,7 @@ export function UpgradeScreen({
           const items = GEAR_ITEMS.filter((g) => g.category === cat.key);
           if (!items.length) return null;
           return (
-            <Section key={cat.key} show={tab === cat.key} title={`${cat.icon} Uniform Stores · ${cat.name}`}>
+            <Section key={cat.key} show={isGearTab} title={`${cat.icon} ${cat.name}`} open={tab === cat.key} onToggle={() => setTab(tab === cat.key ? "locker" : cat.key)}>
               {items.map((g) => {
                 const owned = gear.includes(g.key);
                 const equipped = equippedGear.includes(g.key);
@@ -302,9 +325,9 @@ export function UpgradeScreen({
                     data-sfx="equip"
                     onClick={() => (owned ? onToggleGear(g.key) : onBuyGear(g.key, g.cost))}
                     className={cn(
-                      "store-bin flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
+                      "locker-row flex w-full items-center gap-3 p-2.5 text-left",
                       owned || can ? "chunky chunky-press" : "opacity-60",
-                      equipped && "border-calm bg-calm/10",
+                      equipped && "locker-row-equipped",
                       isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
                     )}
                   >
@@ -315,24 +338,24 @@ export function UpgradeScreen({
                       <p className="font-display truncate text-sm font-black uppercase">
                         {g.name}
                       </p>
-                      <p className="text-[11px] leading-tight text-muted-foreground">
+                      <p className="text-[11px] leading-tight opacity-80">
                         {g.blurb}
                       </p>
                     </div>
                     <span
                       className={cn(
-                        "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
+                        "font-display shrink-0 px-2.5 py-1 text-sm font-black rounded-lg",
                         equipped
-                          ? "bg-calm text-calm-foreground"
+                          ? "locker-equipped-pill"
                           : isNew
                             ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
                             : locked && !owned
                               ? "store-stamp"
-                              : "bg-primary text-primary-foreground",
+                              : "locker-price",
                       )}
                     >
                       {equipped
-                        ? "EQUIPPED"
+                        ? "✔ EQUIPPED"
                         : owned
                           ? "EQUIP"
                           : isNew
@@ -350,7 +373,7 @@ export function UpgradeScreen({
       </>
 
       {/* ---------- bed upgrades ---------- */}
-      <Section show={tab === "ward"} title="🛏️ Equipment Bay · Beds">
+      <Section show={tab === "ward"} title="🛏️ Beds">
         {BED_UPGRADES.map((b) => {
           const owned = bedUpgrades.includes(b.key);
           const locked = rank.level < (b.rank ?? 1);
@@ -363,7 +386,7 @@ export function UpgradeScreen({
               data-sfx="equip"
               onClick={() => onBuyBedUpgrade(b.key, b.cost)}
               className={cn(
-                "store-bin flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
+                "locker-row flex w-full items-center gap-3 p-2.5 text-left",
                 can ? "chunky chunky-press" : "opacity-60",
                 isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
@@ -373,14 +396,14 @@ export function UpgradeScreen({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-display truncate text-sm font-black uppercase">{b.name}</p>
-                <p className="text-[11px] leading-tight text-muted-foreground">{b.blurb}</p>
+                <p className="text-[11px] leading-tight opacity-80">{b.blurb}</p>
               </div>
               <span
                 className={cn(
-                  "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
+                  "font-display shrink-0 px-2.5 py-1 text-sm font-black rounded-lg",
                   isNew
                     ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
-                    : "bg-primary text-primary-foreground",
+                    : "locker-price",
                 )}
               >
                 {owned ? "FITTED" : isNew ? "✨ NEW" : locked ? `RESTRICTED · Lv${b.rank}` : `⭐${b.cost}`}
@@ -391,7 +414,7 @@ export function UpgradeScreen({
       </Section>
 
       {/* ---------- staff ---------- */}
-      <Section cork show={tab === "staff"} title={`📌 Staff Roster · ${staff.length}/${MAX_STAFF}`}>
+      <Section cork show={tab === "staff"} title={`👥 Staff · ${staff.length}/${MAX_STAFF} hired`}>
         {STAFF.map((s) => {
           const hired = staff.includes(s.key);
           const need = s.rank ?? 2;
@@ -406,7 +429,7 @@ export function UpgradeScreen({
               data-sfx="equip"
               onClick={() => onHire(s.key, s.cost)}
               className={cn(
-                "store-bin flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left",
+                "locker-row flex w-full items-center gap-3 p-2.5 text-left",
                 can ? "chunky chunky-press" : "opacity-60",
                 isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
@@ -416,16 +439,16 @@ export function UpgradeScreen({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-display truncate text-sm font-black uppercase">{s.name}</p>
-                <p className="text-[11px] leading-tight text-muted-foreground">{s.bonus}</p>
+                <p className="text-[11px] leading-tight opacity-80">{s.bonus}</p>
               </div>
               <span
                 className={cn(
-                  "font-display shrink-0 rounded-lg px-2 py-1 text-xs font-black",
+                  "font-display shrink-0 px-2.5 py-1 text-sm font-black rounded-lg",
                   isNew
                     ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
                     : locked && !hired
                       ? "store-stamp"
-                      : "bg-primary text-primary-foreground",
+                      : "locker-price",
                 )}
               >
                 {hired
@@ -443,17 +466,17 @@ export function UpgradeScreen({
         })}
       </Section>
 
-      <div className="mt-auto space-y-2">
+      <div className="mt-auto space-y-2 pt-2">
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onBack}
-            className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+            className="chunky chunky-press locker-tab py-3 font-display text-sm font-black uppercase"
           >
             ← Back to Summary
           </button>
           <button
             onClick={onSave}
-            className="chunky chunky-press rounded-2xl bg-secondary py-3 font-display text-sm font-black uppercase text-secondary-foreground"
+            className="chunky chunky-press locker-tab py-3 font-display text-sm font-black uppercase"
           >
             💾 Save progress
           </button>
@@ -463,6 +486,7 @@ export function UpgradeScreen({
             {saveNote}
           </p>
         )}
+      </div>
       </div>
     </div>
   );
