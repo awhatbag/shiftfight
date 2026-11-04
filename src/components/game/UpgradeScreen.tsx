@@ -215,7 +215,7 @@ export function UpgradeScreen({
             key={t.id}
             onClick={() => setTab(t.go)}
             className={cn(
-              "locker-tab chunky-press relative flex h-[4.5rem] flex-col items-center justify-center gap-0.5 px-1 text-center font-display text-xs font-black uppercase leading-tight",
+              "locker-tab chunky-press relative flex h-[4.5rem] flex-col items-center justify-center gap-0.5 px-1 text-center font-display text-sm font-black uppercase leading-tight",
               t.active && "locker-tab-active",
             )}
           >
