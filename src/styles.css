@@ -757,57 +757,100 @@
 .pillow-drop { animation: pillow-drop 0.8s steps(8) both; }
 @media (prefers-reduced-motion: reduce) { .pillow-star, .pillow-drop { animation-duration: 0.01s; } }
 
-/* ---------- Staff locker room (shop) — arcade pixel interface ---------- */
+/* ---------- Staff locker room (shop) — modern arcade pixel interface ---------- */
 :root {
-  --locker-teal: oklch(0.6 0.09 195);
-  --locker-teal-dark: oklch(0.45 0.08 200);
-  --locker-teal-light: oklch(0.74 0.09 190);
-  --locker-floor: oklch(0.7 0.04 70);
-  --locker-floor-dark: oklch(0.6 0.05 65);
+  --locker-page: oklch(0.36 0.05 220);
+  --locker-page-line: oklch(0.31 0.045 220);
+  --locker-navy: oklch(0.25 0.06 255);
+  --locker-sky: oklch(0.86 0.06 220);
+  --locker-sky-dark: oklch(0.68 0.08 225);
+  --locker-panel: oklch(0.88 0.035 230);
+  --locker-cream: oklch(0.95 0.025 85);
+  --locker-yellow: oklch(0.87 0.16 90);
+  --locker-yellow-dark: oklch(0.68 0.15 70);
+  --locker-green: oklch(0.9 0.09 150);
+  --locker-green-dark: oklch(0.52 0.13 155);
+  --locker-glass: color-mix(in oklab, oklch(0.32 0.06 225) 88%, transparent);
+}
+@utility locker-page {
+  background-color: var(--locker-page);
+  background-image:
+    linear-gradient(var(--locker-page-line) 2px, transparent 2px),
+    linear-gradient(90deg, var(--locker-page-line) 2px, transparent 2px);
+  background-size: 40px 40px;
 }
 @utility locker-stage {
   position: relative;
-  border: 4px solid var(--store-ink);
-  box-shadow: 4px 4px 0 var(--store-ink);
   overflow: hidden;
-  background-color: var(--locker-teal);
-  background-image:
-    /* floor tiles (bottom 22%) */
-    linear-gradient(0deg, transparent 0 0, transparent 0),
-    repeating-linear-gradient(90deg, var(--locker-teal-dark) 0 3px, transparent 3px 25%),
-    linear-gradient(90deg, transparent 4px, var(--locker-teal-light) 4px 7px, transparent 7px),
-    repeating-linear-gradient(180deg, transparent 0 14px, var(--locker-teal-dark) 14px 16px, transparent 16px 20px, var(--locker-teal-dark) 20px 22px, transparent 22px 60px);
-  background-size: 100% 100%, 100% 78%, 25% 78%, 25% 78%;
-  background-repeat: no-repeat, no-repeat, repeat-x, repeat-x;
+  border-bottom: 4px solid var(--locker-navy);
   image-rendering: pixelated;
-  &::after {
-    content: "";
-    position: absolute; left: 0; right: 0; bottom: 0; height: 22%;
-    border-top: 4px solid var(--store-ink);
-    background-color: var(--locker-floor);
-    background-image:
-      linear-gradient(var(--locker-floor-dark) 2px, transparent 2px),
-      linear-gradient(90deg, var(--locker-floor-dark) 2px, transparent 2px);
-    background-size: 32px 16px;
-    z-index: 0;
-  }
 }
 @utility locker-sign {
-  background: var(--store-ink);
-  color: var(--store-hazard);
-  border: 3px solid var(--store-hazard);
-  box-shadow: 3px 3px 0 var(--store-ink);
-  letter-spacing: 0.08em;
+  background: var(--locker-cream);
+  color: var(--locker-navy);
+  border: 3px solid oklch(0.45 0.08 55);
+  box-shadow: 0 3px 0 oklch(0.35 0.07 50);
+  border-radius: 0.3rem;
+  letter-spacing: 0.04em;
 }
-@utility locker-card {
-  background: color-mix(in oklab, var(--card) 94%, transparent);
-  color: var(--store-ink);
-  border: 3px solid var(--store-ink);
-  box-shadow: 3px 3px 0 var(--store-ink);
-  border-radius: 0.25rem;
+@utility locker-glass {
+  background: var(--locker-glass);
+  color: var(--locker-cream);
+  border: 3px solid var(--locker-cream);
+  border-radius: 0.9rem;
+  box-shadow: 0 4px 0 var(--locker-navy);
+}
+@utility locker-stars {
+  background: var(--locker-navy);
+  color: var(--locker-cream);
+  border: 3px solid var(--locker-yellow);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 oklch(0.15 0.03 255);
+}
+@utility locker-btn-yellow {
+  background: var(--locker-yellow);
+  color: var(--locker-navy);
+  border: 3px solid var(--locker-navy);
+  border-radius: 0.7rem;
+  box-shadow: inset 0 -4px 0 var(--locker-yellow-dark), 0 3px 0 var(--locker-navy);
 }
 @utility locker-tab {
-  border: 3px solid var(--store-ink);
-  box-shadow: inset 0 -4px 0 color-mix(in oklab, var(--store-ink) 30%, transparent), 3px 3px 0 var(--store-ink);
-  border-radius: 0.35rem;
+  color: var(--locker-navy);
+  border: 3px solid var(--locker-navy);
+  border-radius: 0.9rem;
+  box-shadow: inset 0 -5px 0 var(--locker-sky-dark), 0 4px 0 var(--locker-navy);
+  background: var(--locker-sky);
+}
+@utility locker-tab-active {
+  background: var(--locker-yellow);
+  box-shadow: inset 0 -5px 0 var(--locker-yellow-dark), 0 4px 0 var(--locker-navy);
+}
+@utility locker-panel {
+  background: var(--locker-panel);
+  color: var(--locker-navy);
+  border: 3px solid var(--locker-navy);
+  border-radius: 0.9rem;
+  box-shadow: inset 0 -4px 0 var(--locker-sky-dark), 0 4px 0 oklch(0.2 0.04 230);
+}
+@utility locker-row {
+  background: var(--locker-cream);
+  color: var(--locker-navy);
+  border: 2px solid var(--locker-sky-dark);
+  border-radius: 0.6rem;
+}
+@utility locker-row-equipped {
+  background: var(--locker-green);
+  border-color: var(--locker-green-dark);
+}
+@utility locker-price {
+  background: var(--locker-yellow);
+  color: var(--locker-navy);
+  border: 2px solid var(--locker-navy);
+  border-radius: 0.6rem;
+  box-shadow: inset 0 -3px 0 var(--locker-yellow-dark);
+}
+@utility locker-equipped-pill {
+  background: var(--locker-green-dark);
+  color: var(--locker-cream);
+  border-radius: 999px;
 }
