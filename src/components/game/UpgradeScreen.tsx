@@ -105,7 +105,7 @@ export function UpgradeScreen({
       key={t.id}
       onClick={() => setTab(t.id)}
       className={cn(
-        "chunky chunky-press relative flex h-14 w-full items-center justify-center rounded-xl px-1 text-center font-display text-xs font-black uppercase leading-tight",
+        "locker-tab chunky-press relative flex h-12 w-full items-center justify-center px-1 text-center font-display text-xs font-black uppercase leading-tight",
         tab === t.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
       )}
     >
