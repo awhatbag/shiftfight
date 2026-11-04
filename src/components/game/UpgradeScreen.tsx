@@ -137,7 +137,7 @@ export function UpgradeScreen({
         </span>
       </div>
 
-      <div className="locker-stage">
+      <div className="locker-stage shrink-0">
         <div className="relative z-10 grid grid-cols-[minmax(0,1fr)_minmax(0,8.5rem)] items-end gap-2 p-2">
           <button
             type="button"
