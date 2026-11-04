@@ -756,3 +756,58 @@
 .pillow-star { animation: pillow-star 0.6s steps(6) forwards; text-shadow: 0 0 6px var(--gold, gold); }
 .pillow-drop { animation: pillow-drop 0.8s steps(8) both; }
 @media (prefers-reduced-motion: reduce) { .pillow-star, .pillow-drop { animation-duration: 0.01s; } }
+
+/* ---------- Staff locker room (shop) — arcade pixel interface ---------- */
+:root {
+  --locker-teal: oklch(0.6 0.09 195);
+  --locker-teal-dark: oklch(0.45 0.08 200);
+  --locker-teal-light: oklch(0.74 0.09 190);
+  --locker-floor: oklch(0.7 0.04 70);
+  --locker-floor-dark: oklch(0.6 0.05 65);
+}
+@utility locker-stage {
+  position: relative;
+  border: 4px solid var(--store-ink);
+  box-shadow: 4px 4px 0 var(--store-ink);
+  overflow: hidden;
+  background-color: var(--locker-teal);
+  background-image:
+    /* floor tiles (bottom 22%) */
+    linear-gradient(0deg, transparent 0 0, transparent 0),
+    repeating-linear-gradient(90deg, var(--locker-teal-dark) 0 3px, transparent 3px 25%),
+    linear-gradient(90deg, transparent 4px, var(--locker-teal-light) 4px 7px, transparent 7px),
+    repeating-linear-gradient(180deg, transparent 0 14px, var(--locker-teal-dark) 14px 16px, transparent 16px 20px, var(--locker-teal-dark) 20px 22px, transparent 22px 60px);
+  background-size: 100% 100%, 100% 78%, 25% 78%, 25% 78%;
+  background-repeat: no-repeat, no-repeat, repeat-x, repeat-x;
+  image-rendering: pixelated;
+  &::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: 0; height: 22%;
+    border-top: 4px solid var(--store-ink);
+    background-color: var(--locker-floor);
+    background-image:
+      linear-gradient(var(--locker-floor-dark) 2px, transparent 2px),
+      linear-gradient(90deg, var(--locker-floor-dark) 2px, transparent 2px);
+    background-size: 32px 16px;
+    z-index: 0;
+  }
+}
+@utility locker-sign {
+  background: var(--store-ink);
+  color: var(--store-hazard);
+  border: 3px solid var(--store-hazard);
+  box-shadow: 3px 3px 0 var(--store-ink);
+  letter-spacing: 0.08em;
+}
+@utility locker-card {
+  background: color-mix(in oklab, var(--card) 94%, transparent);
+  color: var(--store-ink);
+  border: 3px solid var(--store-ink);
+  box-shadow: 3px 3px 0 var(--store-ink);
+  border-radius: 0.25rem;
+}
+@utility locker-tab {
+  border: 3px solid var(--store-ink);
+  box-shadow: inset 0 -4px 0 color-mix(in oklab, var(--store-ink) 30%, transparent), 3px 3px 0 var(--store-ink);
+  border-radius: 0.35rem;
+}
