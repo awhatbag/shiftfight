@@ -105,7 +105,7 @@ export function UpgradeScreen({
       key={t.id}
       onClick={() => setTab(t.id)}
       className={cn(
-        "chunky chunky-press relative flex h-14 w-full items-center justify-center rounded-xl px-1 text-center font-display text-xs font-black uppercase leading-tight",
+        "locker-tab chunky-press relative flex h-12 w-full items-center justify-center px-1 text-center font-display text-xs font-black uppercase leading-tight",
         tab === t.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
       )}
     >
@@ -118,76 +118,94 @@ export function UpgradeScreen({
     </button>
   );
 
+  const gearTabs = tabs.filter((t) => t.id !== "ward" && t.id !== "staff");
+  const isGearTab = gearTabs.some((t) => t.id === tab);
+  const mainTabs = [
+    { id: "locker", label: "🔐 Your Locker", active: isGearTab, go: gearTabs[0]?.id ?? "ward", hasNew: gearTabs.some((t) => tabHasNew(t.id)) },
+    { id: "ward", label: "🩺 Ward Supplies", active: tab === "ward", go: "ward", hasNew: tabHasNew("ward") },
+    { id: "staff", label: "👥 Staff Roster", active: tab === "staff", go: "staff", hasNew: tabHasNew("staff") },
+  ];
+
   return (
     <div className="store-room flex h-full flex-col gap-3 overflow-y-auto p-4">
-      <div className="rounded-2xl border-2 border-border bg-card p-3">
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-display text-sm font-black uppercase">
-            ✨ Nurse Lv {rank.level} · {rank.title}
-          </p>
-          <span className="text-[11px] text-muted-foreground">
-            {rank.next ? `Next: ${rank.next.title}` : "Max rank"}
-          </span>
-        </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-[image:var(--gradient-calm)]"
-            style={{ width: `${rank.progress * 100}%` }}
-          />
-        </div>
-        <p className="mt-1 text-[11px] text-muted-foreground">{rank.perk}</p>
-      </div>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-        <div className="store-sign min-w-0 px-3 pb-3 pt-1.5">
-          <h2 className="font-display truncate text-lg font-black uppercase leading-tight">Ward Supply Cupboard</h2>
-          <p className="font-display text-[10px] font-black uppercase text-destructive">⚠ Authorised access only</p>
-        </div>
-        <span className="font-display shrink-0 rounded-xl bg-[image:var(--gradient-gold)] px-3 py-1.5 text-base font-black text-gold-foreground">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="locker-sign truncate px-3 py-1.5 font-display text-base font-black uppercase leading-tight">
+          🔑 Staff Locker Room
+        </h2>
+        <span className="locker-card shrink-0 bg-[image:var(--gradient-gold)] px-3 py-1 font-display text-base font-black text-gold-foreground">
           ⭐ {points}
         </span>
       </div>
 
-      <div className="store-locker p-2">
-        <div className="flex flex-col items-center gap-2">
-          <p className="store-shelf-label px-2 py-0.5 font-display text-[10px] font-black uppercase">🔑 Staff locker</p>
+      <div className="locker-stage shrink-0">
+        <div className="relative z-10 grid grid-cols-[minmax(0,1fr)_minmax(0,8.5rem)] items-end gap-2 p-2">
           <button
             type="button"
             onClick={onCustomise}
             disabled={!onCustomise}
             aria-label="Customise nurse"
-            className={cn(
-              "relative h-80 w-48 rounded-sm border-4 border-[var(--store-ink)] bg-[image:var(--gradient-gold)] p-1",
-              onCustomise && "chunky-press cursor-pointer",
-            )}
+            className={cn("relative mx-auto h-[23rem] w-full max-w-60", onCustomise && "chunky-press cursor-pointer")}
           >
             <Nurse character={character} variant="preview" className="h-full" />
           </button>
-          {onCustomise && (
-            <button
-              onClick={onCustomise}
-              className="chunky chunky-press w-48 rounded-xl bg-secondary py-1.5 font-display text-[11px] font-black uppercase text-secondary-foreground"
-            >
-              🎨 Customise
-            </button>
-          )}
-        </div>
-        <div className="mt-2 grid grid-cols-4 gap-2">
-          {tabs.map((t) => tabButton(t))}
-        </div>
-        <div className="mt-2 flex flex-wrap justify-center gap-1 rounded-sm bg-card/90 p-1">
-          {equippedGear.length === 0 && (
-            <span className="text-[11px] text-muted-foreground">Nothing equipped yet</span>
-          )}
-          {equippedGear.map((k) => {
-            const g = GEAR_ITEMS.find((x) => x.key === k);
-            return g ? (
-              <span key={k} className="rounded-lg bg-secondary px-1.5 py-0.5 text-[11px]">
-                {g.icon} {g.name}
-              </span>
-            ) : null;
-          })}
+          <div className="mb-2 flex flex-col gap-2">
+            <div className="locker-card p-2">
+              <p className="font-display text-[10px] font-black uppercase text-muted-foreground">Your nurse</p>
+              <p className="font-display text-sm font-black uppercase leading-tight">Lv {rank.level} · {rank.title}</p>
+              <div className="mt-1 h-2 overflow-hidden rounded-sm border border-[var(--store-ink)] bg-muted">
+                <div className="h-full bg-[image:var(--gradient-calm)]" style={{ width: `${rank.progress * 100}%` }} />
+              </div>
+              <p className="mt-1 text-[10px] leading-tight text-muted-foreground">
+                {rank.next ? `Next: ${rank.next.title}` : "Max rank"}
+              </p>
+              <p className="mt-1 text-[10px] leading-tight">{rank.perk}</p>
+            </div>
+            <div className="locker-card p-2">
+              <p className="font-display text-[10px] font-black uppercase text-muted-foreground">Equipped</p>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {equippedGear.length === 0 && <span className="text-[10px] text-muted-foreground">Nothing yet</span>}
+                {equippedGear.map((k) => {
+                  const g = GEAR_ITEMS.find((x) => x.key === k);
+                  return g ? (
+                    <span key={k} title={g.name} className="rounded-sm bg-secondary px-1 text-[11px]">
+                      {g.icon} <span className="text-[9px]">{g.name}</span>
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            </div>
+            {onCustomise && (
+              <button
+                onClick={onCustomise}
+                className="locker-tab chunky-press bg-secondary py-2 font-display text-[11px] font-black uppercase text-secondary-foreground"
+              >
+                🎨 Customise
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {mainTabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.go)}
+            className={cn(
+              "locker-tab chunky-press relative flex h-14 items-center justify-center px-1 text-center font-display text-xs font-black uppercase leading-tight",
+              t.active ? "bg-primary text-primary-foreground" : "bg-card text-[var(--store-ink)]",
+            )}
+          >
+            {t.label}
+            {t.hasNew && (
+              <span className="absolute -right-1 -top-1 animate-pulse rounded-full bg-[image:var(--gradient-gold)] px-1.5 py-0.5 font-display text-[9px] font-black text-gold-foreground shadow">
+                ✨NEW
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+      {isGearTab && <div className="grid grid-cols-3 gap-2">{gearTabs.map((t) => tabButton(t))}</div>}
 
       <Section show={tab === "ward"} title="🧴 Clean Utility · Ward kit">
         {freshUnlocks.includes("tier5") && (
