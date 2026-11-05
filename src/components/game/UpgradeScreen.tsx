@@ -151,9 +151,9 @@ export function UpgradeScreen({
   const gearTabs = tabs.filter((t) => t.id !== "ward" && t.id !== "staff");
   const isGearTab = tab === "locker" || gearTabs.some((t) => t.id === tab);
   const mainTabs = [
-    { id: "locker", icon: "👕", label: "Your Locker", active: isGearTab, go: gearTabs[0]?.id ?? "ward", hasNew: gearTabs.some((t) => tabHasNew(t.id)) },
-    { id: "ward", icon: "🛏️", label: "Ward Supplies", active: tab === "ward", go: "ward", hasNew: tabHasNew("ward") },
-    { id: "staff", icon: "👥", label: "Staff Roster", active: tab === "staff", go: "staff", hasNew: tabHasNew("staff") },
+    { id: "locker", icon: "scrubs_teal", label: "Your Locker", active: isGearTab, go: gearTabs[0]?.id ?? "ward", hasNew: gearTabs.some((t) => tabHasNew(t.id)) },
+    { id: "ward", icon: "profiling", label: "Ward Supplies", active: tab === "ward", go: "ward", hasNew: tabHasNew("ward") },
+    { id: "staff", icon: "star", label: "Staff Roster", active: tab === "staff", go: "staff", hasNew: tabHasNew("staff") },
   ];
 
   return (
@@ -226,7 +226,7 @@ export function UpgradeScreen({
               t.active && "locker-tab-active",
             )}
           >
-            <span className="text-xl leading-none">{t.icon}</span>
+            <ShopIcon itemKey={t.icon} fallback="" className="h-8 w-8 bg-transparent shadow-none [&>img]:h-8 [&>img]:w-8" />
             {t.label}
             {t.hasNew && (
               <span className="absolute -right-1 -top-1 animate-pulse rounded-full bg-destructive px-1.5 py-0.5 font-display text-[9px] font-black text-destructive-foreground shadow">
