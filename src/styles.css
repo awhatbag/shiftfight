@@ -816,27 +816,28 @@
 }
 @utility locker-tab {
   color: var(--locker-navy);
-  border: 3px solid var(--locker-navy);
-  border-radius: 0.9rem;
-  box-shadow: inset 0 -5px 0 var(--locker-sky-dark), 0 4px 0 var(--locker-navy);
+  border: 2px solid var(--locker-navy);
+  border-radius: 4px;
+  box-shadow: inset 0 -3px 0 var(--locker-sky-dark), inset 0 2px 0 oklch(1 0 0 / 0.6), 0 2px 0 var(--locker-navy);
   background: var(--locker-sky);
 }
 @utility locker-tab-active {
   background: var(--locker-yellow);
-  box-shadow: inset 0 -5px 0 var(--locker-yellow-dark), 0 4px 0 var(--locker-navy);
+  box-shadow: inset 0 -3px 0 var(--locker-yellow-dark), inset 0 2px 0 oklch(1 0 0 / 0.6), 0 2px 0 var(--locker-navy);
 }
 @utility locker-panel {
   background: var(--locker-panel);
   color: var(--locker-navy);
-  border: 3px solid var(--locker-navy);
-  border-radius: 0.9rem;
-  box-shadow: inset 0 -4px 0 var(--locker-sky-dark), 0 4px 0 oklch(0.2 0.04 230);
+  border: 2px solid var(--locker-navy);
+  border-radius: 4px;
+  box-shadow: inset 0 -3px 0 var(--locker-sky-dark), inset 0 2px 0 oklch(1 0 0 / 0.6), 0 2px 0 oklch(0.2 0.04 230);
 }
 @utility locker-row {
   background: var(--locker-cream);
   color: var(--locker-navy);
   border: 2px solid var(--locker-sky-dark);
-  border-radius: 0.6rem;
+  border-radius: 3px;
+  box-shadow: inset 0 -2px 0 oklch(0.85 0.03 85);
 }
 @utility locker-row-equipped {
   background: var(--locker-green);
@@ -846,11 +847,62 @@
   background: var(--locker-yellow);
   color: var(--locker-navy);
   border: 2px solid var(--locker-navy);
-  border-radius: 0.6rem;
-  box-shadow: inset 0 -3px 0 var(--locker-yellow-dark);
+  border-radius: 3px;
+  box-shadow: inset 0 -2px 0 var(--locker-yellow-dark), inset 0 2px 0 oklch(1 0 0 / 0.6);
 }
 @utility locker-equipped-pill {
   background: var(--locker-green-dark);
   color: var(--locker-cream);
   border-radius: 999px;
+}
+
+/* ---------- Nintendo DS pixel UI (shop + top bar): thin stepped pixel frames ---------- */
+:root {
+  --ds-blue: oklch(0.62 0.13 240);
+  --ds-blue-light: oklch(0.8 0.09 230);
+  --ds-blue-dark: oklch(0.42 0.12 250);
+}
+@utility ds-bar {
+  background: linear-gradient(var(--ds-blue-light) 0 2px, var(--ds-blue) 2px calc(100% - 2px), var(--ds-blue-dark) calc(100% - 2px));
+  border-bottom: 2px solid var(--locker-navy);
+}
+@utility ds-btn {
+  position: relative;
+  background: var(--locker-cream);
+  color: var(--locker-navy);
+  border-radius: 0;
+  box-shadow:
+    0 -2px 0 0 var(--locker-navy), 0 2px 0 0 var(--locker-navy),
+    -2px 0 0 0 var(--locker-navy), 2px 0 0 0 var(--locker-navy),
+    inset 0 -3px 0 0 var(--locker-sky-dark), inset 0 2px 0 0 oklch(1 0 0 / 0.7),
+    0 4px 0 0 oklch(0.2 0.04 250 / 0.5);
+  transition: transform 80ms, box-shadow 80ms;
+  &:active { transform: translateY(2px); }
+}
+@utility ds-btn-go {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+  box-shadow:
+    0 -2px 0 0 var(--locker-navy), 0 2px 0 0 var(--locker-navy),
+    -2px 0 0 0 var(--locker-navy), 2px 0 0 0 var(--locker-navy),
+    inset 0 -3px 0 0 oklch(0.4 0.15 25), inset 0 2px 0 0 oklch(1 0 0 / 0.45),
+    0 4px 0 0 oklch(0.2 0.04 250 / 0.5);
+}
+@utility ds-icon {
+  background: var(--ds-blue-light);
+  box-shadow: 0 0 0 2px var(--locker-navy), inset 0 -2px 0 var(--ds-blue), inset 0 2px 0 oklch(1 0 0 / 0.6);
+}
+@utility ds-pips {
+  display: flex;
+  gap: 2px;
+}
+@utility ds-acc {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 280ms ease;
+  & > div { overflow: hidden; }
+  &[data-open="true"] { grid-template-rows: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-acc { transition: none; }
 }
