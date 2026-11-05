@@ -10,6 +10,7 @@ import {
 import { GEAR_CATEGORIES, GEAR_ITEMS } from "@/game/gear";
 import { BED_UPGRADES } from "@/game/bedUpgrades";
 import { StaffPortrait } from "./StaffPortrait";
+import { ShopIcon } from "./ShopIcon";
 import { Nurse } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { useState, type ReactNode } from "react";
@@ -40,9 +41,15 @@ function Section({
         className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left font-display text-base font-black uppercase"
       >
         <span className="truncate">{title}</span>
-        {onToggle && <span className="text-lg leading-none">{open ? "▲" : "▼"}</span>}
+        {onToggle && (
+          <span className={cn("text-sm leading-none transition-transform duration-300", open && "rotate-180")}>▼</span>
+        )}
       </button>
-      {open && <div className="space-y-2 px-2 pb-3">{children}</div>}
+      <div className="ds-acc" data-open={open}>
+        <div>
+          <div className="space-y-2 px-2 pb-3">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -230,7 +237,7 @@ export function UpgradeScreen({
         ))}
       </div>
 
-      <Section show={tab === "ward"} title="🧴 Ward Kit">
+      <Section show={tab === "ward"} title="Ward Kit">
         {freshUnlocks.includes("tier5") && (
           <p className="animate-pulse rounded-xl bg-[image:var(--gradient-gold)] px-3 py-2 text-center font-display text-xs font-black uppercase text-gold-foreground">
             ✨ New tier unlocked — upgrades can go to tier 5!
@@ -252,21 +259,19 @@ export function UpgradeScreen({
                 can ? "chunky chunky-press" : "opacity-60",
               )}
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
-                {u.icon}
-              </span>
+<ShopIcon itemKey={u.key} fallback={u.icon} />
               <div className="min-w-0 flex-1">
                 <p className="font-display truncate text-sm font-black uppercase">
                   {u.name}
                 </p>
                 <p className="truncate text-[11px] opacity-80">{u.blurb}</p>
-                <div className="mt-1 flex gap-1">
+                <div className="ds-pips mt-1">
                   {Array.from({ length: maxTier }).map((_, i) => (
                     <span
                       key={i}
                       className={cn(
-                        "h-1.5 w-6 rounded-full",
-                        i < lvl ? "bg-calm" : "bg-muted",
+                        "h-2 w-5 border border-[var(--locker-navy)]",
+                        i < lvl ? "bg-[var(--ds-blue)]" : "bg-[var(--locker-cream)]",
                       )}
                     />
                   ))}
@@ -311,7 +316,7 @@ export function UpgradeScreen({
           const items = GEAR_ITEMS.filter((g) => g.category === cat.key);
           if (!items.length) return null;
           return (
-            <Section key={cat.key} show={isGearTab} title={`${cat.icon} ${cat.name}`} open={tab === cat.key} onToggle={() => setTab(tab === cat.key ? "locker" : cat.key)}>
+            <Section key={cat.key} show={isGearTab} title={cat.name} open={tab === cat.key} onToggle={() => setTab(tab === cat.key ? "locker" : cat.key)}>
               {items.map((g) => {
                 const owned = gear.includes(g.key);
                 const equipped = equippedGear.includes(g.key);
@@ -331,9 +336,7 @@ export function UpgradeScreen({
                       isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
                     )}
                   >
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
-                      {g.icon}
-                    </span>
+<ShopIcon itemKey={g.key} fallback={g.icon} />
                     <div className="min-w-0 flex-1">
                       <p className="font-display truncate text-sm font-black uppercase">
                         {g.name}
@@ -344,7 +347,7 @@ export function UpgradeScreen({
                     </div>
                     <span
                       className={cn(
-                        "font-display shrink-0 px-2.5 py-1 text-sm font-black rounded-lg",
+                        "font-display shrink-0 px-2.5 py-1 text-sm font-black rounded-[3px]",
                         equipped
                           ? "locker-equipped-pill"
                           : isNew
@@ -373,7 +376,7 @@ export function UpgradeScreen({
       </>
 
       {/* ---------- bed upgrades ---------- */}
-      <Section show={tab === "ward"} title="🛏️ Beds">
+      <Section show={tab === "ward"} title="Beds">
         {BED_UPGRADES.map((b) => {
           const owned = bedUpgrades.includes(b.key);
           const locked = rank.level < (b.rank ?? 1);
@@ -391,16 +394,14 @@ export function UpgradeScreen({
                 isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
-                {b.icon}
-              </span>
+<ShopIcon itemKey={b.key} fallback={b.icon} />
               <div className="min-w-0 flex-1">
                 <p className="font-display truncate text-sm font-black uppercase">{b.name}</p>
                 <p className="text-[11px] leading-tight opacity-80">{b.blurb}</p>
               </div>
               <span
                 className={cn(
-                  "font-display shrink-0 px-2.5 py-1 text-sm font-black rounded-lg",
+                  "font-display shrink-0 px-2.5 py-1 text-sm font-black rounded-[3px]",
                   isNew
                     ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
                     : "locker-price",
@@ -414,7 +415,7 @@ export function UpgradeScreen({
       </Section>
 
       {/* ---------- staff ---------- */}
-      <Section cork show={tab === "staff"} title={`👥 Staff · ${staff.length}/${MAX_STAFF} hired`}>
+      <Section cork show={tab === "staff"} title={`Duty Roster · ${staff.length}/${MAX_STAFF} seats filled`}>
         {STAFF.map((s) => {
           const hired = staff.includes(s.key);
           const need = s.rank ?? 2;
@@ -434,7 +435,7 @@ export function UpgradeScreen({
                 isNew && "border-gold shadow-[0_0_10px_var(--gold)]",
               )}
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-accent text-xl">
+              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden ds-icon text-xl">
                 <StaffPortrait staffKey={s.key} fallback={s.icon} />
               </span>
               <div className="min-w-0 flex-1">
@@ -443,7 +444,7 @@ export function UpgradeScreen({
               </div>
               <span
                 className={cn(
-                  "font-display shrink-0 px-2.5 py-1 text-sm font-black rounded-lg",
+                  "font-display shrink-0 px-2.5 py-1 text-sm font-black rounded-[3px]",
                   isNew
                     ? "animate-pulse bg-[image:var(--gradient-gold)] text-gold-foreground"
                     : locked && !hired
@@ -452,7 +453,7 @@ export function UpgradeScreen({
                 )}
               >
                 {hired
-                  ? "ON SHIFT"
+                  ? "ON DUTY"
                   : isNew
                     ? "✨ NEW"
                     : locked
