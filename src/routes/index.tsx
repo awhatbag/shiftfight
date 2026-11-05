@@ -234,10 +234,10 @@ function TopBar({
   if (phase === "intro") return null;
 
   return (
-    <div className="flex w-full shrink-0 items-center gap-1.5 overflow-hidden border-b-2 border-border bg-background px-2 py-2">
+    <div className="ds-bar flex w-full shrink-0 items-center gap-2 overflow-hidden px-2.5 py-2">
       <button
         onClick={onBack}
-        className="chunky chunky-press flex h-11 shrink-0 items-center rounded-xl bg-secondary px-2.5 font-display text-xs font-black uppercase text-secondary-foreground"
+        className="ds-btn flex h-10 shrink-0 items-center px-2.5 font-display text-xs font-black uppercase"
       >
         ← Back
       </button>
@@ -245,19 +245,19 @@ function TopBar({
         {phase === "shop" && onContinue && (
           <button
             onClick={onContinue}
-            className="chunky chunky-press flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-destructive px-3 font-display text-sm font-black uppercase text-destructive-foreground shadow-[0_4px_0_rgb(0,0,0,0.35)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.85)] ring-2 ring-white/60"
+            className="ds-btn ds-btn-go flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 px-3 font-display text-sm font-black uppercase drop-shadow-[0_1px_0_var(--locker-navy)]"
           >
-            <span className="shrink-0 rounded-md bg-background/25 px-1.5 py-0.5 text-[11px]">
+            <span className="shrink-0 bg-[var(--locker-navy)] px-1.5 py-0.5 text-[11px] text-[var(--locker-yellow)]">
               LV{nextLevel}
             </span>
             <span className="min-w-0 truncate">{nextTitle.title}</span>
-            <span className="shrink-0 text-base">▶</span>
+            <span className="shrink-0 animate-pulse text-base">▶</span>
           </button>
         )}
         <button
           onClick={onMenu}
           aria-label="Open menu"
-          className="chunky chunky-press flex h-11 shrink-0 items-center rounded-xl bg-secondary px-2.5 font-display text-xs font-black uppercase text-secondary-foreground"
+          className="ds-btn flex h-10 shrink-0 items-center px-2.5 font-display text-xs font-black uppercase"
         >
           ☰ Menu
         </button>
