@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Add Compression Socks, Diet Cola, Coffee and Box of Chocolates with pixel-art icons and existing equipment effects; verify purchasing/equipping and shift integration.
+- [x] Add Compression Socks, Diet Cola, Coffee and Box of Chocolates with pixel-art icons and existing equipment effects; eight item/progression tests passed and build OK. Full browser purchase/next-shift check remains unverified because the test did not reach the shop.
 
 - [x] Split rear desk/front counter layering without changing walking paths or other ward furniture; live mobile shift verified nurse fully visible in the front lane (depth 33 above desk layers 18/28), no runtime errors, build OK.
 
