@@ -7,7 +7,8 @@ const ICONS = import.meta.glob<string>("@/assets/shop-icons/*.png", {
 });
 const byKey: Record<string, string> = {};
 for (const [path, url] of Object.entries(ICONS)) {
-  byKey[path.split("/").pop()!.replace(".png", "")] = url;
+  const filename = path.split("/").pop();
+  if (filename) byKey[filename.replace(".png", "")] = url;
 }
 
 export function ShopIcon({ itemKey, fallback, className }: { itemKey: string; fallback: string; className?: string }) {

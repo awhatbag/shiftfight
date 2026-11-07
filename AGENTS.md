@@ -36,3 +36,5 @@ Nurses' station occlusion uses separate rear-desk and front-counter clips of the
 Patient-card dismissal only clears WardScreen selection, leaving calls and journeys intact; the scene ignores bubbled interactive-control taps so closing the card cannot interfere with bed, pillow, staff or goose actions.
 
 Ward and shop rendering failures unmount locally and return to the title without awarding a shift or resetting progression; audio recovery cancels active playback, fades and autoplay retries. Sound effects use bounded cleanup pools so failed or interrupted playback cannot accumulate nodes.
+
+Shop refreshments reuse the gear registry and existing one-per-category equipment slot, remaining owned between shifts rather than adding a separate consumable inventory.
