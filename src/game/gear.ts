@@ -9,7 +9,7 @@ export type GearCategory = "shoes" | "ppe" | "pager" | "scrubs" | "watch" | "cap
 
 export const GEAR_CATEGORIES: { key: GearCategory; name: string; icon: string }[] = [
   { key: "shoes", name: "Shoes", icon: "👟" },
-  { key: "ppe", name: "PPE", icon: "🥽" },
+  { key: "ppe", name: "PPE & Shift Essentials", icon: "🥽" },
   { key: "pager", name: "Pagers & Phones", icon: "📟" },
   { key: "scrubs", name: "Scrubs", icon: "👕" },
   { key: "watch", name: "Fob Watches", icon: "⌚" },
@@ -85,6 +85,43 @@ export const GEAR_ITEMS: GearItem[] = [
     blurb: "Slower, but nothing dropped on your foot ruins the shift.",
     cost: 3600,
     effects: { travelMult: 1.05, damageMult: 0.85 },
+  },
+  {
+    key: "compression_socks",
+    category: "shoes",
+    name: "Compression Socks",
+    icon: "🧦",
+    blurb: "Happy legs, steady rounds. Walk 6% faster; stability hits hurt 8% less.",
+    cost: 1800,
+    effects: { travelMult: 0.94, damageMult: 0.92 },
+  },
+  /* 🥽 PPE and shift essentials — reusable equipment, not consumed */
+  {
+    key: "diet_cola",
+    category: "ppe",
+    name: "Diet Cola",
+    icon: "🥤",
+    blurb: "Pocket-sized fizz. Mini-game rewards +10%.",
+    cost: 1400,
+    effects: { miniMult: 1.1 },
+  },
+  {
+    key: "coffee",
+    category: "ppe",
+    name: "Coffee",
+    icon: "☕",
+    blurb: "One very determined cuppa. Walk 8% faster; earn 5% more XP.",
+    cost: 2400,
+    effects: { travelMult: 0.92, xpMult: 1.05 },
+  },
+  {
+    key: "chocolates",
+    category: "ppe",
+    name: "Box of Chocolates",
+    icon: "🍫",
+    blurb: "Emergency morale rations. Routine call bells occur 10% less often.",
+    cost: 2000,
+    effects: { sillyMult: 0.9 },
   },
   /* 🥽 PPE */
   {
