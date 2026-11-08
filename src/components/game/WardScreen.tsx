@@ -821,7 +821,7 @@ export function WardScreen({
       stats.current.objectives = objectivesRef.current;
       /* clear the shift song so the end-of-shift whistle plays on its own */
       stopMusic("ward");
-      playWhistle();
+      if (collapsed) playWhistle();
       onEnd({ ...stats.current });
     },
     [onEnd],
@@ -876,6 +876,11 @@ export function WardScreen({
 
   useEffect(() => {
     if (phase !== "ending") return undefined;
+    if (!stats.current.collapsed) {
+      /* whistle blows the moment "Time's up!" appears */
+      stopMusic("ward");
+      playWhistle();
+    }
     const t = window.setTimeout(() => finish(stats.current.collapsed), stats.current.collapsed ? 450 : 1100);
     return () => window.clearTimeout(t);
   }, [phase, finish]);
