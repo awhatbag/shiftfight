@@ -45,7 +45,7 @@ export const BED_ARRIVAL: Point[] = [
   { x: 0.238, y: 0.92 }, { x: 0.763, y: 0.92 },
 ];
 
-const DESK_TOP_Y = 0.1;
+const DESK_TOP_Y = 0.14;
 const CHAIR_LANE_Y = 0.2;
 type NavNode = { p: Point; edges: number[] };
 const NAV: NavNode[] = [];
