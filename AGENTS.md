@@ -38,3 +38,5 @@ Patient-card dismissal only clears WardScreen selection, leaving calls and journ
 Ward and shop rendering failures unmount locally and return to the title without awarding a shift or resetting progression; audio recovery cancels active playback, fades and autoplay retries. Sound effects use bounded cleanup pools so failed or interrupted playback cannot accumulate nodes.
 
 Shop refreshments reuse the gear registry and existing one-per-category equipment slot, remaining owned between shifts rather than adding a separate consumable inventory.
+
+Title decorations use an isolated, bounded presentation runtime with expiry pruning and unmount cleanup, never catastrophe or ward gameplay state.

@@ -4,6 +4,26 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.title-prop { position: absolute; width: 72px; height: 72px; pointer-events: none; }
+.title-prop img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.title-prop-avocado { animation: title-cross 6s steps(90) both; }
+.title-prop-goose { width: 96px; height: 106px; animation: title-cross 7s steps(105) both; }
+.title-prop-reverse:not(.title-prop-pillow) { animation-direction: reverse; }
+@keyframes title-cross { from { left: 100%; transform: translateX(16px); } to { left: 0%; transform: translateX(-120px); } }
+.title-avocado-roll { animation: title-roll 6s steps(90) both; }
+.title-prop-reverse .title-avocado-roll { animation-direction: reverse; }
+@keyframes title-roll { from { rotate: 0deg; } to { rotate: -900deg; } }
+.title-goose-frames { width: 100%; height: 100%; background-size: 600% 100%; image-rendering: pixelated; animation: title-goose-walk 1.26s steps(6) infinite; }
+.title-goose-face-right { transform: scaleX(-1); }
+@keyframes title-goose-walk { from { background-position: 0% 0%; } to { background-position: 120% 0%; } }
+.title-prop-pillow { animation: title-pillow-fade 2.8s both; }
+.title-pillow-pop { animation: title-pillow-appear .6s steps(8) both; }
+@keyframes title-pillow-appear { 0% { transform: translateY(-40px) scale(.2); } 45% { transform: translateY(-24px) scale(1.1); } 100% { transform: translateY(0) scale(1); } }
+@keyframes title-pillow-fade { 0%, 65% { opacity: 1; } 100% { opacity: 0; } }
+.title-pillow-star { position: absolute; top: -20px; left: 24px; font-size: 32px; animation: title-star-pop .6s steps(6) both; }
+@keyframes title-star-pop { 0% { transform: scale(.2); opacity: 0; } 40% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { [data-title-ambience] { display: none; } }
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

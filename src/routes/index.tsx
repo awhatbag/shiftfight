@@ -1,4 +1,5 @@
 import { MusicVolumeSlider } from "@/components/game/MusicVolumeSlider";
+import { TitleAmbience } from "@/components/game/TitleAmbience";
 import { advanceSchedule, newSchedule, normalizeSchedule, pickCatastrophe, type CatastropheSchedule } from "@/game/catastrophes";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -1141,6 +1142,7 @@ function IntroScreen({
         className="pointer-events-none absolute inset-0 h-full w-full object-cover"
       />
       <div className="pointer-events-none absolute inset-0 bg-background/10" />
+      <TitleAmbience />
 
       <img
         src={logoAsset.url}
