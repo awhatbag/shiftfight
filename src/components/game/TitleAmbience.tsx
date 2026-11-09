@@ -23,7 +23,7 @@ export function TitleAmbience() {
         const kinds = (["avocado", "goose", "pillow"] as TitlePropKind[]).filter(kind => kind !== previous);
         const kind = kinds[Math.floor(Math.random() * kinds.length)] ?? "pillow";
         previous = kind;
-        const prop: TitleProp = { id: ++id, kind, born: now, life: TITLE_PROP_LIFE[kind], y: 65 + Math.random() * 24, x: 15 + Math.random() * 70, reverse: Math.random() < 0.5 };
+        const prop: TitleProp = { id: ++id, kind, born: now, life: TITLE_PROP_LIFE[kind], y: 5 + Math.random() * 82, x: 15 + Math.random() * 70, reverse: Math.random() < 0.5 };
         setProps(current => addTitleProp(current, prop, now));
         nextSpawn = now + nextTitleSpawnDelay();
       } else {
