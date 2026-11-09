@@ -34,3 +34,8 @@ export function staffCallInterrupted(rt: StaffRuntime, events: readonly ActiveEv
   return rt.eventId !== null && rt.attendUntil === undefined && !rt.goingHome &&
     (resolved.has(rt.eventId) || !events.some((event) => event.id === rt.eventId));
 }
+
+export function releaseInterruptedStaffCall(rt: StaffRuntime): void {
+  rt.eventId = null;
+  rt.cooldownUntil = 0;
+}

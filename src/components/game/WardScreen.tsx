@@ -6,7 +6,7 @@ import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, DOOR_POINT, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
 import { doorPhase, holdDoor, releaseDoor } from "@/game/wardDoor";
-import { pickStaffCall, staffCallInterrupted } from "@/game/staffDispatch";
+import { pickStaffCall, releaseInterruptedStaffCall, staffCallInterrupted } from "@/game/staffDispatch";
 
 const STAFF_DOOR: Point = DOOR_POINT; // top double doors
 import type { ActiveEvent, Banner, CatastrophePhase, RewardCallout, RollingHazard, StaffRuntime } from "./wardTypes";
@@ -1172,8 +1172,7 @@ export function WardScreen({
 
       // A colleague or the player answered: redirect from this exact floor position.
       if (staffCallInterrupted(rt, events, resolved)) {
-        rt.eventId = null;
-        rt.cooldownUntil = 0;
+        releaseInterruptedStaffCall(rt);
         const replacement = pickStaffCall(key, events, staffRt.current, now, "retarget", resolved);
         if (replacement) {
           dispatchStaff(key, replacement);
@@ -1287,7 +1286,6 @@ export function WardScreen({
       say("ON IT", `${info?.name ?? "Staff"} is already going`, true);
       return;
     }
-    const b = STAFF_BEHAVIOUR[key];
     const pick = pickStaffCall(key, events, staffRt.current, gameT.current, "manual");
     if (!pick) {
       say("STANDING BY", `${info?.name ?? "Staff"} can't take those`, true);
