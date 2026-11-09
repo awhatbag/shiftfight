@@ -1154,8 +1154,9 @@ export function WardScreen({
 
       // Cancelled care can be reassigned even on the way back to the station.
       if (rt.eventId === null && !rt.entering && (!rt.path.length || rt.goingHome)) {
-        if (now < rt.cooldownUntil) continue;
-        const target = pickStaffCall(key, events, staffRt.current, now, "auto", resolved);
+        const target = now >= rt.cooldownUntil
+          ? pickStaffCall(key, events, staffRt.current, now, "auto", resolved)
+          : undefined;
         if (target) dispatchStaff(key, target);
       }
 
