@@ -6,6 +6,7 @@ import { pickStaffCall, releaseInterruptedStaffCall, staffCallInterrupted } from
 const mild = EVENTS.find((event) => event.severity === 1);
 if (!mild) throw new Error("Staff tests require an ordinary severity-one call");
 function call(id: number): ActiveEvent {
+  if (!mild) throw new Error("Missing ordinary staff test call");
   return { id, bed: id - 1, def: mild, born: 0, ttl: 30000, scores: {}, actionOrder: [] };
 }
 function runtime(eventId: number | null = null): StaffRuntime {
