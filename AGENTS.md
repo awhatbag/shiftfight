@@ -26,6 +26,7 @@ Goose obstruction controls are anchored inside the shared ward scene to the bloc
 DON visits end their gameplay reactions when departure starts, but retain the ward sprite until its shared navigation route reaches the top doors; this prevents timed visits from removing her mid-walk.
 
 Hired staff spawn behind the top doors and walk to their station chair via the shared staff runtime (enterAt/attendUntil in StaffRuntime); character art (e.g. BarrySprite) only renders that runtime, so new staff sprites need no movement logic.
+Staff dispatch shares a pure call-reservation selector across automatic, manual and interrupted journeys; same-tick resolved IDs are excluded so pending React removals cannot cause duplicate care.
 Hired staff animation uses runtime path presence for walking and position deltas only for facing; shared frame selection excludes the terminal standing cell so stationary ticks cannot interrupt a journey with an action pose.
 - Shop staff portraits are CSS crops of each staff member's supplied sprite sheet, registered in src/components/game/StaffPortrait.tsx; staff without artwork fall back to their emoji, so new artwork only needs a registry entry.
 

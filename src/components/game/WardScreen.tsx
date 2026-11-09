@@ -6,6 +6,7 @@ import type { NurseAction, NurseDirection } from "./Nurse";
 import type { PlayerCharacter } from "@/game/character";
 import { BED_ARRIVAL, BED_SLOTS, DOOR_POINT, STATION, STATION_CHAIRS, msPerUnit, routeTo, stationChairInWard, type Point } from "@/game/wardNav";
 import { doorPhase, holdDoor, releaseDoor } from "@/game/wardDoor";
+import { pickStaffCall, staffCallInterrupted } from "@/game/staffDispatch";
 
 const STAFF_DOOR: Point = DOOR_POINT; // top double doors
 import type { ActiveEvent, Banner, CatastrophePhase, RewardCallout, RollingHazard, StaffRuntime } from "./wardTypes";
@@ -1129,10 +1130,13 @@ export function WardScreen({
     (key: string, ev: ActiveEvent) => {
       const rt = staffRt.current[key];
       if (!rt) return;
+      const destination = BED_ARRIVAL[ev.bed] ?? BED_SLOTS[ev.bed];
+      if (!destination) return;
       rt.eventId = ev.id;
       rt.goingHome = false;
+      rt.attendUntil = undefined;
       rt.lastT = gameT.current;
-      rt.path = routeTo(BED_ARRIVAL[ev.bed] ?? BED_SLOTS[ev.bed]!, staffPosRef.current[key] ?? staffHome(key));
+      rt.path = routeTo(destination, staffPosRef.current[key] ?? staffHome(key));
     },
     [routeTo, staffHome],
   );
@@ -1141,21 +1145,18 @@ export function WardScreen({
     if (rate === 0 || !staff.length) return;
     const now = gameT.current;
     let moved = false;
+    // React removals commit after this loop; don't reassign a just-resolved call.
+    const resolved = new Set<number>();
     for (const key of staff) {
       const b = STAFF_BEHAVIOUR[key];
       const rt = staffRt.current[key];
       if (!b || !rt) continue;
 
-      // idle at the station: wait for a red/critical situation
-      if (!rt.path.length && rt.eventId === null) {
+      // Cancelled care can be reassigned even on the way back to the station.
+      if (rt.eventId === null && !rt.entering && (!rt.path.length || rt.goingHome)) {
         if (now < rt.cooldownUntil) continue;
-        const target = events.find((e) => {
-          if (now - e.born < b.responseMs) return false;
-          if (isPillowEvent(e.def)) return false; // pillows must be found and delivered by the nurse
-          return e.def.severity <= b.maxSeverity;
-        });
-        if (!target) continue;
-        dispatchStaff(key, target);
+        const target = pickStaffCall(key, events, staffRt.current, now, "auto", resolved);
+        if (target) dispatchStaff(key, target);
       }
 
       if (rt.enterAt !== undefined) {
@@ -1169,12 +1170,18 @@ export function WardScreen({
       const doorId = staffDoorIds.current[key];
       if (doorId && (staffPosRef.current[key]?.y ?? 1) > 0.2) releaseDoor(doorId);
 
-      // assigned call resolved while still walking there: turn back to the desk
-      if (rt.eventId !== null && rt.attendUntil === undefined && !rt.goingHome && rt.path.length && !events.some((e) => e.id === rt.eventId)) {
+      // A colleague or the player answered: redirect from this exact floor position.
+      if (staffCallInterrupted(rt, events, resolved)) {
         rt.eventId = null;
-        rt.goingHome = true;
-        rt.cooldownUntil = now + b.cooldownMs;
-        rt.path = routeTo(staffHome(key), staffPosRef.current[key] ?? staffHome(key));
+        rt.cooldownUntil = 0;
+        const replacement = pickStaffCall(key, events, staffRt.current, now, "retarget", resolved);
+        if (replacement) {
+          dispatchStaff(key, replacement);
+        } else {
+          rt.goingHome = true;
+          rt.path = routeTo(staffHome(key), staffPosRef.current[key] ?? staffHome(key));
+        }
+        moved = true;
       }
       if (rt.attendUntil !== undefined) {
         if (now < rt.attendUntil) {
@@ -1200,7 +1207,8 @@ export function WardScreen({
       rt.lastT = now;
       let cur = staffPosRef.current[key] ?? staffHome(key);
       while (remaining > 0 && rt.path.length) {
-        const t = rt.path[0]!;
+        const t = rt.path[0];
+        if (!t) break;
         const dx = t.x - cur.x;
         const dy = t.y - cur.y;
         const d = Math.hypot(dx * 0.8, dy) || 0.0001;
@@ -1234,6 +1242,7 @@ export function WardScreen({
         rt.cooldownUntil = now + b.cooldownMs;
         const target = events.find((e) => e.id === evId);
         if (target) {
+          resolved.add(target.id);
           setEvents((c) => c.filter((e) => e.id !== target.id));
           const gain = Math.round(8 * target.def.severity * payMult(upgrades, staffBonus));
           stats.current.points += gain;
@@ -1279,11 +1288,7 @@ export function WardScreen({
       return;
     }
     const b = STAFF_BEHAVIOUR[key];
-    const pick = [...events].filter((e) => !isCatastropheEvent(e.def) && (!b || e.def.severity <= b.maxSeverity)).sort(
-      (a, z) =>
-        z.def.severity - a.def.severity ||
-        (gameT.current - z.born) / z.ttl - (gameT.current - a.born) / a.ttl,
-    )[0];
+    const pick = pickStaffCall(key, events, staffRt.current, gameT.current, "manual");
     if (!pick) {
       say("STANDING BY", `${info?.name ?? "Staff"} can't take those`, true);
       return;
