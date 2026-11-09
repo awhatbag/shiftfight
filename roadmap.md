@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Add bounded, non-interactive title avocado/goose/pillow decorations behind controls; verify timing, expiry and title-to-game cleanup.
+- [x] Add bounded, non-interactive title avocado/goose/pillow decorations behind controls; three timing/limit/expiry tests passed, live title showed all three with at most two objects, expired objects removed, no page errors and Clock in unmounted the layer; build OK.
 
 - [x] Add Compression Socks, Diet Cola, Coffee and Box of Chocolates with pixel-art icons and existing equipment effects; eight item/progression tests passed and build OK. Full browser purchase/next-shift check remains unverified because the test did not reach the shop.
 
