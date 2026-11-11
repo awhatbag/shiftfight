@@ -89,7 +89,7 @@ export const NEIL_ARENA_LAYOUT = {
   nurseMinX: 0.14,
   nurseMaxX: 0.86,
   /** nurse height as a fraction of arena height */
-  nurseHeight: 0.12,
+  nurseHeight: 0.17,
   /** Neil glides along this lane just below his desk */
   bossLaneY: 0.385,
   bossMinX: 0.2,

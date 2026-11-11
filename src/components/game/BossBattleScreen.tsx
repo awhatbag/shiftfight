@@ -37,7 +37,7 @@ function SheetCell({ atlas, col, row, style }: { atlas: Atlas; col: number; row:
       style={{
         backgroundImage: `url(${atlas.src})`,
         backgroundSize: `${atlas.cols * 100}% ${atlas.rows * 100}%`,
-        backgroundPosition: `${(col / (atlas.cols - 1)) * 100}% ${(row / (atlas.rows - 1)) * 100}%`,
+        backgroundPosition: `${atlas.cols > 1 ? (col / (atlas.cols - 1)) * 100 : 0}% ${atlas.rows > 1 ? (row / (atlas.rows - 1)) * 100 : 0}%`,
         backgroundRepeat: "no-repeat",
         imageRendering: "pixelated",
         ...style,
@@ -426,7 +426,6 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
               width: doorW,
               height: doorH,
               zIndex: 8,
-              backgroundPositionY: 0,
             }}
           />
 
