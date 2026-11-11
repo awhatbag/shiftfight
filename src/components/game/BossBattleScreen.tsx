@@ -402,12 +402,12 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
 
           {/* nurse — the player's own sprite and appearance */}
           <div
-            className="absolute"
+            className="absolute flex justify-center"
             style={{
-              left: s.nurseX * W - (nurseH * 104) / 148 / 2,
+              left: s.nurseX * W - nurseH / 2,
               top: nursePxY - nurseH,
               height: nurseH,
-              width: (nurseH * 104) / 148,
+              width: nurseH,
               zIndex: nurseBehindDoor ? 5 : 15,
             }}
           >
