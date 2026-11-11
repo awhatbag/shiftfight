@@ -11,6 +11,7 @@ import { GEAR_CATEGORIES, GEAR_ITEMS, type Effects } from "@/game/gear";
 import { BED_UPGRADES } from "@/game/bedUpgrades";
 import { SHIFT_TITLES, shiftTitle } from "@/game/shifts";
 import { WARDS, wardLadder } from "@/game/wards";
+import { BOSSES } from "@/game/bosses";
 import { useEffect } from "react";
 import { Nurse, type NurseAction, type NurseDirection } from "@/components/game/Nurse";
 import {
@@ -49,6 +50,8 @@ export type DevApi = {
   jobSecurity: number;
   setJobSecurity: (n: number) => void;
   openLadder: () => void;
+  /** launches a boss battle in test mode (never touches saved progress) */
+  launchBoss: (id: string) => void;
   resetSave: () => void;
   character: PlayerCharacter;
   setCharacter: (c: PlayerCharacter) => void;
@@ -675,6 +678,21 @@ export const DEV_CATEGORIES: Category[] = [
           </div>
         </Row>
         <Placeholder text="Ward designs, ward-specific gameplay and staff takeover are future work; the architecture already supports more wards and levels." />
+      </div>
+    ),
+  },
+  {
+    key: "bosses",
+    name: "Boss Battles",
+    icon: "👔",
+    render: (api) => (
+      <div className="space-y-2">
+        {BOSSES.map((b) => (
+          <Row key={b.id} label={`${b.stage} · ${b.name} — ${b.title}`}>
+            <Chip onClick={() => api.launchBoss(b.id)}>Launch test battle</Chip>
+          </Row>
+        ))}
+        <Placeholder text="Test battles show phase and HP controls and never change saved progress or unlocks." />
       </div>
     ),
   },

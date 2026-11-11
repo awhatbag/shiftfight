@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { shiftTitle } from "@/game/shifts";
 import { wardLadder } from "@/game/wards";
+import { BOSSES, bossDefeated, bossUnlocked, levelGateOpen, type BossProgress } from "@/game/bosses";
 
 /**
  * Level ladder — pick any shift you've already unlocked, and see the wards
@@ -12,7 +13,11 @@ export function LadderScreen({
   currentLevel,
   onPick,
   onBack,
+  bossProgress,
+  onPickBoss,
 }: {
+  bossProgress?: BossProgress;
+  onPickBoss?: (id: string) => void;
   highestLevel: number;
   currentLevel: number;
   onPick: (level: number) => void;
@@ -39,7 +44,8 @@ export function LadderScreen({
       </p>
 
       {ladder.map(({ ward, unlocked, levels }) => (
-        <div key={ward.id} className="rounded-2xl border-2 border-border bg-card/70 p-3">
+        <div key={ward.id} className="space-y-3">
+        <div className="rounded-2xl border-2 border-border bg-card/70 p-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">{ward.icon}</span>
             <div className="min-w-0 flex-1">
@@ -65,7 +71,7 @@ export function LadderScreen({
           {ward.status === "live" ? (
             <div className="mt-3 space-y-1.5">
               {levels.map((l) => {
-                const open = unlocked && l <= Math.max(1, highestLevel);
+                const open = unlocked && l <= Math.max(1, highestLevel) && levelGateOpen(l, bossProgress);
                 const story = shiftTitle(l);
                 return (
                   <button
@@ -104,6 +110,39 @@ export function LadderScreen({
               built — finish Ward A first.
             </p>
           )}
+        </div>
+        {BOSSES.filter((b) => b.afterLevel === ward.to).map((b) => {
+          const open = bossUnlocked(b, bossProgress);
+          const beaten = bossDefeated(b, bossProgress);
+          return (
+            <button
+              key={b.id}
+              disabled={!open}
+              onClick={() => onPickBoss?.(b.id)}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-2xl border-2 border-destructive bg-card p-3 text-left",
+                open ? "chunky-press" : "opacity-50",
+              )}
+            >
+              <span className="font-display grid h-9 w-12 shrink-0 place-items-center rounded-lg bg-destructive text-xs font-black text-destructive-foreground">
+                {open ? b.stage : "🔒"}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="font-display block truncate text-xs font-black uppercase">
+                  Boss · {b.title}
+                </span>
+                <span className="block truncate text-[11px] text-muted-foreground">
+                  {open ? `${b.name}, ${b.role}${beaten ? " · defeated" : ""}` : `Clear Level ${b.afterLevel} to face ${b.name}`}
+                </span>
+              </span>
+              {open && (
+                <span className="font-display shrink-0 rounded-lg bg-destructive px-2 py-1 text-[10px] font-black uppercase text-destructive-foreground">
+                  {beaten ? "Rematch" : "Fight ▶"}
+                </span>
+              )}
+            </button>
+          );
+        })}
         </div>
       ))}
     </div>
