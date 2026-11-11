@@ -11,6 +11,8 @@ import { GameErrorBoundary } from "@/components/game/GameErrorBoundary";
 import { UpgradeScreen } from "@/components/game/UpgradeScreen";
 import { FiredScreen } from "@/components/game/FiredScreen";
 import { LadderScreen } from "@/components/game/LadderScreen";
+import { BossBattleScreen } from "@/components/game/BossBattleScreen";
+import { bossById, markDefeated, unlockAfterLevel, type BossProgress } from "@/game/bosses";
 import { CreditsScreen } from "@/components/game/CreditsScreen";
 import { CharacterScreen } from "@/components/game/CharacterScreen";
 import {
@@ -107,6 +109,7 @@ type SaveData = {
   bedUpgrades?: string[];
   highestLevel?: number;
   wardProgress?: WardProgress;
+  bossProgress?: BossProgress;
   /** character identity + cosmetics (separate from gameplay equipment) */
   character?: PlayerCharacter;
   /** shared catastrophe rotation; older saves start a fresh schedule */
@@ -213,7 +216,8 @@ type Phase =
   | "shop"
   | "dev"
   | "fired"
-  | "ladder";
+  | "ladder"
+  | "boss";
 
 function TopBar({
   phase,
@@ -326,6 +330,8 @@ function Game() {
   const [level, setLevel] = useState(1);
   const [highestLevel, setHighestLevel] = useState(1);
   const [wardProgress, setWardProgress] = useState<WardProgress>({});
+  const [bossProgress, setBossProgress] = useState<BossProgress>({});
+  const [bossRun, setBossRun] = useState<{ id: string; dev: boolean } | null>(null);
   const [soundOn, setSoundOn] = useState(true);
   const [musicOn, setMusicOnState] = useState(isMusicOn);
   const [hapticsOn, setHapticsOn] = useState(true);
@@ -420,6 +426,7 @@ function Game() {
       bedUpgrades,
       highestLevel,
       wardProgress,
+      bossProgress,
       catastropheSchedule,
       character,
     };
@@ -477,6 +484,7 @@ function Game() {
     setBedUpgrades(d.bedUpgrades ?? []);
     setHighestLevel(d.highestLevel ?? d.level ?? 1);
     setWardProgress(d.wardProgress ?? {});
+    setBossProgress(d.bossProgress ?? {});
     setCatastropheSchedule(normalizeSchedule(d.catastropheSchedule));
     setJobSecurity(d.jobSecurity ?? JOB_SECURITY_START);
     if (d.character) {
@@ -538,7 +546,10 @@ function Game() {
     let nextLevel = level;
     let nextHighest = highestLevel;
     let nextWardProgress = wardProgress;
+    let nextBossProgress = bossProgress;
     if (!s.collapsed) {
+      nextBossProgress = unlockAfterLevel(bossProgress, level);
+      setBossProgress(nextBossProgress);
       nextLevel = Math.min(MAX_LEVEL, level + 1);
       nextHighest = Math.max(highestLevel, nextLevel);
       nextWardProgress = updateWardProgress(wardProgress, nextLevel);
@@ -596,6 +607,7 @@ function Game() {
       bedUpgrades,
       highestLevel: nextHighest,
       wardProgress: nextWardProgress,
+      bossProgress: nextBossProgress,
       character,
       catastropheSchedule: nextSchedule,
     });
@@ -662,6 +674,10 @@ function Game() {
       writeCharacter(next);
     },
     openLadder: () => setPhase("ladder"),
+    launchBoss: (id: string) => {
+      setBossRun({ id, dev: true });
+      setPhase("boss");
+    },
     resetSave: () => {
       try {
         window.localStorage.removeItem(SAVE_KEY);
@@ -682,6 +698,7 @@ function Game() {
       setLevel(1);
       setHighestLevel(1);
       setWardProgress({});
+      setBossProgress({});
       setCatastropheSchedule(newSchedule());
       setUpgrades({ speed: 0, response: 0, equipment: 0 });
       setStaff([]);
@@ -745,7 +762,7 @@ function Game() {
     <main className="terrazzo flex min-h-dvh justify-center">
       <div className="relative flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-2xl">
         <AdBanner />
-        {phase !== "dev" && phase !== "shift" && (
+        {phase !== "dev" && phase !== "shift" && phase !== "boss" && (
           <TopBar phase={phase} level={level} onBack={handleBack} onMenu={() => setMenuOpen(true)} onContinue={play} />
         )}
         <div className="relative flex-1 overflow-hidden">
@@ -802,12 +819,32 @@ function Game() {
           <LadderScreen
             highestLevel={highestLevel}
             currentLevel={level}
+            bossProgress={bossProgress}
+            onPickBoss={(id) => {
+              setBossRun({ id, dev: false });
+              setPhase("boss");
+            }}
             onPick={(l) => {
               setLevel(l);
               play();
             }}
             onBack={() => setPhase("intro")}
           />
+        )}
+        {phase === "boss" && bossRun && bossById(bossRun.id) && (
+          <GameErrorBoundary key={`boss-${bossRun.id}`} screen="ward" onReturn={() => setPhase("intro")}>
+            <BossBattleScreen
+              boss={bossById(bossRun.id)!}
+              character={character}
+              dev={bossRun.dev}
+              onExit={() => setPhase(bossRun.dev ? "dev" : "ladder")}
+              onVictory={() => {
+                const next = markDefeated(bossProgress, bossRun.id);
+                setBossProgress(next);
+                autoSaveData({ ...currentSaveData(), bossProgress: next });
+              }}
+            />
+          </GameErrorBoundary>
         )}
         {phase === "shift" && (
           <GameErrorBoundary key={runKey} screen="ward" onReturn={() => setPhase("intro")}>
