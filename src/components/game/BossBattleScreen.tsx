@@ -208,7 +208,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
 
       if (s.stage === "entering") {
         /* wait for the door to swing open, then walk in */
-        if (s.doorFrame >= DOOR.frames - 1) {
+        if (s.doorFrame >= DOOR.frames - 1 || s.nurseY < 1.04) {
           s.nurseY = Math.max(L.nurseLaneY, s.nurseY - CFG.nurseEntrySpeed * dt * L.aspect);
           s.nurseMoving = true;
         }

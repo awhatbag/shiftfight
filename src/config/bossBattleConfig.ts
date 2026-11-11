@@ -31,7 +31,7 @@ export const BOSS_BATTLE_CONFIG = {
   /** how fast the nurse follows your finger along her lane */
   nurseSpeed: 0.9,
   /** how fast the nurse walks in through the door at the start */
-  nurseEntrySpeed: 0.12,
+  nurseEntrySpeed: 0.25,
   /** Neil's chair-glide speed */
   bossSpeed: 0.22,
   /** Neil pauses this long (random between min and max) between glides */
@@ -85,11 +85,11 @@ export const BOSS_BATTLE_CONFIG = {
 export const NEIL_ARENA_LAYOUT = {
   aspect: 941 / 1672,
   /** nurse walks along this lower lane */
-  nurseLaneY: 0.86,
+  nurseLaneY: 0.84,
   nurseMinX: 0.14,
   nurseMaxX: 0.86,
   /** nurse height as a fraction of arena height */
-  nurseHeight: 0.085,
+  nurseHeight: 0.12,
   /** Neil glides along this lane just below his desk */
   bossLaneY: 0.385,
   bossMinX: 0.2,
