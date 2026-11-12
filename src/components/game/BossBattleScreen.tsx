@@ -17,7 +17,7 @@ const NEIL_NORMAL: Atlas = { src: neilNormalArt.url, cols: 8, rows: 7, cellW: 23
 /** display scale reference (height of the original normal cell the layout was tuned for) */
 const REF_CELL_H = 186;
 /** new normal sheet is drawn at a smaller pixel scale than the dishevelled sheet */
-const NORMAL_SCALE = 1.38;
+const NORMAL_SCALE = 1.4;
 const NEIL_FLUSTERED: Atlas = { src: neilFlusteredArt.url, cols: 8, rows: 7, cellW: 442, cellH: 183 };
 /* both atlases share one pixel scale, so Neil's head stays the same size */
 
