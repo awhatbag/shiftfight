@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import arenaArt from "@/assets/boss/neil_arena.jpg.asset.json";
 import doorArt from "@/assets/boss/neil_door_strip.png.asset.json";
-import neilNormalArt from "@/assets/boss/neil_normal_atlas.png.asset.json";
+import neilNormalArt from "@/assets/boss/neil_normal_v2_atlas.png.asset.json";
 import neilFlusteredArt from "@/assets/boss/neil_flustered_atlas.png.asset.json";
 import neilHpArt from "@/assets/boss/neil_hp_bar.png.asset.json";
 import nurseHpArt from "@/assets/boss/nurse_hp_bar.png.asset.json";
@@ -13,12 +13,19 @@ import { Nurse, type NurseDirection } from "@/components/game/Nurse";
 /* ---------- supplied-artwork atlases (cut from the user's sheets) ---------- */
 
 type Atlas = { src: string; cols: number; rows: number; cellW: number; cellH: number };
-const NEIL_NORMAL: Atlas = { src: neilNormalArt.url, cols: 5, rows: 5, cellW: 196, cellH: 186 };
+const NEIL_NORMAL: Atlas = { src: neilNormalArt.url, cols: 8, rows: 7, cellW: 231, cellH: 135 };
+/** display scale reference (height of the original normal cell the layout was tuned for) */
+const REF_CELL_H = 186;
+/** new normal sheet is drawn at a smaller pixel scale than the dishevelled sheet */
+const NORMAL_SCALE = 1.4;
 const NEIL_FLUSTERED: Atlas = { src: neilFlusteredArt.url, cols: 8, rows: 7, cellW: 442, cellH: 183 };
 /* both atlases share one pixel scale, so Neil's head stays the same size */
 
-/** normal sheet rows: idle(back), turn, move left, move right, react */
-const N = { idle: 0, turn: 1, left: 2, right: 3, react: 4 } as const;
+/** normal sheet rows: throw pens, flustered, hands up, slide, flustered throw, flustered hands up, flustered slide */
+const N = { throwPens: 0, flustered: 1, handsUp: 2, slide: 3, fThrowPens: 4, fHandsUp: 5, fSlide: 6 } as const;
+/** slide rows: col 0 rest, 1–2 slide right, 5–6 slide left */
+const NSLIDE_RIGHT = [1, 2];
+const NSLIDE_LEFT = [5, 6];
 /** flustered sheet rows: dishevelled 0–3, flustered 4–6 (slide rows carry left/right frames) */
 const SLIDE_ROW: Record<2 | 3, number> = { 2: 6, 3: 3 };
 const SLIDE_RIGHT = [1, 2];
@@ -292,41 +299,31 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   /* ---- Neil frame selection ---- */
   let atlas = NEIL_NORMAL;
   let col = 0;
-  let row: number = N.idle;
+  let row: number = N.slide;
   let bob = 0;
   let laughing = false;
   const frameOf = (len: number, ms: number) => Math.floor(s.t / ms) % len;
   const bobOffset = Math.sin((s.t / CFG.bossIdleBobMs) * Math.PI * 2) * CFG.bossIdleBob;
+  const slideRow = phase === 1 ? N.slide : N.fSlide;
   if (s.t < s.laughUntil) {
     laughing = true;
     bob = Math.abs(Math.sin((s.t / 140) * Math.PI)) * 0.03;
-    if (phase === 1) {
-      row = N.react;
-      col = 4;
-    } else {
+    if (phase === 3) {
       atlas = NEIL_FLUSTERED;
-      row = SLIDE_ROW[phase as 2 | 3];
+      row = SLIDE_ROW[3];
+    } else row = slideRow;
+    col = 0;
+  } else if (phase !== 3) {
+    row = slideRow;
+    if (s.stage !== "entering" && s.stage !== "turning" && s.bossMoving > 0) col = NSLIDE_RIGHT[frameOf(2, CFG.bossFrameMs)]!;
+    else if (s.stage !== "entering" && s.stage !== "turning" && s.bossMoving < 0) col = NSLIDE_LEFT[frameOf(2, CFG.bossFrameMs)]!;
+    else {
       col = 0;
-    }
-  } else if (phase === 1) {
-    if (s.stage === "entering") {
-      row = N.idle;
-      col = frameOf(4, 300);
-      bob = bobOffset;
-    } else if (s.stage === "turning") {
-      row = N.turn;
-      col = Math.min(4, Math.floor((s.t - s.stageAt) / CFG.bossTurnFrameMs));
-    } else if (s.bossMoving !== 0) {
-      row = s.bossMoving < 0 ? N.left : N.right;
-      col = frameOf(4, CFG.bossFrameMs);
-    } else {
-      row = N.turn;
-      col = 4;
       bob = bobOffset;
     }
   } else {
     atlas = NEIL_FLUSTERED;
-    row = SLIDE_ROW[phase as 2 | 3];
+    row = SLIDE_ROW[3];
     if (s.bossMoving > 0) col = SLIDE_RIGHT[frameOf(SLIDE_RIGHT.length, CFG.bossFrameMs)]!;
     else if (s.bossMoving < 0) col = SLIDE_LEFT[frameOf(SLIDE_LEFT.length, CFG.bossFrameMs)]!;
     else {
@@ -334,7 +331,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
       bob = bobOffset;
     }
   }
-  const neilH = L.bossCellHeight * H * (atlas.cellH / NEIL_NORMAL.cellH);
+  const neilH = L.bossCellHeight * H * ((atlas.cellH * (atlas === NEIL_NORMAL ? NORMAL_SCALE : 1)) / REF_CELL_H);
   const neilW = (neilH * atlas.cellW) / atlas.cellH;
 
   /* ---- door geometry ---- */
