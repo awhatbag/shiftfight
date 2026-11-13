@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import arenaArt from "@/assets/boss/neil_arena.jpg.asset.json";
 import doorArt from "@/assets/boss/neil_door_strip.png.asset.json";
 import neilNormalArt from "@/assets/boss/neil_normal_v2_atlas.png.asset.json";
+import neilOriginalArt from "@/assets/boss/neil_normal_atlas.png.asset.json";
+import neilLaughArt from "@/assets/boss/neil_phase_laughs.png.asset.json";
 import neilFlusteredArt from "@/assets/boss/neil_flustered_atlas.png.asset.json";
 import neilHpArt from "@/assets/boss/neil_hp_bar.png.asset.json";
 import nurseHpArt from "@/assets/boss/nurse_hp_bar.png.asset.json";
@@ -14,6 +16,8 @@ import { Nurse, type NurseDirection } from "@/components/game/Nurse";
 
 type Atlas = { src: string; cols: number; rows: number; cellW: number; cellH: number };
 const NEIL_NORMAL: Atlas = { src: neilNormalArt.url, cols: 8, rows: 7, cellW: 231, cellH: 135 };
+const NEIL_ORIGINAL: Atlas = { src: neilOriginalArt.url, cols: 5, rows: 5, cellW: 196, cellH: 186 };
+const NEIL_LAUGHS: Atlas = { src: neilLaughArt.url, cols: 2, rows: 1, cellW: 887, cellH: 887 };
 /** display scale reference (height of the original normal cell the layout was tuned for) */
 const REF_CELL_H = 186;
 /** new normal sheet is drawn at a smaller pixel scale than the dishevelled sheet */
@@ -308,15 +312,20 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   if (s.t < s.laughUntil) {
     laughing = true;
     bob = Math.abs(Math.sin((s.t / 140) * Math.PI)) * 0.03;
-    if (phase === 3) {
-      atlas = NEIL_FLUSTERED;
-      row = SLIDE_ROW[3];
-    } else row = slideRow;
-    col = 0;
+    atlas = phase === 1 ? NEIL_ORIGINAL : NEIL_LAUGHS;
+    row = phase === 1 ? 4 : 0;
+    col = phase === 1 ? 4 : phase - 2;
+  } else if (s.stage === "entering" || s.stage === "turning") {
+    atlas = NEIL_ORIGINAL;
+    row = s.stage === "entering" ? 0 : 1;
+    col = s.stage === "entering"
+      ? frameOf(4, CFG.bossFrameMs)
+      : Math.min(4, Math.floor((s.t - s.stageAt) / CFG.bossTurnFrameMs));
+    bob = s.stage === "entering" ? bobOffset : 0;
   } else if (phase !== 3) {
     row = slideRow;
-    if (s.stage !== "entering" && s.stage !== "turning" && s.bossMoving > 0) col = NSLIDE_RIGHT[frameOf(2, CFG.bossFrameMs)]!;
-    else if (s.stage !== "entering" && s.stage !== "turning" && s.bossMoving < 0) col = NSLIDE_LEFT[frameOf(2, CFG.bossFrameMs)]!;
+    if (s.bossMoving > 0) col = NSLIDE_RIGHT[frameOf(2, CFG.bossFrameMs)] ?? 0;
+    else if (s.bossMoving < 0) col = NSLIDE_LEFT[frameOf(2, CFG.bossFrameMs)] ?? 0;
     else {
       col = 0;
       bob = bobOffset;
@@ -324,14 +333,15 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   } else {
     atlas = NEIL_FLUSTERED;
     row = SLIDE_ROW[3];
-    if (s.bossMoving > 0) col = SLIDE_RIGHT[frameOf(SLIDE_RIGHT.length, CFG.bossFrameMs)]!;
-    else if (s.bossMoving < 0) col = SLIDE_LEFT[frameOf(SLIDE_LEFT.length, CFG.bossFrameMs)]!;
+    if (s.bossMoving > 0) col = SLIDE_RIGHT[frameOf(SLIDE_RIGHT.length, CFG.bossFrameMs)] ?? 0;
+    else if (s.bossMoving < 0) col = SLIDE_LEFT[frameOf(SLIDE_LEFT.length, CFG.bossFrameMs)] ?? 0;
     else {
       col = 0;
       bob = bobOffset;
     }
   }
-  const neilH = L.bossCellHeight * H * ((atlas.cellH * (atlas === NEIL_NORMAL ? NORMAL_SCALE : 1)) / REF_CELL_H);
+  const artScale = atlas === NEIL_NORMAL ? NORMAL_SCALE : atlas === NEIL_LAUGHS ? 0.21 : 1;
+  const neilH = L.bossCellHeight * H * ((atlas.cellH * artScale) / REF_CELL_H);
   const neilW = (neilH * atlas.cellW) / atlas.cellH;
 
   /* ---- door geometry ---- */

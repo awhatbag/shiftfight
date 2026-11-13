@@ -43,3 +43,4 @@ Shop refreshments reuse the gear registry and existing one-per-category equipmen
 Title decorations use an isolated, bounded presentation runtime with expiry pruning and unmount cleanup, never catastrophe or ward gameplay state.
 
 Boss battles: tunables live only in src/config/bossBattleConfig.ts, progression rules (unlock after a level, gate the next level, phases) are pure helpers in src/game/bosses.ts stored as a separate bossProgress save field, and BossBattleScreen renders crops of supplied art; this keeps ward saves untouched and new bosses registry-only. Dev launches never write progress.
+Neil presentation retains separate supplied intro/turn, movement, and phase-specific laugh atlases so replacing movement artwork does not discard his entrance or reactions.
