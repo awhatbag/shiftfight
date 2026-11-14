@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { isGooseEvent } from "@/game/gooseProblems";
 import { isPillowEvent, PILLOW_GIVE_TEXT } from "@/game/pillowProblems";
 import { PILLOW_LIFE_MS, PILLOW_SPRITES, type FloorPillow } from "./PillowLayer";
-import { blockingGoose, gooseExitComplete, gooseNeedsDoor, newGooseWorld, shooGoose, startGooseExit, stepGooseWorld, type GooseWorld } from "@/game/gooseRuntime";
+import { blockingGoose, gooseNeedsDoor, newGooseWorld, shooGoose, startGooseExit, stepGooseWorld, type GooseWorld } from "@/game/gooseRuntime";
 import type { DonPose } from "./DonSprite";
 import { PatientActionPanel } from "./PatientActionPanel";
 import { CatastropheConclusion, CatastropheIntro, EndCountdown, MiniOfferOverlay, PauseOverlay, ReadyCue, RewardCalloutOverlay, SettingsOverlay, ShiftBriefing, TutorialOverlay } from "./WardOverlays";
