@@ -356,23 +356,6 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
 
   return (
     <div className="relative flex h-full w-full flex-col bg-background">
-      {/* HUD */}
-      <div className="z-20 flex shrink-0 items-start justify-between gap-2 px-2 pt-2">
-        <HpBar kind="nurse" hp={nurseHp} max={CFG.nurseMaxHp} align="left" />
-        <HpBar kind="neil" hp={bossHp} max={CFG.bossMaxHp} align="right" />
-      </div>
-      <div className="flex shrink-0 items-center justify-between px-3 pb-1 pt-1">
-        <p className="font-display truncate text-[11px] font-black uppercase tracking-wider text-muted-foreground">
-          {boss.stage} · {boss.title} · Phase {phase}
-        </p>
-        <button
-          onClick={onExit}
-          className="chunky-press font-display shrink-0 rounded-lg bg-secondary px-2.5 py-1 text-[11px] font-black uppercase text-secondary-foreground"
-        >
-          Exit
-        </button>
-      </div>
-
       {/* arena */}
       <div className="relative min-h-0 flex-1" style={{ containerType: "size" }}>
         <div
@@ -391,6 +374,21 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
+          {/* HUD on the arena ceiling — appears once the fight begins (after the intro/dialogue) */}
+          {(s.stage === "active" || ended) && (
+            <div className="pointer-events-none absolute inset-x-0 top-[1.5%] z-30 flex items-start justify-between gap-[3%] px-[4%]">
+              <HpBar kind="nurse" hp={nurseHp} max={CFG.nurseMaxHp} align="left" />
+              <HpBar kind="neil" hp={bossHp} max={CFG.bossMaxHp} align="right" />
+            </div>
+          )}
+          <button
+            onClick={onExit}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="chunky-press font-display absolute bottom-[1.5%] right-[3%] z-40 rounded-lg bg-secondary px-2.5 py-1 text-[11px] font-black uppercase text-secondary-foreground"
+            aria-label={`Exit ${boss.title}`}
+          >
+            Exit
+          </button>
           {/* Neil */}
           <div
             className="absolute"
