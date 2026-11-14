@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "asset_id": "f4f21551-24fd-4932-a79b-a2a988e5e30c",
+  "asset_id": "8e0f8d9a-af9a-4e7e-b94f-a9cade26929e",
   "project_id": "1ccd1dcd-2a6e-4da1-8c4c-9bf2978b655b",
-  "url": "/__l5e/assets-v1/f4f21551-24fd-4932-a79b-a2a988e5e30c/nurse_hp_bar.png",
-  "r2_key": "a/v1/1ccd1dcd-2a6e-4da1-8c4c-9bf2978b655b/f4f21551-24fd-4932-a79b-a2a988e5e30c/nurse_hp_bar.png",
-  "original_filename": "nurse_hp_bar.png",
-  "size": 92459,
+  "url": "/__l5e/assets-v1/8e0f8d9a-af9a-4e7e-b94f-a9cade26929e/nurse_hp_bar_clean.png",
+  "r2_key": "a/v1/1ccd1dcd-2a6e-4da1-8c4c-9bf2978b655b/8e0f8d9a-af9a-4e7e-b94f-a9cade26929e/nurse_hp_bar_clean.png",
+  "original_filename": "nurse_hp_bar_clean.png",
+  "size": 308210,
   "content_type": "image/png",
-  "created_at": "2026-11-11T09:42:55Z"
+  "created_at": "2026-11-14T10:56:48Z"
 }
