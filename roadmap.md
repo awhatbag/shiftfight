@@ -51,3 +51,4 @@
 - [x] Add the approved progression/reward layer: ward level tab, combo feedback, staged summary, level-up travel, and real unlock reveals.
 - [x] Show a How to Play card (with 1/3 ward speed note, Abandon kept) every time a mini-game starts.
 - [x] Make the shop category buttons bigger and equal size (fixed height, larger text, shortened labels).
+- [x] Boss 10.1: nurse trolley bottom-left, tap to restock, bounces while refilling

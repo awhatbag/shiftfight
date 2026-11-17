@@ -6,6 +6,7 @@ import neilOriginalArt from "@/assets/boss/neil_normal_atlas.png.asset.json";
 import neilLaughArt from "@/assets/boss/neil_phase_laughs.png.asset.json";
 import neilFlusteredArt from "@/assets/boss/neil_flustered_atlas.png.asset.json";
 import neilHpArt from "@/assets/boss/neil_hp_bar.png.asset.json";
+import cartArt from "@/assets/boss/nurse_cart.png.asset.json";
 import nurseHpArt from "@/assets/boss/nurse_hp_bar.png.asset.json";
 import { BOSS_BATTLE_CONFIG as CFG, NEIL_ARENA_LAYOUT as L } from "@/config/bossBattleConfig";
 import { hpForPhase, phaseFor, type BossDef, type BossPhase } from "@/game/bosses";
@@ -137,6 +138,10 @@ type Sim = {
   doorFrame: number;
   doorAt: number;
   laughUntil: number;
+  /** throwables carried (filled at the trolley; used by later stages) */
+  ammo: number;
+  restockPending: boolean;
+  restockUntil: number;
 };
 
 export type BossBattleProps = {
@@ -171,6 +176,9 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     doorFrame: 0,
     doorAt: 0,
     laughUntil: 0,
+    ammo: CFG.nurseAmmoCapacity,
+    restockPending: false,
+    restockUntil: 0,
   });
   const [, setTick] = useState(0);
   const drag = useRef<{ id: number; startX: number; startNurse: number } | null>(null);
@@ -249,7 +257,15 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           s.nurseMoving = true;
         } else {
           s.nurseMoving = false;
-          s.nurseDir = "south";
+          s.nurseDir = s.restockPending || s.restockUntil > t ? "west" : "south";
+          if (s.restockPending) {
+            s.restockPending = false;
+            s.restockUntil = t + CFG.restockMs;
+          }
+        }
+        if (s.restockUntil && t >= s.restockUntil) {
+          s.restockUntil = 0;
+          s.ammo = CFG.nurseAmmoCapacity;
         }
         /* Neil glides between random spots, pausing between glides */
         if (t >= s.bossPauseUntil) {
@@ -283,6 +299,8 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   const onPointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
     const s = sim.current;
+    s.restockPending = false;
+    s.restockUntil = 0;
     drag.current = { id: e.pointerId, startX: e.clientX, startNurse: s.nurseTarget };
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
   };
@@ -353,6 +371,16 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   const nurseBehindDoor = nursePxY > doorTopY + doorH * 0.35;
 
   const ended = s.stage === "won" || s.stage === "lost";
+  const cartW = L.cart.widthFrac * W;
+  const cartH = (cartW * 1259) / 1222;
+  const refilling = s.restockUntil > s.t;
+  const cartBounce = refilling ? Math.abs(Math.sin(s.t / 90)) * cartH * 0.04 : 0;
+  const goRestock = () => {
+    if (s.stage !== "active") return;
+    s.nurseTarget = L.cart.restockX;
+    s.restockPending = true;
+    s.restockUntil = 0;
+  };
 
   return (
     <div className="relative flex h-full w-full flex-col bg-background">
@@ -388,6 +416,17 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
             aria-label={`Exit ${boss.title}`}
           >
             Exit
+          </button>
+          {/* restock trolley — tap to walk over and refill throwables */}
+          <button
+            type="button"
+            onClick={goRestock}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label="Restock at the nurses trolley"
+            className="absolute"
+            style={{ left: L.cart.left * W, top: L.cart.bottom * H - cartH - cartBounce, width: cartW, height: cartH, zIndex: 12 }}
+          >
+            <img src={cartArt.url} alt="" draggable={false} className="h-full w-full" style={{ imageRendering: "pixelated" }} />
           </button>
           {/* Neil */}
           <div
