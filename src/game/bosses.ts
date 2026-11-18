@@ -70,6 +70,15 @@ export function phaseFor(hp: number, maxHp = BOSS_BATTLE_CONFIG.bossMaxHp): Boss
   return 1;
 }
 
+/**
+ * Size boost for Neil's sprite while he scoots, by phase.
+ * His supplied scoot poses are crouched side-profiles that read smaller than his
+ * upright resting stance, so they are scaled back up to that resting height.
+ */
+export function scootScaleFor(phase: BossPhase): number {
+  return BOSS_BATTLE_CONFIG.bossScootScale[phase - 1] ?? 1;
+}
+
 /** a representative HP for jumping straight to a phase (dev testing) */
 export function hpForPhase(phase: BossPhase, maxHp = BOSS_BATTLE_CONFIG.bossMaxHp): number {
   const { phase2At, phase3At } = BOSS_BATTLE_CONFIG.phases;

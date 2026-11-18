@@ -6,7 +6,7 @@ import neilHpArt from "@/assets/boss/neil_hp_bar.png.asset.json";
 import cartArt from "@/assets/boss/nurse_cart.png.asset.json";
 import nurseHpArt from "@/assets/boss/nurse_hp_bar.png.asset.json";
 import { BOSS_BATTLE_CONFIG as CFG, NEIL_ARENA_LAYOUT as L } from "@/config/bossBattleConfig";
-import { hpForPhase, phaseFor, type BossDef, type BossPhase } from "@/game/bosses";
+import { hpForPhase, phaseFor, scootScaleFor, type BossDef, type BossPhase } from "@/game/bosses";
 import type { PlayerCharacter } from "@/game/character";
 import { Nurse, type NurseDirection } from "@/components/game/Nurse";
 
@@ -335,6 +335,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     bob = bobOffset;
   }
   const row = (phase - 1) * 6 + NEIL_ROW[anim];
+  const scooting = anim === "left" || anim === "right";
   const neilH = L.bossCellHeight * H * NEIL_CELL_SCALE;
   const neilW = (neilH * atlas.cellW) / atlas.cellH;
 
@@ -412,6 +413,10 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
               top: L.bossLaneY * H - neilH - bob * neilH,
               width: neilW,
               height: neilH,
+              // his crouched scoot poses read smaller than his resting stance, so
+              // scale them back up around the chair wheels to keep him grounded
+              transform: scooting ? `scale(${scootScaleFor(phase)})` : undefined,
+              transformOrigin: "bottom center",
               zIndex: 10,
             }}
             role="img"
