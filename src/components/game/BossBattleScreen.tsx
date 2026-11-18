@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import arenaArt from "@/assets/boss/neil_arena.jpg.asset.json";
 import doorArt from "@/assets/boss/neil_door_strip.png.asset.json";
-import neilNormalArt from "@/assets/boss/neil_normal_v2_atlas.png.asset.json";
-import neilOriginalArt from "@/assets/boss/neil_normal_atlas.png.asset.json";
-import neilLaughArt from "@/assets/boss/neil_phase_laughs.png.asset.json";
-import neilFlusteredArt from "@/assets/boss/neil_flustered_atlas.png.asset.json";
+import neilArt from "@/assets/boss/neil_10_1_atlas.png.asset.json";
 import neilHpArt from "@/assets/boss/neil_hp_bar.png.asset.json";
 import cartArt from "@/assets/boss/nurse_cart.png.asset.json";
 import nurseHpArt from "@/assets/boss/nurse_hp_bar.png.asset.json";
@@ -16,25 +13,15 @@ import { Nurse, type NurseDirection } from "@/components/game/Nurse";
 /* ---------- supplied-artwork atlases (cut from the user's sheets) ---------- */
 
 type Atlas = { src: string; cols: number; rows: number; cellW: number; cellH: number };
-const NEIL_NORMAL: Atlas = { src: neilNormalArt.url, cols: 8, rows: 7, cellW: 231, cellH: 135 };
-const NEIL_ORIGINAL: Atlas = { src: neilOriginalArt.url, cols: 5, rows: 5, cellW: 196, cellH: 186 };
-const NEIL_LAUGHS: Atlas = { src: neilLaughArt.url, cols: 2, rows: 1, cellW: 887, cellH: 887 };
-/** display scale reference (height of the original normal cell the layout was tuned for) */
-const REF_CELL_H = 186;
-/** new normal sheet is drawn at a smaller pixel scale than the dishevelled sheet */
-const NORMAL_SCALE = 1.4;
-const NEIL_FLUSTERED: Atlas = { src: neilFlusteredArt.url, cols: 8, rows: 7, cellW: 442, cellH: 183 };
-/* both atlases share one pixel scale, so Neil's head stays the same size */
-
-/** normal sheet rows: throw pens, flustered, hands up, slide, flustered throw, flustered hands up, flustered slide */
-const N = { throwPens: 0, flustered: 1, handsUp: 2, slide: 3, fThrowPens: 4, fHandsUp: 5, fSlide: 6 } as const;
-/** slide rows: col 0 rest, 1–2 slide right, 5–6 slide left */
-const NSLIDE_RIGHT = [1, 2];
-const NSLIDE_LEFT = [5, 6];
-/** flustered sheet rows: dishevelled 0–3, flustered 4–6 (slide rows carry left/right frames) */
-const SLIDE_ROW: Record<2 | 3, number> = { 2: 6, 3: 3 };
-const SLIDE_RIGHT = [1, 2];
-const SLIDE_LEFT = [4, 5, 6];
+/**
+ * Neil 10.1 atlas: 6 cols × 18 rows, uniform cells, bottom-anchored on his chair wheels.
+ * Rows = phase block (0 normal, 1 flustered, 2 dishevelled) × 6 + animation row below.
+ * Pens are cut out of the throw frames (pen artwork is supplied separately later).
+ */
+const NEIL: Atlas = { src: neilArt.url, cols: 6, rows: 18, cellW: 271, cellH: 253 };
+const NEIL_ROW = { turn: 0, laugh: 1, left: 2, right: 3, raise: 4, throw: 5 } as const;
+/** cell height relative to Neil's body (≈200px), so the layout's bossCellHeight still sizes his body */
+const NEIL_CELL_SCALE = 253 / 200;
 
 const DOOR = { src: doorArt.url, frames: 5, cellW: 357, cellH: 206 };
 const HP_BARS = {
@@ -240,7 +227,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           s.stageAt = t;
         }
       } else if (s.stage === "turning") {
-        if (t - s.stageAt >= CFG.bossTurnFrameMs * 5) {
+        if (t - s.stageAt >= CFG.bossTurnFrameMs * 6) {
           s.stage = "active";
           s.stageAt = t;
           s.bossPauseUntil = t + 400;
@@ -319,47 +306,35 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   const W = arenaPx.w || 1;
 
   /* ---- Neil frame selection ---- */
-  let atlas = NEIL_NORMAL;
+  const atlas = NEIL;
   let col = 0;
-  let row: number = N.slide;
+  let anim: keyof typeof NEIL_ROW = "turn";
   let bob = 0;
   let laughing = false;
   const frameOf = (len: number, ms: number) => Math.floor(s.t / ms) % len;
   const bobOffset = Math.sin((s.t / CFG.bossIdleBobMs) * Math.PI * 2) * CFG.bossIdleBob;
-  const slideRow = phase === 1 ? N.slide : N.fSlide;
   if (s.t < s.laughUntil) {
     laughing = true;
+    anim = "laugh";
     bob = Math.abs(Math.sin((s.t / 140) * Math.PI)) * 0.03;
-    atlas = phase === 1 ? NEIL_ORIGINAL : NEIL_LAUGHS;
-    row = phase === 1 ? 4 : 0;
-    col = phase === 1 ? 4 : phase - 2;
-  } else if (s.stage === "entering" || s.stage === "turning") {
-    atlas = NEIL_ORIGINAL;
-    row = s.stage === "entering" ? 0 : 1;
-    col = s.stage === "entering"
-      ? frameOf(4, CFG.bossFrameMs)
-      : Math.min(4, Math.floor((s.t - s.stageAt) / CFG.bossTurnFrameMs));
-    bob = s.stage === "entering" ? bobOffset : 0;
-  } else if (phase !== 3) {
-    row = slideRow;
-    if (s.bossMoving > 0) col = NSLIDE_RIGHT[frameOf(2, CFG.bossFrameMs)] ?? 0;
-    else if (s.bossMoving < 0) col = NSLIDE_LEFT[frameOf(2, CFG.bossFrameMs)] ?? 0;
-    else {
-      col = 0;
-      bob = bobOffset;
-    }
+  } else if (s.stage === "entering") {
+    col = 0; // back to the nurse, facing the window
+    bob = bobOffset;
+  } else if (s.stage === "turning") {
+    col = Math.min(5, Math.floor((s.t - s.stageAt) / CFG.bossTurnFrameMs));
+  } else if (s.bossMoving !== 0) {
+    anim = s.bossMoving > 0 ? "right" : "left";
+    col = frameOf(4, CFG.bossFrameMs);
+  } else if (phase === 1) {
+    col = 5; // facing forward, resting
+    bob = bobOffset;
   } else {
-    atlas = NEIL_FLUSTERED;
-    row = SLIDE_ROW[3];
-    if (s.bossMoving > 0) col = SLIDE_RIGHT[frameOf(SLIDE_RIGHT.length, CFG.bossFrameMs)] ?? 0;
-    else if (s.bossMoving < 0) col = SLIDE_LEFT[frameOf(SLIDE_LEFT.length, CFG.bossFrameMs)] ?? 0;
-    else {
-      col = 0;
-      bob = bobOffset;
-    }
+    anim = "raise";
+    col = 0; // flustered/dishevelled resting pose (their sheets have no turn row)
+    bob = bobOffset;
   }
-  const artScale = atlas === NEIL_NORMAL ? NORMAL_SCALE : atlas === NEIL_LAUGHS ? 0.21 : 1;
-  const neilH = L.bossCellHeight * H * ((atlas.cellH * artScale) / REF_CELL_H);
+  const row = (phase - 1) * 6 + NEIL_ROW[anim];
+  const neilH = L.bossCellHeight * H * NEIL_CELL_SCALE;
   const neilW = (neilH * atlas.cellW) / atlas.cellH;
 
   /* ---- door geometry ---- */
