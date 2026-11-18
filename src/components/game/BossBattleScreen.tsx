@@ -15,13 +15,14 @@ import { Nurse, type NurseDirection } from "@/components/game/Nurse";
 type Atlas = { src: string; cols: number; rows: number; cellW: number; cellH: number };
 /**
  * Neil 10.1 atlas: 6 cols × 18 rows, uniform cells, bottom-anchored on his chair wheels.
+ * Every animation row is proportionally normalised to the same 142px chair height.
  * Rows = phase block (0 normal, 1 flustered, 2 dishevelled) × 6 + animation row below.
  * Pens are cut out of the throw frames (pen artwork is supplied separately later).
  */
-const NEIL: Atlas = { src: neilArt.url, cols: 6, rows: 18, cellW: 271, cellH: 253 };
+const NEIL: Atlas = { src: neilArt.url, cols: 6, rows: 18, cellW: 337, cellH: 315 };
 const NEIL_ROW = { turn: 0, laugh: 1, left: 2, right: 3, raise: 4, throw: 5 } as const;
 /** cell height relative to Neil's body (≈200px), so the layout's bossCellHeight still sizes his body */
-const NEIL_CELL_SCALE = 253 / 200;
+const NEIL_CELL_SCALE = 315 / 200;
 
 const DOOR = { src: doorArt.url, frames: 5, cellW: 357, cellH: 206 };
 const HP_BARS = {
