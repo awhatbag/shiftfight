@@ -74,13 +74,6 @@ export const BOSS_BATTLE_CONFIG = {
   bossIdleBobMs: 1400,
   /** how long Neil laughs after landing a hit */
   bossLaughMs: 1200,
-  /**
-   * Bottom-anchored size boost applied while Neil scoots left or right, per phase.
-   * His supplied scoot poses are crouched side-profiles, so they read smaller than
-   * his upright resting stance; these ratios restore his resting height
-   * (measured from the atlas: 217/206, 265/216, 273/235).
-   */
-  bossScootScale: [1.05, 1.23, 1.16],
   /** door animation frame time */
   doorFrameMs: 70,
 } as const;

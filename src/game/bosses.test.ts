@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bossById, bossUnlocked, levelGateOpen, markDefeated, phaseFor, scootScaleFor, unlockAfterLevel } from "./bosses";
+import { bossById, bossUnlocked, levelGateOpen, markDefeated, phaseFor, unlockAfterLevel } from "./bosses";
 
 const neil = bossById("neil")!;
 
@@ -27,10 +27,5 @@ describe("Neil phases", () => {
     expect(phaseFor(26)).toBe(2);
     expect(phaseFor(25)).toBe(3);
     expect(phaseFor(0)).toBe(3);
-  });
-  it("boosts his crouched scoot poses back to resting height, per phase", () => {
-    expect(scootScaleFor(1)).toBe(1.05);
-    expect(scootScaleFor(2)).toBe(1.23);
-    expect(scootScaleFor(3)).toBe(1.16);
   });
 });
