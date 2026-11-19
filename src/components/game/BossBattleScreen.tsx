@@ -335,7 +335,8 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     bob = bobOffset;
   }
   const row = (phase - 1) * 6 + NEIL_ROW[anim];
-  const neilH = L.bossCellHeight * H * NEIL_CELL_SCALE * CFG.bossPhaseScale[phase];
+  const moveScale = s.bossMoving !== 0 && !laughing ? CFG.bossPhaseMoveScale[phase] : 1;
+  const neilH = L.bossCellHeight * H * NEIL_CELL_SCALE * CFG.bossPhaseScale[phase] * moveScale;
   const neilW = (neilH * atlas.cellW) / atlas.cellH;
 
   /* ---- door geometry ---- */
