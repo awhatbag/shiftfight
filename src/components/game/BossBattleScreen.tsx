@@ -126,6 +126,9 @@ type Sim = {
   doorFrame: number;
   doorAt: number;
   laughUntil: number;
+  /** Dev Mode pose test: which animation to force, and until when */
+  poseAnim: "throw" | "raise" | null;
+  poseUntil: number;
   /** throwables carried (filled at the trolley; used by later stages) */
   ammo: number;
   restockPending: boolean;
@@ -164,6 +167,8 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     doorFrame: 0,
     doorAt: 0,
     laughUntil: 0,
+    poseAnim: null,
+    poseUntil: 0,
     ammo: CFG.nurseAmmoCapacity,
     restockPending: false,
     restockUntil: 0,
@@ -318,6 +323,9 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     laughing = true;
     anim = "laugh";
     bob = Math.abs(Math.sin((s.t / 140) * Math.PI)) * 0.03;
+  } else if (s.poseAnim && s.t < s.poseUntil) {
+    anim = s.poseAnim;
+    col = s.poseAnim === "throw" ? frameOf(6, CFG.bossFrameMs) : 0;
   } else if (s.stage === "entering") {
     col = 0; // back to the nurse, facing the window
     bob = bobOffset;
@@ -486,6 +494,22 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           <DevBtn onClick={() => setBossHp((h) => Math.max(0, h - 10))}>-10</DevBtn>
           <DevBtn onClick={() => setBossHp((h) => Math.min(CFG.bossMaxHp, h + 10))}>+10</DevBtn>
           <DevBtn onClick={() => (sim.current.laughUntil = sim.current.t + CFG.bossLaughMs)}>Laugh</DevBtn>
+          <DevBtn
+            onClick={() => {
+              sim.current.poseAnim = "throw";
+              sim.current.poseUntil = sim.current.t + CFG.bossPoseMs;
+            }}
+          >
+            Throw
+          </DevBtn>
+          <DevBtn
+            onClick={() => {
+              sim.current.poseAnim = "raise";
+              sim.current.poseUntil = sim.current.t + CFG.bossPoseMs;
+            }}
+          >
+            Raise
+          </DevBtn>
           <span className="font-display ml-2 text-[10px] font-black uppercase">Nurse</span>
           <DevBtn onClick={() => setNurseHp((h) => Math.max(0, h - 10))}>-10</DevBtn>
           <DevBtn onClick={() => setNurseHp((h) => Math.min(CFG.nurseMaxHp, h + 10))}>+10</DevBtn>

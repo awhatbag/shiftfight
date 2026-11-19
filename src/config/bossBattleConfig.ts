@@ -80,6 +80,8 @@ export const BOSS_BATTLE_CONFIG = {
   bossIdleBobMs: 1400,
   /** how long Neil laughs after landing a hit */
   bossLaughMs: 1200,
+  /** how long Dev Mode pose tests (throw pens / raise arms) play */
+  bossPoseMs: 1200,
   /** door animation frame time */
   doorFrameMs: 70,
 } as const;
