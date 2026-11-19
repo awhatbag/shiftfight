@@ -65,6 +65,8 @@ export const BOSS_BATTLE_CONFIG = {
   },
 
   /* ---------------- presentation ---------------- */
+  /** Counter atlas enlargement by phase (normal, flustered, dishevelled), anchored at the chair wheels. */
+  bossPhaseScale: { 1: 1, 2: 0.82, 3: 0.8 },
   /** Neil's chair-glide frame time */
   bossFrameMs: 140,
   /** Neil's turn-around frame time */

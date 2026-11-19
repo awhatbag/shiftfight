@@ -44,3 +44,4 @@ Title decorations use an isolated, bounded presentation runtime with expiry prun
 
 Boss battles: tunables live only in src/config/bossBattleConfig.ts, progression rules (unlock after a level, gate the next level, phases) are pure helpers in src/game/bosses.ts stored as a separate bossProgress save field, and BossBattleScreen renders crops of supplied art; this keeps ward saves untouched and new bosses registry-only. Dev launches never write progress.
 Neil uses one uniform, bottom-anchored atlas cut from the supplied per-phase sheets (phase block × animation row), so swapping artwork only needs a re-cut, not new frame logic.
+Neil's presentation applies config-owned phase scale compensation to both sprite dimensions before bottom anchoring; this offsets atlas enlargement without changing poses, movement or gameplay.
