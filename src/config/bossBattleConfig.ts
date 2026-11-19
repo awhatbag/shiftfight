@@ -69,6 +69,8 @@ export const BOSS_BATTLE_CONFIG = {
   bossPhaseScale: { 1: 1, 2: 0.82, 3: 0.8 },
   /** Extra shrink for Neil's left/right glide frames by phase (their cells are drawn larger than his resting pose). */
   bossPhaseMoveScale: { 1: 0.93, 2: 1, 3: 1 },
+  /** Extra shrink for Neil's laughing frames by phase (their cells are drawn larger than his resting pose). */
+  bossPhaseLaughScale: { 1: 0.9, 2: 1, 3: 1 },
   /** Neil's chair-glide frame time */
   bossFrameMs: 140,
   /** Neil's turn-around frame time */
