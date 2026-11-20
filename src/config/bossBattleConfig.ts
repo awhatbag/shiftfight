@@ -113,5 +113,5 @@ export const NEIL_ARENA_LAYOUT = {
   door: { centerX: 0.5, widthFrac: 0.267, bottom: 1.0 },
   /** restock trolley in the bottom-left corner (art is 1222×1259); nurse stops at restockX to refill */
   cart: { left: 0.02, widthFrac: 0.2, bottom: 0.985, restockX: 0.2 },
-  supplies: { left: 0.015, top: 0.13, heightFrac: 0.56 },
+  supplies: { left: 0.015, top: 0.13, heightFrac: 0.672 },
 } as const;
