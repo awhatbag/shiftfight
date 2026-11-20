@@ -9,6 +9,14 @@ import { BOSS_BATTLE_CONFIG as CFG, NEIL_ARENA_LAYOUT as L } from "@/config/boss
 import { hpForPhase, phaseFor, type BossDef, type BossPhase } from "@/game/bosses";
 import type { PlayerCharacter } from "@/game/character";
 import { Nurse, type NurseDirection } from "@/components/game/Nurse";
+import { Button } from "@/components/ui/button";
+import supplyEmptyArt from "@/assets/boss/supply_grid_empty.png.asset.json";
+import supplyFullArt from "@/assets/boss/supply_grid_full.png.asset.json";
+import projectileArt from "@/assets/boss/nurse_projectiles.png.asset.json";
+import { emptyNurseSupplies, refillNurseSupplies, takeNurseProjectile } from "@/game/nurseProjectiles";
+
+const SUPPLY_ROWS = [[136,234],[246,343],[355,453],[464,561],[572,669],[680,778],[787,882],[892,987],[993,1088],[1097,1191]] as const;
+const SUPPLY_COLS = [[40,140],[147,248]] as const;
 
 /* ---------- supplied-artwork atlases (cut from the user's sheets) ---------- */
 
@@ -133,6 +141,9 @@ type Sim = {
   ammo: number;
   restockPending: boolean;
   restockUntil: number;
+  nurseThrowUntil: number;
+  projectiles: { id: number; item: number; at: number; x: number; y: number; targetX: number; targetY: number }[];
+  nextProjectileId: number;
 };
 
 export type BossBattleProps = {
@@ -169,9 +180,12 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     laughUntil: 0,
     poseAnim: null,
     poseUntil: 0,
-    ammo: CFG.nurseAmmoCapacity,
+    ammo: emptyNurseSupplies().ammo,
     restockPending: false,
     restockUntil: 0,
+    nurseThrowUntil: 0,
+    projectiles: [],
+    nextProjectileId: 0,
   });
   const [, setTick] = useState(0);
   const drag = useRef<{ id: number; startX: number; startNurse: number } | null>(null);
@@ -208,6 +222,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
       const s = sim.current;
       s.t += dt * 1000;
       const t = s.t;
+      s.projectiles = s.projectiles.filter((shot) => t - shot.at < CFG.nurseProjectileFlightMs);
 
       /* door: step toward its target frame (0 closed … 4 fully open) */
       if (t - s.doorAt >= CFG.doorFrameMs) {
@@ -258,7 +273,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
         }
         if (s.restockUntil && t >= s.restockUntil) {
           s.restockUntil = 0;
-          s.ammo = CFG.nurseAmmoCapacity;
+          s.ammo = refillNurseSupplies().ammo;
         }
         /* Neil glides between random spots, pausing between glides */
         if (t >= s.bossPauseUntil) {
@@ -367,6 +382,18 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     s.restockPending = true;
     s.restockUntil = 0;
   };
+  const nurseThrow = () => {
+    if (s.stage !== "active" || refilling || s.restockPending) return;
+    const shot = takeNurseProjectile(s);
+    if (!shot) return;
+    s.ammo = shot.ammo;
+    s.nurseThrowUntil = s.t + CFG.nurseThrowPoseMs;
+    s.projectiles.push({ id: s.nextProjectileId++, item: shot.item, at: s.t,
+      x: s.nurseX, y: s.nurseY - L.nurseHeight * 0.65,
+      targetX: s.nurseX, targetY: L.bossLaneY - L.bossCellHeight * 0.5 });
+  };
+  const supplyH = L.supplies.heightFrac * H;
+  const supplyW = supplyH * 273 / 1129;
 
   return (
     <div className="relative flex h-full w-full flex-col bg-background">
@@ -395,6 +422,29 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
               <HpBar kind="neil" hp={bossHp} max={CFG.bossMaxHp} align="right" />
             </div>
           )}
+          <div
+            role="meter" aria-label="Nurse projectiles" aria-valuemin={0}
+            aria-valuemax={CFG.nurseAmmoCapacity} aria-valuenow={s.ammo}
+            className="pointer-events-none absolute z-30"
+            style={{ left: L.supplies.left * W, top: L.supplies.top * H, width: supplyW, height: supplyH }}
+          >
+            <img src={supplyEmptyArt.url} alt="" className="absolute inset-0 h-full w-full" draggable={false} style={{ imageRendering: "pixelated" }} />
+            {Array.from({ length: CFG.nurseAmmoCapacity }, (_, slot) => {
+              if (slot < CFG.nurseAmmoCapacity - s.ammo) return null;
+              const bounds = SUPPLY_ROWS[Math.floor(slot / 2)];
+              const xs = SUPPLY_COLS[slot % 2];
+              if (!bounds || !xs) return null;
+              const [y0, y1] = bounds;
+              const [x0, x1] = xs;
+              return <div key={slot} data-supply-slot={slot} className="absolute overflow-hidden" style={{
+                left: `${(x0 - 7) / 273 * 100}%`, top: `${(y0 - 99) / 1129 * 100}%`,
+                width: `${(x1 - x0) / 273 * 100}%`, height: `${(y1 - y0) / 1129 * 100}%`,
+                backgroundImage: `url(${supplyFullArt.url})`, imageRendering: "pixelated",
+                backgroundSize: `${273 / (x1 - x0) * 100}% ${1129 / (y1 - y0) * 100}%`,
+                backgroundPosition: `${(x0 - 7) / (273 - (x1 - x0)) * 100}% ${(y0 - 99) / (1129 - (y1 - y0)) * 100}%`,
+              }} />;
+            })}
+          </div>
           <button
             onClick={onExit}
             onPointerDown={(e) => e.stopPropagation()}
@@ -441,8 +491,21 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
               zIndex: nurseBehindDoor ? 5 : 15,
             }}
           >
-            <Nurse character={character} moving={s.nurseMoving} direction={s.nurseDir} />
+            <Nurse character={character} moving={s.nurseMoving} direction={s.nurseThrowUntil > s.t ? "north" : s.nurseDir} />
           </div>
+
+          {s.projectiles.map((shot) => {
+            const progress = Math.min(1, (s.t - shot.at) / CFG.nurseProjectileFlightMs);
+            const size = CFG.nurseProjectileSize * H;
+            return <SheetCell key={shot.id}
+              atlas={{ src: projectileArt.url, cols: 5, rows: 1, cellW: 560, cellH: 560 }} col={shot.item} row={0}
+              style={{ position: "absolute", pointerEvents: "none", zIndex: 35,
+                width: size, height: size,
+                left: (shot.x + (shot.targetX - shot.x) * progress) * W - size / 2,
+                top: (shot.y + (shot.targetY - shot.y) * progress) * H - size / 2,
+                transform: `rotate(${-360 * progress}deg)`,
+              }} />;
+          })}
 
           {/* bottom door (frame 0 closed, 1–4 opening) */}
           <SheetCell
@@ -511,6 +574,8 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
             Raise
           </DevBtn>
           <span className="font-display ml-2 text-[10px] font-black uppercase">Nurse</span>
+          <DevBtn onClick={nurseThrow} disabled={s.stage !== "active" || s.ammo === 0 || refilling || s.restockPending}>Nurse throw</DevBtn>
+          <DevBtn onClick={goRestock} disabled={s.stage !== "active" || refilling || s.restockPending}>Refill</DevBtn>
           <DevBtn onClick={() => setNurseHp((h) => Math.max(0, h - 10))}>-10</DevBtn>
           <DevBtn onClick={() => setNurseHp((h) => Math.min(CFG.nurseMaxHp, h + 10))}>+10</DevBtn>
         </DevBossPanel>
@@ -527,15 +592,15 @@ function DevBossPanel({ children }: { children: ReactNode }) {
   );
 }
 
-function DevBtn({ children, onClick, active }: { children: ReactNode; onClick: () => void; active?: boolean }) {
+function DevBtn({ children, onClick, active, disabled }: { children: ReactNode; onClick: () => void; active?: boolean; disabled?: boolean }) {
   return (
-    <button
+    <Button variant="outline" size="sm" disabled={disabled}
       onClick={onClick}
       className={`chunky-press font-display rounded-lg border-2 border-border px-2 py-1 text-[11px] font-black uppercase ${
         active ? "bg-primary text-primary-foreground" : "bg-background"
       }`}
     >
       {children}
-    </button>
+    </Button>
   );
 }

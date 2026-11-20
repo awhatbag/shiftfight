@@ -54,6 +54,10 @@ export const BOSS_BATTLE_CONFIG = {
   nurseAmmoCapacity: 20,
   nurseFireIntervalMs: 800,
   restockMs: 1000,
+  /** Manual projectile preview only; automatic throw timing remains deferred. */
+  nurseProjectileFlightMs: 1200,
+  nurseProjectileSize: 0.065,
+  nurseThrowPoseMs: 350,
 
   /* ---------------- Neil's attacks (used by later stages) ---------------- */
   /** time between attacks and the on-screen warning before each one lands */
@@ -109,4 +113,5 @@ export const NEIL_ARENA_LAYOUT = {
   door: { centerX: 0.5, widthFrac: 0.267, bottom: 1.0 },
   /** restock trolley in the bottom-left corner (art is 1222×1259); nurse stops at restockX to refill */
   cart: { left: 0.02, widthFrac: 0.2, bottom: 0.985, restockX: 0.2 },
+  supplies: { left: 0.015, top: 0.13, heightFrac: 0.56 },
 } as const;

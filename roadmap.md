@@ -52,3 +52,4 @@
 - [x] Show a How to Play card (with 1/3 ward speed note, Abandon kept) every time a mini-game starts.
 - [x] Make the shop category buttons bigger and equal size (fixed height, larger text, shortened labels).
 - [x] Boss 10.1: nurse trolley bottom-left, tap to restock, bounces while refilling
+- [x] Neil 10.1: supplied empty/refilled left supply grid, cut-out projectiles and manual Dev Mode nurse throw/refill controls; seven tests passed and live mobile/desktop refill, throw, empty lockout and repeat refill checked; automatic throwing timing deferred as requested.
