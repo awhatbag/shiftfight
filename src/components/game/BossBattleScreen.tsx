@@ -29,6 +29,8 @@ type Atlas = { src: string; cols: number; rows: number; cellW: number; cellH: nu
  */
 const NEIL: Atlas = { src: neilArt.url, cols: 6, rows: 18, cellW: 337, cellH: 315 };
 const NEIL_ROW = { turn: 0, laugh: 1, left: 2, right: 3, raise: 4, throw: 5 } as const;
+/** hands-up wave: raise through all 6 frames then lower again */
+const RAISE_WAVE = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1] as const;
 /** cell height relative to Neil's body (≈200px), so the layout's bossCellHeight still sizes his body */
 const NEIL_CELL_SCALE = 315 / 200;
 
@@ -340,7 +342,8 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     bob = Math.abs(Math.sin((s.t / 140) * Math.PI)) * 0.03;
   } else if (s.poseAnim && s.t < s.poseUntil) {
     anim = s.poseAnim;
-    col = s.poseAnim === "throw" ? frameOf(6, CFG.bossFrameMs) : 0;
+    // raise: ping-pong up through the 6-frame hands-up sequence and back down
+    col = s.poseAnim === "throw" ? frameOf(6, CFG.bossFrameMs) : RAISE_WAVE[frameOf(RAISE_WAVE.length, CFG.bossFrameMs)] ?? 0;
   } else if (s.stage === "entering") {
     col = 0; // back to the nurse, facing the window
     bob = bobOffset;
