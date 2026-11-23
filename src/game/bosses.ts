@@ -77,3 +77,8 @@ export function hpForPhase(phase: BossPhase, maxHp = BOSS_BATTLE_CONFIG.bossMaxH
   if (phase === 2) return Math.round((maxHp * phase2At) / 100);
   return Math.round((maxHp * phase3At) / 100);
 }
+
+/** Neil cannot glide left or right while raising his arms or throwing pens (any phase). */
+export function canBossGlide(poseAnim: "throw" | "raise" | null, nowMs: number, poseUntilMs: number): boolean {
+  return !(poseAnim !== null && nowMs < poseUntilMs);
+}

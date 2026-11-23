@@ -6,7 +6,7 @@ import neilHpArt from "@/assets/boss/neil_hp_bar.png.asset.json";
 import cartArt from "@/assets/boss/nurse_cart.png.asset.json";
 import nurseHpArt from "@/assets/boss/nurse_hp_bar.png.asset.json";
 import { BOSS_BATTLE_CONFIG as CFG, NEIL_ARENA_LAYOUT as L } from "@/config/bossBattleConfig";
-import { hpForPhase, phaseFor, type BossDef, type BossPhase } from "@/game/bosses";
+import { canBossGlide, hpForPhase, phaseFor, type BossDef, type BossPhase } from "@/game/bosses";
 import type { PlayerCharacter } from "@/game/character";
 import { Nurse, type NurseDirection } from "@/components/game/Nurse";
 import { Button } from "@/components/ui/button";
@@ -278,7 +278,9 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           s.ammo = refillNurseSupplies().ammo;
         }
         /* Neil glides between random spots, pausing between glides */
-        if (t >= s.bossPauseUntil) {
+        if (!canBossGlide(s.poseAnim, t, s.poseUntil)) {
+          s.bossMoving = 0;
+        } else if (t >= s.bossPauseUntil) {
           const bdx = s.bossTarget - s.bossX;
           if (Math.abs(bdx) < 0.004) {
             s.bossMoving = 0;
@@ -334,6 +336,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   let anim: keyof typeof NEIL_ROW = "turn";
   let bob = 0;
   let laughing = false;
+  let poseActive = false;
   const frameOf = (len: number, ms: number) => Math.floor(s.t / ms) % len;
   const bobOffset = Math.sin((s.t / CFG.bossIdleBobMs) * Math.PI * 2) * CFG.bossIdleBob;
   if (s.t < s.laughUntil) {
@@ -341,6 +344,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     anim = "laugh";
     bob = Math.abs(Math.sin((s.t / 140) * Math.PI)) * 0.03;
   } else if (s.poseAnim && s.t < s.poseUntil) {
+    poseActive = true;
     anim = s.poseAnim;
     // raise: ping-pong up through the 6-frame hands-up sequence and back down
     col = s.poseAnim === "throw" ? frameOf(6, CFG.bossFrameMs) : RAISE_WAVE[frameOf(RAISE_WAVE.length, CFG.bossFrameMs)] ?? 0;
@@ -361,9 +365,10 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     bob = bobOffset;
   }
   const row = (phase - 1) * 6 + NEIL_ROW[anim];
-  const moveScale = s.bossMoving !== 0 && !laughing ? CFG.bossPhaseMoveScale[phase] : 1;
+  const moveScale = s.bossMoving !== 0 && !laughing && !poseActive ? CFG.bossPhaseMoveScale[phase] : 1;
   const laughScale = laughing ? CFG.bossPhaseLaughScale[phase] : 1;
-  const neilH = L.bossCellHeight * H * NEIL_CELL_SCALE * CFG.bossPhaseScale[phase] * moveScale * laughScale;
+  const poseScale = poseActive ? CFG.bossPhasePoseScale[phase] : 1;
+  const neilH = L.bossCellHeight * H * NEIL_CELL_SCALE * CFG.bossPhaseScale[phase] * moveScale * laughScale * poseScale;
   const neilW = (neilH * atlas.cellW) / atlas.cellH;
 
   /* ---- door geometry ---- */

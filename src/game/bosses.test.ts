@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bossById, bossUnlocked, levelGateOpen, markDefeated, phaseFor, unlockAfterLevel } from "./bosses";
+import { bossById, bossUnlocked, canBossGlide, levelGateOpen, markDefeated, phaseFor, unlockAfterLevel } from "./bosses";
 
 const neil = bossById("neil")!;
 
@@ -27,5 +27,13 @@ describe("Neil phases", () => {
     expect(phaseFor(26)).toBe(2);
     expect(phaseFor(25)).toBe(3);
     expect(phaseFor(0)).toBe(3);
+  });
+
+  it("locks left/right movement while raising arms or throwing pens", () => {
+    expect(canBossGlide("raise", 500, 1200)).toBe(false);
+    expect(canBossGlide("throw", 500, 1200)).toBe(false);
+    expect(canBossGlide("raise", 1200, 1200)).toBe(true);
+    expect(canBossGlide("throw", 1200, 1200)).toBe(true);
+    expect(canBossGlide(null, 500, 1200)).toBe(true);
   });
 });
