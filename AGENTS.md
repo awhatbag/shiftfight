@@ -46,3 +46,4 @@ Boss battles: tunables live only in src/config/bossBattleConfig.ts, progression 
 Neil uses one uniform, bottom-anchored atlas cut from the supplied per-phase sheets (phase block × animation row), so swapping artwork only needs a re-cut, not new frame logic.
 Neil's presentation applies config-owned phase scale compensation to both sprite dimensions before bottom anchoring; this offsets atlas enlargement without changing poses, movement or gameplay.
 Neil's supply grid uses supplied empty/full artwork crops and the shared ammo count; manual projectile previews consume that count and expire in the battle runtime, without automatic firing or damage until gameplay timing is specified.
+Boss health bars and the right supply/action column live outside the arena pointer surface; only the arena scales world geometry, keeping future action taps separate from movement.

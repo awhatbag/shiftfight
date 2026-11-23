@@ -395,20 +395,35 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
       x: s.nurseX, y: s.nurseY - L.nurseHeight * 0.65,
       targetX: s.nurseX, targetY: L.bossLaneY - L.bossCellHeight * 0.5 });
   };
-  const supplyH = L.supplies.heightFrac * H;
-  const supplyW = supplyH * 273 / 1129;
-
   return (
     <div className="relative flex h-full w-full flex-col bg-background">
-      {/* arena */}
+      <header className="shrink-0 border-b-2 border-border bg-card px-3 pb-2 pt-2" aria-label="Battle health">
+        <div className="font-display mb-1 flex items-center justify-between gap-2 text-[11px] font-black uppercase">
+          <span>Nurse</span>
+          <span className="text-right">{boss.name} · Phase {phase}</span>
+        </div>
+        <div className={`flex items-center justify-between gap-2 ${s.stage === "active" || ended ? "" : "invisible"}`}>
+          <HpBar kind="nurse" hp={nurseHp} max={CFG.nurseMaxHp} align="left" />
+          <HpBar kind="neil" hp={bossHp} max={CFG.bossMaxHp} align="right" />
+        </div>
+      </header>
+      {/* Independent arena and right-hand controls share the available height. */}
       <div className="relative min-h-0 flex-1" style={{ containerType: "size" }}>
         <div
-          ref={arenaRef}
-          className="absolute left-1/2 top-1/2 touch-none select-none overflow-hidden"
+          className="absolute left-1/2 top-1/2 grid items-stretch gap-2"
           style={{
-            width: `min(100cqw, calc(100cqh * ${L.aspect}))`,
-            aspectRatio: `${L.aspect}`,
+            "--boss-sidebar-width": `min(${L.supplies.widthFrac * 100}cqw, ${L.supplies.maxWidthPx}px)`,
+            width: `min(100cqw, calc(100cqh * ${L.aspect} + var(--boss-sidebar-width) + 8px))`,
+            gridTemplateColumns: "minmax(0, 1fr) var(--boss-sidebar-width)",
             transform: "translate(-50%, -50%)",
+          } as React.CSSProperties}
+        >
+        <div
+          ref={arenaRef}
+          aria-label="Neil boss arena"
+          className="relative w-full touch-none select-none overflow-hidden"
+          style={{
+            aspectRatio: `${L.aspect}`,
             backgroundImage: `url(${arenaArt.url})`,
             backgroundSize: "100% 100%",
             imageRendering: "pixelated",
@@ -418,44 +433,14 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          {/* HUD on the arena ceiling — appears once the fight begins (after the intro/dialogue) */}
-          {(s.stage === "active" || ended) && (
-            <div className="pointer-events-none absolute inset-x-0 top-[1.5%] z-30 flex items-start justify-between gap-[3%] px-[4%]">
-              <HpBar kind="nurse" hp={nurseHp} max={CFG.nurseMaxHp} align="left" />
-              <HpBar kind="neil" hp={bossHp} max={CFG.bossMaxHp} align="right" />
-            </div>
-          )}
-          <div
-            role="meter" aria-label="Nurse projectiles" aria-valuemin={0}
-            aria-valuemax={CFG.nurseAmmoCapacity} aria-valuenow={s.ammo}
-            className="pointer-events-none absolute z-30"
-            style={{ left: L.supplies.left * W, top: L.supplies.top * H, width: supplyW, height: supplyH }}
-          >
-            <img src={supplyEmptyArt.url} alt="" className="absolute inset-0 h-full w-full" draggable={false} style={{ imageRendering: "pixelated" }} />
-            {Array.from({ length: CFG.nurseAmmoCapacity }, (_, slot) => {
-              if (slot < CFG.nurseAmmoCapacity - s.ammo) return null;
-              const bounds = SUPPLY_ROWS[Math.floor(slot / 2)];
-              const xs = SUPPLY_COLS[slot % 2];
-              if (!bounds || !xs) return null;
-              const [y0, y1] = bounds;
-              const [x0, x1] = xs;
-              return <div key={slot} data-supply-slot={slot} className="absolute overflow-hidden" style={{
-                left: `${(x0 - 7) / 273 * 100}%`, top: `${(y0 - 99) / 1129 * 100}%`,
-                width: `${(x1 - x0) / 273 * 100}%`, height: `${(y1 - y0) / 1129 * 100}%`,
-                backgroundImage: `url(${supplyFullArt.url})`, imageRendering: "pixelated",
-                backgroundSize: `${273 / (x1 - x0) * 100}% ${1129 / (y1 - y0) * 100}%`,
-                backgroundPosition: `${(x0 - 7) / (273 - (x1 - x0)) * 100}% ${(y0 - 99) / (1129 - (y1 - y0)) * 100}%`,
-              }} />;
-            })}
-          </div>
-          <button
+          <Button
             onClick={onExit}
             onPointerDown={(e) => e.stopPropagation()}
             className="chunky-press font-display absolute bottom-[1.5%] right-[3%] z-40 rounded-lg bg-secondary px-2.5 py-1 text-[11px] font-black uppercase text-secondary-foreground"
             aria-label={`Exit ${boss.title}`}
           >
             Exit
-          </button>
+          </Button>
           {/* restock trolley — tap to walk over and refill throwables */}
           <button
             type="button"
@@ -546,6 +531,33 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
               </div>
             </div>
           )}
+        </div>
+        <aside aria-label="Nurse supplies and special moves" className="flex min-h-0 flex-col border-l-2 border-border bg-card">
+          <div
+            role="meter" aria-label="Nurse projectiles" aria-valuemin={0}
+            aria-valuemax={CFG.nurseAmmoCapacity} aria-valuenow={s.ammo}
+            className="pointer-events-none relative w-full shrink-0"
+            style={{ aspectRatio: "273 / 1129" }}
+          >
+            <img src={supplyEmptyArt.url} alt="" className="absolute inset-0 h-full w-full" draggable={false} style={{ imageRendering: "pixelated" }} />
+            {Array.from({ length: CFG.nurseAmmoCapacity }, (_, slot) => {
+              if (slot < CFG.nurseAmmoCapacity - s.ammo) return null;
+              const bounds = SUPPLY_ROWS[Math.floor(slot / 2)];
+              const xs = SUPPLY_COLS[slot % 2];
+              if (!bounds || !xs) return null;
+              const [y0, y1] = bounds;
+              const [x0, x1] = xs;
+              return <div key={slot} data-supply-slot={slot} className="absolute overflow-hidden" style={{
+                left: `${(x0 - 7) / 273 * 100}%`, top: `${(y0 - 99) / 1129 * 100}%`,
+                width: `${(x1 - x0) / 273 * 100}%`, height: `${(y1 - y0) / 1129 * 100}%`,
+                backgroundImage: `url(${supplyFullArt.url})`, imageRendering: "pixelated",
+                backgroundSize: `${273 / (x1 - x0) * 100}% ${1129 / (y1 - y0) * 100}%`,
+                backgroundPosition: `${(x0 - 7) / (273 - (x1 - x0)) * 100}% ${(y0 - 99) / (1129 - (y1 - y0)) * 100}%`,
+              }} />;
+            })}
+          </div>
+          <div aria-label="Special moves" className="min-h-0 flex-1" />
+        </aside>
         </div>
       </div>
 
