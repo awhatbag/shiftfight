@@ -36,8 +36,8 @@ const NEIL_CELL_SCALE = 315 / 200;
 
 const DOOR = { src: doorArt.url, frames: 5, cellW: 357, cellH: 206 };
 const HP_BARS = {
-  neil: { src: neilHpArt.url, w: 1527, h: 244, fx0: 300, fx1: 1481, fy0: 100, fy1: 185 },
-  nurse: { src: nurseHpArt.url, w: 1479, h: 258, fx0: 255, fx1: 1432, fy0: 95, fy1: 182 },
+  neil: { src: neilHpArt.url, w: 1525, h: 267, fx0: 299, fx1: 1480, fy0: 99, fy1: 184 },
+  nurse: { src: nurseHpArt.url, w: 1477, h: 244, fx0: 254, fx1: 1431, fy0: 94, fy1: 181 },
 };
 
 function SheetCell({ atlas, col, row, style }: { atlas: Atlas; col: number; row: number; style?: React.CSSProperties }) {
