@@ -38,8 +38,9 @@ export const BOSS_BATTLE_CONFIG = {
   bossPauseMinMs: 500,
   bossPauseMaxMs: 1600,
 
-  /* ---------------- damage (used by later stages) ---------------- */
+  /* ---------------- damage ---------------- */
   damage: {
+    /** HP removed from Neil per nurse projectile hit */
     nurseProjectile: 1,
     gooseAbility: 10,
     pen: 1,
@@ -50,13 +51,26 @@ export const BOSS_BATTLE_CONFIG = {
   /** after taking damage the nurse can't be hurt again for this long */
   invulnerabilityMs: 1200,
 
-  /* ---------------- nurse ammunition (used by later stages) ---------------- */
+  /* ---------------- nurse ammunition & combat ---------------- */
+  /** Maximum number of projectiles the nurse can carry */
   nurseAmmoCapacity: 20,
+  /** Milliseconds between automatic nurse throws while ammo remains */
   nurseFireIntervalMs: 800,
+  /** Show subtle low-ammo warning when remaining ammo is at or below this number */
+  lowAmmoThreshold: 5,
+  /** Milliseconds the nurse must stay inside the trolley zone to refill to full */
   restockMs: 1000,
-  /** Manual projectile preview only; automatic throw timing remains deferred. */
-  nurseProjectileFlightMs: 1200,
+  /** Projectile travel speed in arena widths per second */
+  nurseProjectileSpeed: 0.9,
+  /** Visual projectile size as a fraction of arena height */
   nurseProjectileSize: 0.065,
+  /** Projectile collision box (fractions of arena width and height) */
+  nurseProjectileHitbox: { width: 0.06, height: 0.04 },
+  /** Forgiving collision hitbox around Neil's visible sprite (fractions of arena width/height, offsetY from bossLaneY) */
+  bossHitbox: { width: 0.18, height: 0.13, offsetY: -0.065 },
+  /** Trolley restocking zone (fractions of arena width/height); nurse auto-restocks while inside */
+  restockZone: { minX: 0.02, maxX: 0.28, minY: 0.72, maxY: 0.98 },
+  /** Brief throw facing duration when stationary */
   nurseThrowPoseMs: 350,
 
   /* ---------------- Neil's attacks (used by later stages) ---------------- */

@@ -13,7 +13,20 @@ import { Button } from "@/components/ui/button";
 import supplyEmptyArt from "@/assets/boss/supply_grid_empty.png.asset.json";
 import supplyFullArt from "@/assets/boss/supply_grid_full.png.asset.json";
 import projectileArt from "@/assets/boss/nurse_projectiles.png.asset.json";
-import { emptyNurseSupplies, refillNurseSupplies, takeNurseProjectile } from "@/game/nurseProjectiles";
+import {
+  createAimedProjectile,
+  emptyNurseSupplies,
+  hitsBossHitbox,
+  isInRestockZone,
+  isLowAmmo,
+  isProjectileInBounds,
+  refillNurseSupplies,
+  stepProjectile,
+  stepRestockState,
+  takeNurseProjectile,
+  type NurseProjectile,
+  type RestockState,
+} from "@/game/nurseProjectiles";
 
 const SUPPLY_ROWS = [[136,234],[246,343],[355,453],[464,561],[572,669],[680,778],[787,882],[892,987],[993,1088],[1097,1191]] as const;
 const SUPPLY_COLS = [[40,140],[147,248]] as const;
@@ -139,12 +152,14 @@ type Sim = {
   /** Dev Mode pose test: which animation to force, and until when */
   poseAnim: "throw" | "raise" | null;
   poseUntil: number;
-  /** throwables carried (filled at the trolley; used by later stages) */
+  /** throwables carried (filled by entering the trolley restocking zone) */
   ammo: number;
-  restockPending: boolean;
-  restockUntil: number;
+  restock: RestockState;
+  restockActive: boolean;
+  restockProgress: number;
+  nextFireAt: number;
   nurseThrowUntil: number;
-  projectiles: { id: number; item: number; at: number; x: number; y: number; targetX: number; targetY: number }[];
+  projectiles: NurseProjectile[];
   nextProjectileId: number;
 };
 
@@ -183,8 +198,10 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     poseAnim: null,
     poseUntil: 0,
     ammo: emptyNurseSupplies().ammo,
-    restockPending: false,
-    restockUntil: 0,
+    restock: { elapsedMs: 0, completedInZone: false },
+    restockActive: false,
+    restockProgress: 0,
+    nextFireAt: 0,
     nurseThrowUntil: 0,
     projectiles: [],
     nextProjectileId: 0,
@@ -224,7 +241,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
       const s = sim.current;
       s.t += dt * 1000;
       const t = s.t;
-      s.projectiles = s.projectiles.filter((shot) => t - shot.at < CFG.nurseProjectileFlightMs);
+      const dtMs = dt * 1000;
 
       /* door: step toward its target frame (0 closed … 4 fully open) */
       if (t - s.doorAt >= CFG.doorFrameMs) {
@@ -267,16 +284,42 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           s.nurseMoving = true;
         } else {
           s.nurseMoving = false;
-          s.nurseDir = s.restockPending || s.restockUntil > t ? "west" : "south";
-          if (s.restockPending) {
-            s.restockPending = false;
-            s.restockUntil = t + CFG.restockMs;
+          s.nurseDir = s.restockActive ? "west" : "south";
+        }
+
+        /* automatic restocking when inside the trolley zone */
+        const inZone = isInRestockZone(s.nurseX, s.nurseY, CFG.restockZone);
+        const restockStep = stepRestockState(s.restock, inZone, s.ammo, CFG.nurseAmmoCapacity, dtMs, CFG.restockMs);
+        s.restock = { elapsedMs: restockStep.elapsedMs, completedInZone: restockStep.completedInZone };
+        s.restockActive = restockStep.active;
+        s.restockProgress = restockStep.progress;
+        if (restockStep.completedNow) {
+          s.ammo = refillNurseSupplies().ammo;
+          s.nextFireAt = Math.min(s.nextFireAt, t);
+        }
+
+        /* automatic nurse attacks: fire every nurseFireIntervalMs when ammo remains and not restocking */
+        if (!s.restockActive && s.ammo > 0 && t >= s.nextFireAt) {
+          const shot = takeNurseProjectile(s);
+          if (shot) {
+            s.ammo = shot.ammo;
+            s.nextFireAt = t + CFG.nurseFireIntervalMs;
+            s.nurseThrowUntil = t + CFG.nurseThrowPoseMs;
+            s.projectiles.push(
+              createAimedProjectile(
+                s.nextProjectileId++,
+                shot.item,
+                s.nurseX,
+                s.nurseY - L.nurseHeight * 0.65,
+                s.bossX,
+                L.bossLaneY + CFG.bossHitbox.offsetY,
+                CFG.nurseProjectileSpeed,
+                L.aspect,
+              ),
+            );
           }
         }
-        if (s.restockUntil && t >= s.restockUntil) {
-          s.restockUntil = 0;
-          s.ammo = refillNurseSupplies().ammo;
-        }
+
         /* Neil glides between random spots, pausing between glides */
         if (!canBossGlide(s.poseAnim, t, s.poseUntil)) {
           s.bossMoving = 0;
@@ -296,6 +339,30 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
       } else if (s.stage === "won" || s.stage === "lost") {
         s.nurseMoving = false;
         s.bossMoving = 0;
+        s.restockActive = false;
+        s.restockProgress = 0;
+      }
+
+      /* advance projectiles, check Neil hitbox collisions, and remove off-arena shots */
+      let hits = 0;
+      const remaining: NurseProjectile[] = [];
+      for (const shot of s.projectiles) {
+        const nextShot = stepProjectile(shot, dt);
+        if (
+          s.stage === "active" &&
+          bossHpRef.current > 0 &&
+          hitsBossHitbox(nextShot, s.bossX, L.bossLaneY, CFG.nurseProjectileHitbox, CFG.bossHitbox)
+        ) {
+          hits += 1;
+          continue;
+        }
+        if (isProjectileInBounds(nextShot)) remaining.push(nextShot);
+      }
+      s.projectiles = remaining;
+      if (hits > 0) {
+        const nextHp = Math.max(0, bossHpRef.current - hits * CFG.damage.nurseProjectile);
+        bossHpRef.current = nextHp;
+        setBossHp(nextHp);
       }
       setTick((n) => (n + 1) % 1_000_000);
       raf = requestAnimationFrame(loop);
@@ -311,8 +378,6 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   const onPointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
     const s = sim.current;
-    s.restockPending = false;
-    s.restockUntil = 0;
     drag.current = { id: e.pointerId, startX: e.clientX, startNurse: s.nurseTarget };
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
   };
@@ -382,23 +447,17 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   const ended = s.stage === "won" || s.stage === "lost";
   const cartW = L.cart.widthFrac * W;
   const cartH = (cartW * 1259) / 1222;
-  const refilling = s.restockUntil > s.t;
+  const refilling = s.restockActive;
+  const lowAmmo = isLowAmmo(s.ammo, CFG.lowAmmoThreshold);
   const cartBounce = refilling ? Math.abs(Math.sin(s.t / 90)) * cartH * 0.04 : 0;
-  const goRestock = () => {
+  const moveToTrolley = () => {
     if (s.stage !== "active") return;
     s.nurseTarget = L.cart.restockX;
-    s.restockPending = true;
-    s.restockUntil = 0;
   };
-  const nurseThrow = () => {
-    if (s.stage !== "active" || refilling || s.restockPending) return;
-    const shot = takeNurseProjectile(s);
-    if (!shot) return;
-    s.ammo = shot.ammo;
-    s.nurseThrowUntil = s.t + CFG.nurseThrowPoseMs;
-    s.projectiles.push({ id: s.nextProjectileId++, item: shot.item, at: s.t,
-      x: s.nurseX, y: s.nurseY - L.nurseHeight * 0.65,
-      targetX: s.nurseX, targetY: L.bossLaneY - L.bossCellHeight * 0.5 });
+  const instantRefill = () => {
+    if (s.stage !== "active") return;
+    s.ammo = refillNurseSupplies().ammo;
+    s.nextFireAt = Math.min(s.nextFireAt, s.t);
   };
   return (
     <div className="relative flex h-full w-full flex-col bg-background">
@@ -446,17 +505,45 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           >
             Exit
           </Button>
-          {/* restock trolley — tap to walk over and refill throwables */}
-          <button
-            type="button"
-            onClick={goRestock}
-            onPointerDown={(e) => e.stopPropagation()}
-            aria-label="Restock at the nurses trolley"
-            className="absolute"
+          {/* stores trolley — nurse auto-restocks when moving into its restocking zone */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute"
             style={{ left: L.cart.left * W, top: L.cart.bottom * H - cartH - cartBounce, width: cartW, height: cartH, zIndex: 12 }}
           >
             <img src={cartArt.url} alt="" draggable={false} className="h-full w-full" style={{ imageRendering: "pixelated" }} />
-          </button>
+          </div>
+          {refilling && (
+            <div
+              role="progressbar"
+              aria-label="Restocking supplies"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(s.restockProgress * 100)}
+              className="pointer-events-none absolute z-30 flex items-center justify-center rounded-full bg-card/90 p-0.5 shadow"
+              style={{
+                left: (L.cart.left + L.cart.widthFrac / 2) * W - 18,
+                top: L.cart.bottom * H - cartH - 38,
+                width: 36,
+                height: 36,
+              }}
+            >
+              <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
+                <circle cx="18" cy="18" r="14" fill="none" className="stroke-muted" strokeWidth="4" />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="none"
+                  className="stroke-primary"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 14}
+                  strokeDashoffset={2 * Math.PI * 14 * (1 - s.restockProgress)}
+                />
+              </svg>
+            </div>
+          )}
           {/* Neil */}
           <div
             className="absolute"
@@ -484,19 +571,23 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
               zIndex: nurseBehindDoor ? 5 : 15,
             }}
           >
-            <Nurse character={character} moving={s.nurseMoving} direction={s.nurseThrowUntil > s.t ? "north" : s.nurseDir} />
+            <Nurse
+              character={character}
+              moving={s.nurseMoving}
+              direction={s.nurseMoving ? s.nurseDir : s.nurseThrowUntil > s.t ? "north" : s.nurseDir}
+            />
           </div>
 
           {s.projectiles.map((shot) => {
-            const progress = Math.min(1, (s.t - shot.at) / CFG.nurseProjectileFlightMs);
             const size = CFG.nurseProjectileSize * H;
+            const spinDeg = -(shot.ageMs / 1000) * 360;
             return <SheetCell key={shot.id}
               atlas={{ src: projectileArt.url, cols: 5, rows: 1, cellW: 560, cellH: 560 }} col={shot.item} row={0}
               style={{ position: "absolute", pointerEvents: "none", zIndex: 35,
                 width: size, height: size,
-                left: (shot.x + (shot.targetX - shot.x) * progress) * W - size / 2,
-                top: (shot.y + (shot.targetY - shot.y) * progress) * H - size / 2,
-                transform: `rotate(${-360 * progress}deg)`,
+                left: shot.x * W - size / 2,
+                top: shot.y * H - size / 2,
+                transform: `rotate(${spinDeg}deg)`,
               }} />;
           })}
 
@@ -541,7 +632,10 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           <div
             role="meter" aria-label="Nurse projectiles" aria-valuemin={0}
             aria-valuemax={CFG.nurseAmmoCapacity} aria-valuenow={s.ammo}
-            className="pointer-events-none relative w-full shrink-0"
+            data-low-ammo={lowAmmo ? "true" : undefined}
+            className={`pointer-events-none relative w-full shrink-0 transition-shadow ${
+              lowAmmo ? "animate-pulse ring-2 ring-inset ring-destructive" : ""
+            }`}
             style={{ aspectRatio: "273 / 1129" }}
           >
             <img src={supplyEmptyArt.url} alt="" className="absolute inset-0 h-full w-full" draggable={false} style={{ imageRendering: "pixelated" }} />
@@ -594,8 +688,8 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
             Raise
           </DevBtn>
           <span className="font-display ml-2 text-[10px] font-black uppercase">Nurse</span>
-          <DevBtn onClick={nurseThrow} disabled={s.stage !== "active" || s.ammo === 0 || refilling || s.restockPending}>Nurse throw</DevBtn>
-          <DevBtn onClick={goRestock} disabled={s.stage !== "active" || refilling || s.restockPending}>Refill</DevBtn>
+          <DevBtn onClick={instantRefill} disabled={s.stage !== "active"}>Refill</DevBtn>
+          <DevBtn onClick={moveToTrolley} disabled={s.stage !== "active"}>To trolley</DevBtn>
           <DevBtn onClick={() => setNurseHp((h) => Math.max(0, h - 10))}>-10</DevBtn>
           <DevBtn onClick={() => setNurseHp((h) => Math.min(CFG.nurseMaxHp, h + 10))}>+10</DevBtn>
         </DevBossPanel>
