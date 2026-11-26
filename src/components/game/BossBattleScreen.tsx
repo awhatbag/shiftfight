@@ -580,14 +580,12 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
 
           {s.projectiles.map((shot) => {
             const size = CFG.nurseProjectileSize * H;
-            const spinDeg = -(shot.ageMs / 1000) * 360;
             return <SheetCell key={shot.id}
               atlas={{ src: projectileArt.url, cols: 5, rows: 1, cellW: 560, cellH: 560 }} col={shot.item} row={0}
               style={{ position: "absolute", pointerEvents: "none", zIndex: 35,
                 width: size, height: size,
                 left: shot.x * W - size / 2,
                 top: shot.y * H - size / 2,
-                transform: `rotate(${spinDeg}deg)`,
               }} />;
           })}
 
