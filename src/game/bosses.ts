@@ -82,3 +82,51 @@ export function hpForPhase(phase: BossPhase, maxHp = BOSS_BATTLE_CONFIG.bossMaxH
 export function canBossGlide(poseAnim: "throw" | "raise" | null, nowMs: number, poseUntilMs: number): boolean {
   return !(poseAnim !== null && nowMs < poseUntilMs);
 }
+
+/** Neil becomes faster and more erratic as his health declines from maxHp toward 0. */
+export function bossMovementProfile(hp: number, maxHp = BOSS_BATTLE_CONFIG.bossMaxHp) {
+  const clampedHp = Math.max(0, Math.min(maxHp, hp));
+  const damageFrac = maxHp > 0 ? 1 - clampedHp / maxHp : 0;
+  const speed = BOSS_BATTLE_CONFIG.bossSpeed * (1 + damageFrac * (BOSS_BATTLE_CONFIG.bossMaxSpeedMultiplier - 1));
+  const pauseScale = 1 - damageFrac * (1 - BOSS_BATTLE_CONFIG.bossMinPauseScale);
+  return {
+    speed,
+    pauseMinMs: BOSS_BATTLE_CONFIG.bossPauseMinMs * pauseScale,
+    pauseMaxMs: BOSS_BATTLE_CONFIG.bossPauseMaxMs * pauseScale,
+    erraticChancePerSec: damageFrac * BOSS_BATTLE_CONFIG.bossErraticReversalPerSec,
+  };
+}
+
+/** Total duration of Neil's raise-arms telegraph (raise up + 2s enraged hold + lower back down). */
+export function bossRaiseTotalMs(
+  stepMs = BOSS_BATTLE_CONFIG.bossRaiseStepMs,
+  holdMs = BOSS_BATTLE_CONFIG.bossRaiseHoldMs,
+): number {
+  return 5 * stepMs + holdMs + 5 * stepMs;
+}
+
+/**
+ * Frame & enraged state for Neil's raise-arms sequence:
+ * raises 0→4, holds frame 5 for `holdMs` (shaking + red glaze), then lowers 4→0 cleanly.
+ */
+export function getBossRaiseFrame(
+  elapsedMs: number,
+  stepMs = BOSS_BATTLE_CONFIG.bossRaiseStepMs,
+  holdMs = BOSS_BATTLE_CONFIG.bossRaiseHoldMs,
+): { col: number; enraged: boolean; done: boolean } {
+  const t = Math.max(0, elapsedMs);
+  const upMs = 5 * stepMs;
+  const holdEndMs = upMs + holdMs;
+  const totalMs = holdEndMs + 5 * stepMs;
+  if (t < upMs) {
+    return { col: Math.min(4, Math.floor(t / stepMs)), enraged: false, done: false };
+  }
+  if (t < holdEndMs) {
+    return { col: 5, enraged: true, done: false };
+  }
+  if (t < totalMs) {
+    const step = Math.floor((t - holdEndMs) / stepMs);
+    return { col: Math.max(0, 4 - step), enraged: false, done: false };
+  }
+  return { col: 0, enraged: false, done: true };
+}

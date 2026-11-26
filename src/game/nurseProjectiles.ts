@@ -123,6 +123,20 @@ export function isInRestockZone(
 }
 
 /**
+ * Restocking only runs when the player explicitly tapped the trolley and the
+ * nurse has arrived at the trolley's restocking spot (not merely walking nearby).
+ */
+export function shouldRestockAtTrolley(
+  restockRequested: boolean,
+  nurseX: number,
+  nurseY: number,
+  restockX: number,
+  zone: RestockZone = BOSS_BATTLE_CONFIG.restockZone,
+): boolean {
+  return restockRequested && isInRestockZone(nurseX, nurseY, zone) && Math.abs(nurseX - restockX) <= 0.01;
+}
+
+/**
  * Advances automatic trolley restocking. Leaving the zone resets progress
  * without changing ammo; staying for restockMs refills immediately to full.
  */

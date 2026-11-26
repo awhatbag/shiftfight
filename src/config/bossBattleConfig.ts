@@ -34,9 +34,17 @@ export const BOSS_BATTLE_CONFIG = {
   nurseEntrySpeed: 0.25,
   /** Neil's chair-glide speed */
   bossSpeed: 0.22,
+  /** Neil's speed multiplier at 0% HP (scales smoothly up as his health declines) */
+  bossMaxSpeedMultiplier: 2.2,
   /** Neil pauses this long (random between min and max) between glides */
   bossPauseMinMs: 500,
   bossPauseMaxMs: 1600,
+  /** Minimum fraction of Neil's pause duration at 0% HP (shorter pauses as health declines) */
+  bossMinPauseScale: 0.2,
+  /** Maximum mid-glide erratic direction-change rate (per second) at 0% HP */
+  bossErraticReversalPerSec: 1.5,
+  /** Minimum milliseconds between Neil's erratic mid-glide direction changes */
+  bossErraticCooldownMs: 350,
 
   /* ---------------- damage ---------------- */
   damage: {
@@ -68,8 +76,8 @@ export const BOSS_BATTLE_CONFIG = {
   nurseProjectileHitbox: { width: 0.06, height: 0.04 },
   /** Forgiving collision hitbox around Neil's visible sprite (fractions of arena width/height, offsetY from bossLaneY) */
   bossHitbox: { width: 0.18, height: 0.13, offsetY: -0.065 },
-  /** Trolley restocking zone (fractions of arena width/height); nurse auto-restocks while inside */
-  restockZone: { minX: 0.02, maxX: 0.28, minY: 0.72, maxY: 0.98 },
+  /** Trolley restocking zone (fractions of arena width/height); used only after the player taps the trolley */
+  restockZone: { minX: 0.02, maxX: 0.34, minY: 0.72, maxY: 0.98 },
   /** Brief throw facing duration when stationary */
   nurseThrowPoseMs: 350,
 
@@ -100,8 +108,12 @@ export const BOSS_BATTLE_CONFIG = {
   bossIdleBobMs: 1400,
   /** how long Neil laughs after landing a hit */
   bossLaughMs: 1200,
-  /** how long Dev Mode pose tests (throw pens / raise arms) play */
+  /** how long Dev Mode throw-pens pose plays */
   bossPoseMs: 1200,
+  /** time per frame when Neil raises or lowers his arms */
+  bossRaiseStepMs: 60,
+  /** how long Neil holds his arms raised while shaking and glowing red */
+  bossRaiseHoldMs: 2000,
   /** door animation frame time */
   doorFrameMs: 70,
 } as const;
@@ -128,7 +140,7 @@ export const NEIL_ARENA_LAYOUT = {
   /** bottom door (measured from the "with door" reference artwork) */
   door: { centerX: 0.5, widthFrac: 0.267, bottom: 1.0 },
   /** restock trolley in the bottom-left corner (art is 1222×1259); nurse stops at restockX to refill */
-  cart: { left: 0.02, widthFrac: 0.24, bottom: 0.985, restockX: 0.24 },
+  cart: { left: 0.02, widthFrac: 0.288, bottom: 0.985, restockX: 0.29 },
   /** Off-arena right HUD width, limited for portrait screens. */
   supplies: { widthFrac: 0.18, maxWidthPx: 72 },
 } as const;

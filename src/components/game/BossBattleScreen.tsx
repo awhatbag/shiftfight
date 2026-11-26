@@ -6,7 +6,16 @@ import neilHpArt from "@/assets/boss/neil_hp_bar.png.asset.json";
 import cartArt from "@/assets/boss/nurse_cart.png.asset.json";
 import nurseHpArt from "@/assets/boss/nurse_hp_bar.png.asset.json";
 import { BOSS_BATTLE_CONFIG as CFG, NEIL_ARENA_LAYOUT as L } from "@/config/bossBattleConfig";
-import { canBossGlide, hpForPhase, phaseFor, type BossDef, type BossPhase } from "@/game/bosses";
+import {
+  bossMovementProfile,
+  bossRaiseTotalMs,
+  canBossGlide,
+  getBossRaiseFrame,
+  hpForPhase,
+  phaseFor,
+  type BossDef,
+  type BossPhase,
+} from "@/game/bosses";
 import type { PlayerCharacter } from "@/game/character";
 import { Nurse, type NurseDirection } from "@/components/game/Nurse";
 import { Button } from "@/components/ui/button";
@@ -17,10 +26,10 @@ import {
   createAimedProjectile,
   emptyNurseSupplies,
   hitsBossHitbox,
-  isInRestockZone,
   isLowAmmo,
   isProjectileInBounds,
   refillNurseSupplies,
+  shouldRestockAtTrolley,
   stepProjectile,
   stepRestockState,
   takeNurseProjectile,
@@ -42,8 +51,6 @@ type Atlas = { src: string; cols: number; rows: number; cellW: number; cellH: nu
  */
 const NEIL: Atlas = { src: neilArt.url, cols: 6, rows: 18, cellW: 337, cellH: 315 };
 const NEIL_ROW = { turn: 0, laugh: 1, left: 2, right: 3, raise: 4, throw: 5 } as const;
-/** hands-up wave: raise through all 6 frames then lower again */
-const RAISE_WAVE = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1] as const;
 /** cell height relative to Neil's body (≈200px), so the layout's bossCellHeight still sizes his body */
 const NEIL_CELL_SCALE = 315 / 200;
 
@@ -145,16 +152,19 @@ type Sim = {
   bossTarget: number;
   bossPauseUntil: number;
   bossMoving: -1 | 0 | 1;
+  bossLastErraticAt: number;
   doorOpen: boolean;
   doorFrame: number;
   doorAt: number;
   laughUntil: number;
   /** Dev Mode pose test: which animation to force, and until when */
   poseAnim: "throw" | "raise" | null;
+  poseStart: number;
   poseUntil: number;
-  /** throwables carried (filled by entering the trolley restocking zone) */
+  /** throwables carried (filled by tapping the trolley) */
   ammo: number;
   restock: RestockState;
+  restockRequested: boolean;
   restockActive: boolean;
   restockProgress: number;
   nextFireAt: number;
@@ -191,14 +201,17 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     bossTarget: L.bossStartX,
     bossPauseUntil: 0,
     bossMoving: 0,
+    bossLastErraticAt: 0,
     doorOpen: true,
     doorFrame: 0,
     doorAt: 0,
     laughUntil: 0,
     poseAnim: null,
+    poseStart: 0,
     poseUntil: 0,
     ammo: emptyNurseSupplies().ammo,
     restock: { elapsedMs: 0, completedInZone: false },
+    restockRequested: false,
     restockActive: false,
     restockProgress: 0,
     nextFireAt: 0,
@@ -287,14 +300,15 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           s.nurseDir = s.restockActive ? "west" : "south";
         }
 
-        /* automatic restocking when inside the trolley zone */
-        const inZone = isInRestockZone(s.nurseX, s.nurseY, CFG.restockZone);
-        const restockStep = stepRestockState(s.restock, inZone, s.ammo, CFG.nurseAmmoCapacity, dtMs, CFG.restockMs);
+        /* restock only when the player tapped the trolley and the nurse arrived there */
+        const canRestock = shouldRestockAtTrolley(s.restockRequested, s.nurseX, s.nurseY, L.cart.restockX, CFG.restockZone);
+        const restockStep = stepRestockState(s.restock, canRestock, s.ammo, CFG.nurseAmmoCapacity, dtMs, CFG.restockMs);
         s.restock = { elapsedMs: restockStep.elapsedMs, completedInZone: restockStep.completedInZone };
         s.restockActive = restockStep.active;
         s.restockProgress = restockStep.progress;
         if (restockStep.completedNow) {
           s.ammo = refillNurseSupplies().ammo;
+          s.restockRequested = false;
           s.nextFireAt = Math.min(s.nextFireAt, t);
         }
 
@@ -320,25 +334,38 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           }
         }
 
-        /* Neil glides between random spots, pausing between glides */
+        /* Neil glides between random spots; faster and more erratic as his HP declines */
+        const moveProfile = bossMovementProfile(bossHpRef.current, CFG.bossMaxHp);
         if (!canBossGlide(s.poseAnim, t, s.poseUntil)) {
           s.bossMoving = 0;
         } else if (t >= s.bossPauseUntil) {
           const bdx = s.bossTarget - s.bossX;
           if (Math.abs(bdx) < 0.004) {
             s.bossMoving = 0;
-            s.bossPauseUntil = t + CFG.bossPauseMinMs + Math.random() * (CFG.bossPauseMaxMs - CFG.bossPauseMinMs);
+            s.bossPauseUntil = t + moveProfile.pauseMinMs + Math.random() * (moveProfile.pauseMaxMs - moveProfile.pauseMinMs);
             let next = s.bossX;
             while (Math.abs(next - s.bossX) < 0.15) next = L.bossMinX + Math.random() * (L.bossMaxX - L.bossMinX);
             s.bossTarget = next;
           } else {
-            s.bossX += Math.sign(bdx) * Math.min(Math.abs(bdx), CFG.bossSpeed * dt);
-            s.bossMoving = bdx > 0 ? 1 : -1;
+            if (
+              moveProfile.erraticChancePerSec > 0 &&
+              t - s.bossLastErraticAt >= CFG.bossErraticCooldownMs &&
+              Math.random() < moveProfile.erraticChancePerSec * dt
+            ) {
+              s.bossLastErraticAt = t;
+              let next = s.bossX;
+              while (Math.abs(next - s.bossX) < 0.14) next = L.bossMinX + Math.random() * (L.bossMaxX - L.bossMinX);
+              s.bossTarget = next;
+            }
+            const nextDx = s.bossTarget - s.bossX;
+            s.bossX += Math.sign(nextDx) * Math.min(Math.abs(nextDx), moveProfile.speed * dt);
+            s.bossMoving = nextDx > 0 ? 1 : nextDx < 0 ? -1 : 0;
           }
         } else s.bossMoving = 0;
       } else if (s.stage === "won" || s.stage === "lost") {
         s.nurseMoving = false;
         s.bossMoving = 0;
+        s.restockRequested = false;
         s.restockActive = false;
         s.restockProgress = 0;
       }
@@ -385,6 +412,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     const d = drag.current;
     if (!d || d.id !== e.pointerId || !arenaPx.w) return;
     const s = sim.current;
+    if (Math.abs(e.clientX - d.startX) > 3) s.restockRequested = false;
     s.nurseTarget = Math.max(L.nurseMinX, Math.min(L.nurseMaxX, d.startNurse + (e.clientX - d.startX) / arenaPx.w));
   };
   const onPointerUp = (e: React.PointerEvent) => {
@@ -402,6 +430,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   let bob = 0;
   let laughing = false;
   let poseActive = false;
+  let bossEnraged = false;
   const frameOf = (len: number, ms: number) => Math.floor(s.t / ms) % len;
   const bobOffset = Math.sin((s.t / CFG.bossIdleBobMs) * Math.PI * 2) * CFG.bossIdleBob;
   if (s.t < s.laughUntil) {
@@ -411,8 +440,13 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   } else if (s.poseAnim && s.t < s.poseUntil) {
     poseActive = true;
     anim = s.poseAnim;
-    // raise: ping-pong up through the 6-frame hands-up sequence and back down
-    col = s.poseAnim === "throw" ? frameOf(6, CFG.bossFrameMs) : RAISE_WAVE[frameOf(RAISE_WAVE.length, CFG.bossFrameMs)] ?? 0;
+    if (s.poseAnim === "throw") {
+      col = frameOf(6, CFG.bossFrameMs);
+    } else {
+      const raiseFrame = getBossRaiseFrame(s.t - s.poseStart, CFG.bossRaiseStepMs, CFG.bossRaiseHoldMs);
+      col = raiseFrame.col;
+      bossEnraged = raiseFrame.enraged;
+    }
   } else if (s.stage === "entering") {
     col = 0; // back to the nurse, facing the window
     bob = bobOffset;
@@ -435,6 +469,8 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   const poseScale = poseActive ? CFG.bossPhasePoseScale[phase] : 1;
   const neilH = L.bossCellHeight * H * NEIL_CELL_SCALE * CFG.bossPhaseScale[phase] * moveScale * laughScale * poseScale;
   const neilW = (neilH * atlas.cellW) / atlas.cellH;
+  const neilShakeX = bossEnraged ? Math.sin(s.t * 0.085) * 3 : 0;
+  const neilShakeY = bossEnraged ? Math.cos(s.t * 0.11) * 1.5 : 0;
 
   /* ---- door geometry ---- */
   const doorW = L.door.widthFrac * W;
@@ -450,13 +486,18 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
   const refilling = s.restockActive;
   const lowAmmo = isLowAmmo(s.ammo, CFG.lowAmmoThreshold);
   const cartBounce = refilling ? Math.abs(Math.sin(s.t / 90)) * cartH * 0.04 : 0;
-  const moveToTrolley = () => {
+  const requestRestock = () => {
     if (s.stage !== "active") return;
     s.nurseTarget = L.cart.restockX;
+    if (s.ammo < CFG.nurseAmmoCapacity) {
+      s.restockRequested = true;
+      s.restock = { elapsedMs: 0, completedInZone: false };
+    }
   };
   const instantRefill = () => {
     if (s.stage !== "active") return;
     s.ammo = refillNurseSupplies().ammo;
+    s.restockRequested = false;
     s.nextFireAt = Math.min(s.nextFireAt, s.t);
   };
   return (
@@ -505,14 +546,17 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           >
             Exit
           </Button>
-          {/* stores trolley — nurse auto-restocks when moving into its restocking zone */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute"
+          {/* stores trolley — tap to walk over and restock */}
+          <button
+            type="button"
+            onClick={requestRestock}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label="Restock at trolley"
+            className="absolute cursor-pointer border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             style={{ left: L.cart.left * W, top: L.cart.bottom * H - cartH - cartBounce, width: cartW, height: cartH, zIndex: 12 }}
           >
             <img src={cartArt.url} alt="" draggable={false} className="h-full w-full" style={{ imageRendering: "pixelated" }} />
-          </div>
+          </button>
           {refilling && (
             <div
               role="progressbar"
@@ -547,12 +591,16 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           {/* Neil */}
           <div
             className="absolute"
+            data-boss-enraged={bossEnraged ? "true" : undefined}
             style={{
-              left: s.bossX * W - neilW / 2,
-              top: L.bossLaneY * H - neilH - bob * neilH,
+              left: s.bossX * W - neilW / 2 + neilShakeX,
+              top: L.bossLaneY * H - neilH - bob * neilH + neilShakeY,
               width: neilW,
               height: neilH,
               zIndex: 10,
+              filter: bossEnraged
+                ? "sepia(0.85) hue-rotate(-44deg) saturate(4.4) brightness(0.92) drop-shadow(0 0 6px hsla(0, 95%, 48%, 0.72))"
+                : undefined,
             }}
             role="img"
             aria-label={laughing ? "Neil laughing" : `Neil, phase ${phase}`}
@@ -672,6 +720,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           <DevBtn
             onClick={() => {
               sim.current.poseAnim = "throw";
+              sim.current.poseStart = sim.current.t;
               sim.current.poseUntil = sim.current.t + CFG.bossPoseMs;
             }}
           >
@@ -680,14 +729,15 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           <DevBtn
             onClick={() => {
               sim.current.poseAnim = "raise";
-              sim.current.poseUntil = sim.current.t + CFG.bossPoseMs;
+              sim.current.poseStart = sim.current.t;
+              sim.current.poseUntil = sim.current.t + bossRaiseTotalMs();
             }}
           >
             Raise
           </DevBtn>
           <span className="font-display ml-2 text-[10px] font-black uppercase">Nurse</span>
           <DevBtn onClick={instantRefill} disabled={s.stage !== "active"}>Refill</DevBtn>
-          <DevBtn onClick={moveToTrolley} disabled={s.stage !== "active"}>To trolley</DevBtn>
+          <DevBtn onClick={requestRestock} disabled={s.stage !== "active"}>To trolley</DevBtn>
           <DevBtn onClick={() => setNurseHp((h) => Math.max(0, h - 10))}>-10</DevBtn>
           <DevBtn onClick={() => setNurseHp((h) => Math.min(CFG.nurseMaxHp, h + 10))}>+10</DevBtn>
         </DevBossPanel>

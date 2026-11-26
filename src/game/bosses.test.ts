@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { bossById, bossUnlocked, canBossGlide, levelGateOpen, markDefeated, phaseFor, unlockAfterLevel } from "./bosses";
+import {
+  bossById,
+  bossMovementProfile,
+  bossRaiseTotalMs,
+  bossUnlocked,
+  canBossGlide,
+  getBossRaiseFrame,
+  levelGateOpen,
+  markDefeated,
+  phaseFor,
+  unlockAfterLevel,
+} from "./bosses";
 
 const neil = bossById("neil")!;
 
@@ -35,5 +46,44 @@ describe("Neil phases", () => {
     expect(canBossGlide("raise", 1200, 1200)).toBe(true);
     expect(canBossGlide("throw", 1200, 1200)).toBe(true);
     expect(canBossGlide(null, 500, 1200)).toBe(true);
+  });
+
+  it("makes Neil faster and more erratic as his health declines", () => {
+    const full = bossMovementProfile(100);
+    const mid = bossMovementProfile(60);
+    const low = bossMovementProfile(25);
+    const critical = bossMovementProfile(5);
+
+    expect(mid.speed).toBeGreaterThan(full.speed);
+    expect(low.speed).toBeGreaterThan(mid.speed);
+    expect(critical.speed).toBeGreaterThan(low.speed);
+
+    expect(mid.pauseMaxMs).toBeLessThan(full.pauseMaxMs);
+    expect(low.pauseMaxMs).toBeLessThan(mid.pauseMaxMs);
+    expect(critical.pauseMinMs).toBeLessThan(low.pauseMinMs);
+
+    expect(full.erraticChancePerSec).toBe(0);
+    expect(mid.erraticChancePerSec).toBeGreaterThan(0);
+    expect(low.erraticChancePerSec).toBeGreaterThan(mid.erraticChancePerSec);
+  });
+
+  it("holds Neil's arms raised and enraged for 2 seconds, then removes enraged and lowers arms", () => {
+    const stepMs = 60;
+    const holdMs = 2000;
+    expect(bossRaiseTotalMs(stepMs, holdMs)).toBe(2600);
+
+    // raising up (0..299ms)
+    expect(getBossRaiseFrame(0, stepMs, holdMs)).toEqual({ col: 0, enraged: false, done: false });
+    expect(getBossRaiseFrame(240, stepMs, holdMs)).toEqual({ col: 4, enraged: false, done: false });
+
+    // held raised for 2000ms (300..2299ms) with red glaze + shake active
+    expect(getBossRaiseFrame(300, stepMs, holdMs)).toEqual({ col: 5, enraged: true, done: false });
+    expect(getBossRaiseFrame(1300, stepMs, holdMs)).toEqual({ col: 5, enraged: true, done: false });
+    expect(getBossRaiseFrame(2299, stepMs, holdMs)).toEqual({ col: 5, enraged: true, done: false });
+
+    // after 2000ms: red/shake removed and arms lower back down (2300..2599ms)
+    expect(getBossRaiseFrame(2300, stepMs, holdMs)).toEqual({ col: 4, enraged: false, done: false });
+    expect(getBossRaiseFrame(2540, stepMs, holdMs)).toEqual({ col: 0, enraged: false, done: false });
+    expect(getBossRaiseFrame(2600, stepMs, holdMs)).toEqual({ col: 0, enraged: false, done: true });
   });
 });

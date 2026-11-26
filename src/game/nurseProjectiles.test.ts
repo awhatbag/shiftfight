@@ -8,6 +8,7 @@ import {
   isLowAmmo,
   isProjectileInBounds,
   refillNurseSupplies,
+  shouldRestockAtTrolley,
   stepProjectile,
   stepRestockState,
   takeNurseProjectile,
@@ -73,6 +74,10 @@ describe("Trolley restocking zone", () => {
   it("detects entry, takes 1000 ms to complete, and interrupts without refilling if the nurse leaves", () => {
     expect(isInRestockZone(NEIL_ARENA_LAYOUT.cart.restockX, NEIL_ARENA_LAYOUT.nurseLaneY)).toBe(true);
     expect(isInRestockZone(0.5, NEIL_ARENA_LAYOUT.nurseLaneY)).toBe(false);
+    // walking in the vicinity does NOT restock unless the trolley was tapped
+    expect(shouldRestockAtTrolley(false, NEIL_ARENA_LAYOUT.cart.restockX, NEIL_ARENA_LAYOUT.nurseLaneY, NEIL_ARENA_LAYOUT.cart.restockX)).toBe(false);
+    expect(shouldRestockAtTrolley(true, NEIL_ARENA_LAYOUT.cart.restockX, NEIL_ARENA_LAYOUT.nurseLaneY, NEIL_ARENA_LAYOUT.cart.restockX)).toBe(true);
+    expect(shouldRestockAtTrolley(true, 0.5, NEIL_ARENA_LAYOUT.nurseLaneY, NEIL_ARENA_LAYOUT.cart.restockX)).toBe(false);
 
     let state = { elapsedMs: 0, completedInZone: false };
     // Enter at 5 ammo and stay 600ms -> still active, not yet refilled
