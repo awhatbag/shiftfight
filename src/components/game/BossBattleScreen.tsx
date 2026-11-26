@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import supplyEmptyArt from "@/assets/boss/supply_grid_empty.png.asset.json";
 import supplyFullArt from "@/assets/boss/supply_grid_full.png.asset.json";
 import projectileArt from "@/assets/boss/nurse_projectiles.png.asset.json";
+import specialButtonArt from "@/assets/boss/nurse_special_button.png.asset.json";
+import { buzz } from "@/lib/sfx";
 import {
   createAimedProjectile,
   emptyNurseSupplies,
@@ -701,7 +703,20 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
               }} />;
             })}
           </div>
-          <div aria-label="Special moves" className="min-h-0 flex-1" />
+          <div aria-label="Special moves" className="grid min-h-0 min-w-0 flex-1 grid-rows-3 place-items-center gap-1 px-1 py-2">
+            {[1, 2, 3].map((slot) => (
+              <Button
+                key={slot}
+                type="button"
+                variant="ghost"
+                aria-label={`Nurse special attack ${slot}`}
+                className="boss-special-button aspect-square h-auto max-h-full w-full min-w-0 rounded-full p-0 hover:bg-transparent"
+                onClick={() => buzz(25)}
+              >
+                <img src={specialButtonArt.url} alt="" draggable={false} className="pointer-events-none h-full w-full object-contain" />
+              </Button>
+            ))}
+          </div>
         </aside>
         </div>
       </div>
