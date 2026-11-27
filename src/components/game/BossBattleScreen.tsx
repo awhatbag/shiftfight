@@ -27,6 +27,7 @@ import avocadoArt from "@/assets/avocado1.png.asset.json";
 import gooseArt from "@/assets/boss/goose_special_icon.png.asset.json";
 import pillowArt from "@/assets/pillow1.png.asset.json";
 import { buzz } from "@/lib/sfx";
+import { activateSpecial, cooldownRemaining } from "@/game/specialCooldowns";
 import {
   createAimedProjectile,
   emptyNurseSupplies,
@@ -49,6 +50,8 @@ const SPECIAL_BUTTONS = [
   { id: "goose", label: "Goose special attack", kind: "img", src: gooseArt.url, sizeClass: "h-[76%] w-[76%]" },
   { id: "pillow", label: "Pillow special attack", kind: "img", src: pillowArt.url, sizeClass: "h-[64%] w-[64%]" },
 ] as const;
+type SpecialId = (typeof SPECIAL_BUTTONS)[number]["id"];
+const RESTOCK_PIXELS = [[6,0],[10,0],[14,0],[18,3],[21,6],[21,10],[21,14],[18,18],[14,21],[10,21],[6,21],[3,18],[0,14],[0,10],[0,6],[3,3]] as const;
 
 /* ---------- supplied-artwork atlases (cut from the user's sheets) ---------- */
 
@@ -181,6 +184,7 @@ type Sim = {
   nurseThrowUntil: number;
   projectiles: NurseProjectile[];
   nextProjectileId: number;
+  specialUntil: Record<SpecialId, number>;
 };
 
 export type BossBattleProps = {
@@ -228,6 +232,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     nurseThrowUntil: 0,
     projectiles: [],
     nextProjectileId: 0,
+    specialUntil: { avocado: 0, goose: 0, pillow: 0 },
   });
   const [, setTick] = useState(0);
   const drag = useRef<{ id: number; startX: number; startNurse: number } | null>(null);
@@ -574,7 +579,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(s.restockProgress * 100)}
-              className="pointer-events-none absolute z-30 flex items-center justify-center rounded-full bg-card/90 p-0.5 shadow"
+              className="boss-pixel-timer pointer-events-none absolute z-30 flex items-center justify-center p-1"
               style={{
                 left: (L.cart.left + L.cart.widthFrac / 2) * W - 18,
                 top: L.cart.bottom * H - cartH - 38,
@@ -582,19 +587,11 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
                 height: 36,
               }}
             >
-              <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-                <circle cx="18" cy="18" r="14" fill="none" className="stroke-muted" strokeWidth="4" />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="14"
-                  fill="none"
-                  className="stroke-primary"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 14}
-                  strokeDashoffset={2 * Math.PI * 14 * (1 - s.restockProgress)}
-                />
+              <svg viewBox="0 0 24 24" className="h-full w-full" shapeRendering="crispEdges" aria-hidden="true">
+                {RESTOCK_PIXELS.map(([x, y], index) => (
+                  <rect key={index} x={x} y={y} width="3" height="3"
+                    className={index < Math.ceil(s.restockProgress * RESTOCK_PIXELS.length) ? "fill-gold" : "fill-muted-foreground"} />
+                ))}
               </svg>
             </div>
           )}
@@ -712,21 +709,43 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
             })}
           </div>
           <div aria-label="Special moves" className="grid min-h-0 min-w-0 flex-1 grid-rows-3 place-items-center gap-1 px-1 py-2">
-            {SPECIAL_BUTTONS.map((btn) => (
+            {SPECIAL_BUTTONS.map((btn) => {
+              const remainingMs = cooldownRemaining(s.specialUntil[btn.id], s.t);
+              const cooling = remainingMs > 0;
+              const readySegments = Math.floor((1 - remainingMs / CFG.specialCooldownMs) * 8);
+              return (
               <Button
                 key={btn.id}
                 type="button"
                 variant="ghost"
                 aria-label={btn.label}
-                className="boss-special-button aspect-square h-auto max-h-full w-full min-w-0 rounded-full p-0 hover:bg-transparent"
-                onClick={() => buzz(25)}
+                aria-description={cooling ? `Ready in ${Math.ceil(remainingMs / 1000)} seconds` : undefined}
+                disabled={cooling}
+                className="boss-special-button relative aspect-square h-auto max-h-full w-full min-w-0 rounded-full p-0 hover:bg-transparent"
+                onClick={() => {
+                  const until = activateSpecial(s.specialUntil[btn.id], s.t);
+                  if (until === null) return;
+                  s.specialUntil[btn.id] = until;
+                  buzz(25);
+                }}
               >
                 <span className="boss-special-button-face pointer-events-none relative grid h-full w-full place-items-center">
                   <img src={specialButtonArt.url} alt="" draggable={false} className="h-full w-full object-contain" />
                   <img src={btn.src} alt="" draggable={false} className={`absolute ${btn.sizeClass} object-contain [image-rendering:pixelated]`} />
                 </span>
+                {cooling && (
+                  <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1" aria-hidden="true">
+                    <span className="boss-cooldown-count">{Math.ceil(remainingMs / 1000)}s</span>
+                    <span className="grid h-1.5 w-[68%] grid-cols-8 gap-px bg-foreground p-px">
+                      {Array.from({ length: 8 }, (_, index) => (
+                        <span key={index} className={index < readySegments ? "bg-gold" : "bg-muted-foreground"} />
+                      ))}
+                    </span>
+                  </span>
+                )}
               </Button>
-            ))}
+              );
+            })}
           </div>
         </aside>
         </div>

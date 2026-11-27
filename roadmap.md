@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Pixelate the Neil trolley restock timer and add visible independent five-second blue-button cooldowns; 16 focused tests pass, live repeat-tap blocking, reactivation, restocking and portrait/desktop layouts verified without page errors.
+
 - [x] Neil 10.1: life bars above the arena and supplies in an independent right sidebar with empty space for future special moves; seven existing tests passed, live empty/refill/throw, sidebar tap isolation and arena drag checked at 448×877, 390×844, 320×568 and desktop, no page errors, build OK.
 
 - [x] Give staff exclusive call assignments, reroute interrupted journeys and refund unused cooldowns; 32 focused tests pass, build OK. Live mobile shift showed separate Barry/Priya calls and player resolution redirected Priya from call 2 to call 3 with cooldown 0, no page errors; no-replacement refund covered by unit tests.

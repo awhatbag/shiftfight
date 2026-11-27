@@ -80,6 +80,8 @@ export const BOSS_BATTLE_CONFIG = {
   restockZone: { minX: 0.02, maxX: 0.34, minY: 0.72, maxY: 0.98 },
   /** Brief throw facing duration when stationary */
   nurseThrowPoseMs: 350,
+  /** Independent cooldown after pressing each nurse special button (milliseconds). */
+  specialCooldownMs: 5000,
 
   /* ---------------- Neil's attacks (used by later stages) ---------------- */
   /** time between attacks and the on-screen warning before each one lands */

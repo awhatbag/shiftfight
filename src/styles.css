@@ -163,6 +163,24 @@
   transform: translateY(3px) scale(0.93);
   filter: brightness(0.85);
 }
+.boss-special-button:disabled { opacity: 1; }
+.boss-special-button:disabled .boss-special-button-face {
+  filter: grayscale(0.7) brightness(0.55);
+}
+.boss-pixel-timer {
+  border: 2px solid var(--foreground);
+  background: var(--card);
+  box-shadow: 2px 2px 0 var(--foreground);
+}
+.boss-cooldown-count {
+  font-family: "Press Start 2P", monospace;
+  color: var(--gold);
+  background: var(--foreground);
+  border: 2px solid var(--gold);
+  font-size: 10px;
+  line-height: 1;
+  padding: 4px 2px;
+}
 @media (prefers-reduced-motion: reduce) {
   .boss-special-button-face { transition: none; }
 }
