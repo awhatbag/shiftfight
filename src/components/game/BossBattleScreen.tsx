@@ -712,7 +712,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
             {SPECIAL_BUTTONS.map((btn) => {
               const remainingMs = cooldownRemaining(s.specialUntil[btn.id], s.t);
               const cooling = remainingMs > 0;
-              const readySegments = Math.floor((1 - remainingMs / CFG.specialCooldownMs) * 8);
+              const readySegments = Math.floor((1 - remainingMs / CFG.specialCooldownMs) * RESTOCK_PIXELS.length);
               return (
               <Button
                 key={btn.id}
@@ -734,13 +734,13 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
                   <img src={btn.src} alt="" draggable={false} className={`absolute ${btn.sizeClass} object-contain [image-rendering:pixelated]`} />
                 </span>
                 {cooling && (
-                  <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1" aria-hidden="true">
-                    <span className="boss-cooldown-count">{Math.ceil(remainingMs / 1000)}s</span>
-                    <span className="grid h-1.5 w-[68%] grid-cols-8 gap-px bg-foreground p-px">
-                      {Array.from({ length: 8 }, (_, index) => (
-                        <span key={index} className={index < readySegments ? "bg-gold" : "bg-muted-foreground"} />
+                  <span className="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden="true">
+                    <svg viewBox="-1 -1 26 26" className="h-[62%] w-[62%]" shapeRendering="crispEdges" data-cooldown-ring>
+                      {RESTOCK_PIXELS.map(([x, y], index) => (
+                        <rect key={index} x={x} y={y} width="3" height="3"
+                          className={index < readySegments ? "fill-gold" : "fill-muted-foreground"} />
                       ))}
-                    </span>
+                    </svg>
                   </span>
                 )}
               </Button>
