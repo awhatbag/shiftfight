@@ -23,6 +23,9 @@ import supplyEmptyArt from "@/assets/boss/supply_grid_empty.png.asset.json";
 import supplyFullArt from "@/assets/boss/supply_grid_full.png.asset.json";
 import projectileArt from "@/assets/boss/nurse_projectiles.png.asset.json";
 import specialButtonArt from "@/assets/boss/nurse_special_button.png.asset.json";
+import avocadoArt from "@/assets/avocado1.png.asset.json";
+import gooseArt from "@/assets/goose-walking_goose.png.asset.json";
+import pillowArt from "@/assets/pillow1.png.asset.json";
 import { buzz } from "@/lib/sfx";
 import {
   createAimedProjectile,
@@ -41,6 +44,11 @@ import {
 
 const SUPPLY_ROWS = [[136,234],[246,343],[355,453],[464,561],[572,669],[680,778],[787,882],[892,987],[993,1088],[1097,1191]] as const;
 const SUPPLY_COLS = [[40,140],[147,248]] as const;
+const SPECIAL_BUTTONS = [
+  { id: "avocado", label: "Avocado special attack", kind: "img", src: avocadoArt.url, sizeClass: "h-[62%] w-[62%]" },
+  { id: "goose", label: "Goose special attack", kind: "goose", src: gooseArt.url, sizeClass: "h-[68%] w-[68%]" },
+  { id: "pillow", label: "Pillow special attack", kind: "img", src: pillowArt.url, sizeClass: "h-[64%] w-[64%]" },
+] as const;
 
 /* ---------- supplied-artwork atlases (cut from the user's sheets) ---------- */
 
@@ -704,16 +712,27 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
             })}
           </div>
           <div aria-label="Special moves" className="grid min-h-0 min-w-0 flex-1 grid-rows-3 place-items-center gap-1 px-1 py-2">
-            {[1, 2, 3].map((slot) => (
+            {SPECIAL_BUTTONS.map((btn) => (
               <Button
-                key={slot}
+                key={btn.id}
                 type="button"
                 variant="ghost"
-                aria-label={`Nurse special attack ${slot}`}
+                aria-label={btn.label}
                 className="boss-special-button aspect-square h-auto max-h-full w-full min-w-0 rounded-full p-0 hover:bg-transparent"
                 onClick={() => buzz(25)}
               >
-                <img src={specialButtonArt.url} alt="" draggable={false} className="pointer-events-none h-full w-full object-contain" />
+                <span className="boss-special-button-face pointer-events-none relative grid h-full w-full place-items-center">
+                  <img src={specialButtonArt.url} alt="" draggable={false} className="h-full w-full object-contain" />
+                  {btn.kind === "goose" ? (
+                    <span
+                      aria-hidden="true"
+                      className={`absolute ${btn.sizeClass} bg-no-repeat [image-rendering:pixelated]`}
+                      style={{ backgroundImage: `url(${btn.src})`, backgroundSize: "600% 100%", backgroundPosition: "0% 0%" }}
+                    />
+                  ) : (
+                    <img src={btn.src} alt="" draggable={false} className={`absolute ${btn.sizeClass} object-contain [image-rendering:pixelated]`} />
+                  )}
+                </span>
               </Button>
             ))}
           </div>

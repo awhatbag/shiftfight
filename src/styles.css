@@ -155,16 +155,16 @@
   transform-origin: 50% 100%;
 }
 
-.boss-special-button img {
+.boss-special-button-face {
   image-rendering: pixelated;
   transition: transform 80ms ease-out, filter 80ms ease-out;
 }
-.boss-special-button:active img {
+.boss-special-button:active .boss-special-button-face {
   transform: translateY(3px) scale(0.93);
   filter: brightness(0.85);
 }
 @media (prefers-reduced-motion: reduce) {
-  .boss-special-button img { transition: none; }
+  .boss-special-button-face { transition: none; }
 }
 
 /* Sprite-sheet nurse cut from the supplied artwork */
