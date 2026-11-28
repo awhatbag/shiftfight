@@ -27,6 +27,8 @@ import avocadoArt from "@/assets/avocado1.png.asset.json";
 import gooseArt from "@/assets/boss/goose_special_icon.png.asset.json";
 import pillowArt from "@/assets/pillow1.png.asset.json";
 import { buzz } from "@/lib/sfx";
+import { NeilAttackSprites } from "./NeilAttackSprites";
+import { canStartNeilAttack, chooseNeilAttack, createNeilAttack, NEIL_ATTACK_NAMES, stepNeilAttacks, takeNurseDamage, type NeilAttack, type NeilAttackKind } from "@/game/neilAttacks";
 import { activateSpecial, cooldownRemaining } from "@/game/specialCooldowns";
 import {
   createAimedProjectile,
@@ -185,6 +187,14 @@ type Sim = {
   projectiles: NurseProjectile[];
   nextProjectileId: number;
   specialUntil: Record<SpecialId, number>;
+  attacks: NeilAttack[];
+  nextAttackAt: number;
+  nextAttackId: number;
+  attackPhase: BossPhase;
+  autoAttacks: boolean;
+  invulnerableUntil: number;
+  nurseHp: number;
+  pendingLaugh: boolean;
 };
 
 export type BossBattleProps = {
@@ -196,7 +206,7 @@ export type BossBattleProps = {
   onVictory?: () => void;
 };
 
-export function BossBattleScreen({ boss, character, dev = false, onExit, onVictory }: BossBattleProps) {
+export function BossBattleScreen({ boss, character, dev = false, onExit }: BossBattleProps) {
   const [nurseHp, setNurseHp] = useState<number>(CFG.nurseMaxHp);
   const [bossHp, setBossHp] = useState<number>(CFG.bossMaxHp);
   const phase = phaseFor(bossHp);
@@ -233,11 +243,12 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     projectiles: [],
     nextProjectileId: 0,
     specialUntil: { avocado: 0, goose: 0, pillow: 0 },
+    attacks: [], nextAttackAt: 0, nextAttackId: 0, attackPhase: 1,
+    autoAttacks: true, invulnerableUntil: 0, nurseHp: CFG.nurseMaxHp,
+    pendingLaugh: false,
   });
   const [, setTick] = useState(0);
   const drag = useRef<{ id: number; startX: number; startNurse: number } | null>(null);
-  const victoryRef = useRef(onVictory);
-  victoryRef.current = onVictory;
 
   /* arena size */
   useEffect(() => {
@@ -255,7 +266,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     if (s.stage === "won" || s.stage === "lost") return;
     if (bossHp <= 0) {
       s.stage = "won";
-      if (!dev) victoryRef.current?.();
+      // Stage 4 owns outcome presentation and progression; Stage 3 only stops combat.
     } else if (nurseHp <= 0) s.stage = "lost";
   }, [bossHp, nurseHp, dev]);
 
@@ -267,7 +278,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const s = sim.current;
-      s.t += dt * 1000;
+      if (s.stage !== "won" && s.stage !== "lost") s.t += dt * 1000;
       const t = s.t;
       const dtMs = dt * 1000;
 
@@ -303,6 +314,19 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
       }
 
       if (s.stage === "active") {
+        if (s.pendingLaugh && t >= s.poseUntil) { s.laughUntil = t + CFG.bossLaughMs; s.pendingLaugh = false; }
+        const currentPhase = phaseFor(bossHpRef.current);
+        if (s.attackPhase !== currentPhase) {
+          s.attackPhase = currentPhase;
+          s.nextAttackAt = Math.max(s.nextAttackAt, t + CFG.phaseTransitionMs);
+        }
+        if (s.nextAttackAt === 0) s.nextAttackAt = t + CFG.attackPhases[currentPhase].intervalMs;
+        const heldRaise = s.poseAnim === "raise" && t < s.poseUntil && getBossRaiseFrame(t-s.poseStart).enraged;
+        if (s.autoAttacks && t >= s.nextAttackAt && (t >= s.poseUntil || heldRaise) && t >= s.laughUntil) {
+          const kind = chooseNeilAttack(currentPhase, Math.random, s.attacks.length > 0, heldRaise);
+          if (canStartNeilAttack(s.attacks, kind, currentPhase)) startAttack(kind);
+          s.nextAttackAt = t + CFG.attackPhases[currentPhase].intervalMs;
+        }
         /* nurse follows the drag target along her lane */
         const dx = s.nurseTarget - s.nurseX;
         const step = CFG.nurseSpeed * dt;
@@ -389,6 +413,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
       let hits = 0;
       const remaining: NurseProjectile[] = [];
       for (const shot of s.projectiles) {
+        if (s.stage !== "active") { remaining.push(shot); continue; }
         const nextShot = stepProjectile(shot, dt);
         if (
           s.stage === "active" &&
@@ -405,7 +430,23 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
         const nextHp = Math.max(0, bossHpRef.current - hits * CFG.damage.nurseProjectile);
         bossHpRef.current = nextHp;
         setBossHp(nextHp);
+        if (nextHp === 0) s.stage = "won";
       }
+      if (s.stage === "active") {
+        const result = stepNeilAttacks(s.attacks, t-dtMs, t, s.nurseX,
+          { hp:s.nurseHp, invulnerableUntil:s.invulnerableUntil });
+        s.attacks = result.attacks;
+        s.invulnerableUntil = result.health.invulnerableUntil;
+        if (result.hit) {
+          s.nurseHp = result.health.hp;
+          setNurseHp(s.nurseHp);
+          // Do not interrupt a telegraph/attack pose with a laugh.
+          if (t >= s.poseUntil) s.laughUntil = t + CFG.bossLaughMs;
+          else s.pendingLaugh = true;
+          if (s.nurseHp === 0) s.stage = "lost";
+        }
+      }
+      if (s.stage === "won" || s.stage === "lost") { s.nurseMoving=false; s.bossMoving=0; }
       setTick((n) => (n + 1) % 1_000_000);
       raf = requestAnimationFrame(loop);
     };
@@ -415,6 +456,37 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
 
   const bossHpRef = useRef(bossHp);
   bossHpRef.current = bossHp;
+
+  function startAttack(kind: NeilAttackKind, isolated = false) {
+    const s = sim.current;
+    if (s.stage !== "active") return;
+    if (isolated) { s.attacks = []; s.autoAttacks = false; s.laughUntil = 0; s.pendingLaugh=false; }
+    const reuseRaise = !isolated && kind !== "pen" && s.poseAnim === "raise" && s.t<s.poseUntil && getBossRaiseFrame(s.t-s.poseStart).enraged;
+    const a = createNeilAttack(s.nextAttackId++, kind, phaseFor(bossHpRef.current), s.t-(reuseRaise?5*CFG.bossRaiseStepMs:0),
+      s.nurseX, s.bossX, s.attacks[0]?.safeX);
+    s.attacks.push(a);
+    if (!reuseRaise) {
+      s.poseAnim = kind === "pen" ? "throw" : "raise";
+      s.poseStart = s.t;
+      s.poseUntil = s.t + (kind === "pen" ? Math.max(CFG.bossPoseMs, a.warningEnd-s.t+CFG.bossFrameMs*6) : bossRaiseTotalMs());
+    }
+    s.bossMoving = 0;
+  }
+  const adjustNurseHp = (hp: number) => {
+    sim.current.nurseHp = Math.max(0,Math.min(CFG.nurseMaxHp,hp));
+    setNurseHp(sim.current.nurseHp);
+  };
+  const resetBattle = () => {
+    const s=sim.current;
+    s.stage="active"; s.stageAt=s.t; s.nurseHp=CFG.nurseMaxHp; s.invulnerableUntil=0;
+    s.nurseX=L.door.centerX; s.nurseTarget=L.door.centerX; s.nurseY=L.nurseLaneY;
+    s.bossX=L.bossStartX;s.bossTarget=L.bossStartX;s.poseAnim=null;s.poseUntil=0;s.laughUntil=0;
+    s.pendingLaugh=false; s.bossPauseUntil=s.t; s.bossLastErraticAt=s.t; drag.current=null;
+    s.attacks=[];s.projectiles=[];s.ammo=0;s.autoAttacks=true;s.nextAttackAt=0;s.attackPhase=1;
+    s.restockRequested=false;s.restockActive=false;s.restockProgress=0;s.restock={elapsedMs:0,completedInZone:false};
+    s.specialUntil={avocado:0,goose:0,pillow:0};s.nextFireAt=s.t;s.nurseThrowUntil=0;
+    bossHpRef.current=CFG.bossMaxHp;setBossHp(CFG.bossMaxHp);setNurseHp(CFG.nurseMaxHp);
+  };
 
   /* drag-anywhere controls */
   const onPointerDown = (e: React.PointerEvent) => {
@@ -456,7 +528,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
     poseActive = true;
     anim = s.poseAnim;
     if (s.poseAnim === "throw") {
-      col = frameOf(6, CFG.bossFrameMs);
+      col = Math.floor((s.t-s.poseStart)/CFG.bossFrameMs)%6;
     } else {
       const raiseFrame = getBossRaiseFrame(s.t - s.poseStart, CFG.bossRaiseStepMs, CFG.bossRaiseHoldMs);
       col = raiseFrame.col;
@@ -532,8 +604,9 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
         <div
           className="absolute left-1/2 top-1/2 grid items-stretch gap-2"
           style={{
-            "--boss-sidebar-width": `min(${L.supplies.widthFrac * 100}cqw, ${L.supplies.maxWidthPx}px)`,
+            "--boss-sidebar-width": `min(${L.supplies.widthFrac * 100}cqw, ${L.supplies.maxWidthPx}px, calc(100cqh / 8))`,
             width: `min(100cqw, calc(100cqh * ${L.aspect} + var(--boss-sidebar-width) + 8px))`,
+            height: `min(100cqh, calc((100cqw - var(--boss-sidebar-width) - 8px) / ${L.aspect}))`,
             gridTemplateColumns: "minmax(0, 1fr) var(--boss-sidebar-width)",
             transform: "translate(-50%, -50%)",
           } as React.CSSProperties}
@@ -541,7 +614,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
         <div
           ref={arenaRef}
           aria-label="Neil boss arena"
-          className="relative w-full touch-none select-none overflow-hidden"
+          className="relative w-full self-start touch-none select-none overflow-hidden"
           style={{
             aspectRatio: `${L.aspect}`,
             backgroundImage: `url(${arenaArt.url})`,
@@ -552,6 +625,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          data-combat-stage={s.stage}
         >
           <Button
             onClick={onExit}
@@ -596,9 +670,12 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
             </div>
           )}
           {/* Neil */}
+          <NeilAttackSprites attacks={s.attacks} now={s.t} width={W} height={H} />
           <div
             className="absolute"
             data-boss-enraged={bossEnraged ? "true" : undefined}
+            data-boss-phase={phase}
+            data-boss-animation={anim}
             style={{
               left: s.bossX * W - neilW / 2 + neilShakeX,
               top: L.bossLaneY * H - neilH - bob * neilH + neilShakeY,
@@ -618,12 +695,15 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           {/* nurse — the player's own sprite and appearance */}
           <div
             className="absolute flex justify-center"
+            data-nurse-sprite
+            data-invulnerable={s.t < s.invulnerableUntil ? "true" : "false"}
             style={{
               left: s.nurseX * W - nurseH / 2,
               top: nursePxY - nurseH,
               height: nurseH,
               width: nurseH,
               zIndex: nurseBehindDoor ? 5 : 15,
+              opacity: s.t < s.invulnerableUntil && Math.floor(s.t/100)%2 === 0 ? 0.4 : 1,
             }}
           >
             <Nurse
@@ -659,27 +739,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
             }}
           />
 
-          {s.stage === "active" && s.t - s.stageAt < 2500 && (
-            <p className="font-display pointer-events-none absolute inset-x-0 text-center text-sm font-black uppercase text-primary-foreground" style={{ top: "60%", textShadow: "0 2px 0 hsl(0 0% 0%)", zIndex: 20 }}>
-              Drag anywhere to move
-            </p>
-          )}
-
-          {ended && (
-            <div className="absolute inset-0 z-30 grid place-items-center bg-background/70 p-6 text-center">
-              <div className="space-y-3">
-                <p className="font-display text-2xl font-black uppercase">
-                  {s.stage === "won" ? `${boss.name} defeated!` : "Rostered off…"}
-                </p>
-                <button
-                  onClick={onExit}
-                  className="chunky-press font-display rounded-xl bg-primary px-4 py-2 text-sm font-black uppercase text-primary-foreground"
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Zero HP freezes combat in place. Stage 4 supplies the outcome screens. */}
         </div>
         <aside aria-label="Nurse supplies and special moves" className="flex min-h-0 flex-col border-l-2 border-border bg-card">
           <div
@@ -783,8 +843,21 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
           <span className="font-display ml-2 text-[10px] font-black uppercase">Nurse</span>
           <DevBtn onClick={instantRefill} disabled={s.stage !== "active"}>Refill</DevBtn>
           <DevBtn onClick={requestRestock} disabled={s.stage !== "active"}>To trolley</DevBtn>
-          <DevBtn onClick={() => setNurseHp((h) => Math.max(0, h - 10))}>-10</DevBtn>
-          <DevBtn onClick={() => setNurseHp((h) => Math.min(CFG.nurseMaxHp, h + 10))}>+10</DevBtn>
+          <DevBtn onClick={() => adjustNurseHp(nurseHp-10)}>-10</DevBtn>
+          <DevBtn onClick={() => adjustNurseHp(nurseHp+10)}>+10</DevBtn>
+          <label className="font-display text-[10px]">Neil HP <input aria-label="Set Neil HP" type="number" min={0} max={CFG.bossMaxHp} value={bossHp}
+            className="w-14 border border-border bg-background px-1 text-foreground" onChange={e=>{const hp=Math.max(0,Math.min(CFG.bossMaxHp,Number(e.target.value)));bossHpRef.current=hp;setBossHp(hp);}} /></label>
+          <label className="font-display text-[10px]">Nurse HP <input aria-label="Set Nurse HP" type="number" min={0} max={CFG.nurseMaxHp} value={nurseHp}
+            className="w-14 border border-border bg-background px-1 text-foreground" onChange={e=>adjustNurseHp(Number(e.target.value))} /></label>
+          <DevBtn active={s.autoAttacks} onClick={()=>{s.autoAttacks=!s.autoAttacks;s.nextAttackAt=s.t+CFG.attackPhases[phase].intervalMs;}}>Auto attacks</DevBtn>
+          <DevBtn onClick={()=>{s.attacks=[];s.poseUntil=0;s.laughUntil=0;s.pendingLaugh=false;s.autoAttacks=false;}}>Clear attacks</DevBtn>
+          {(Object.keys(NEIL_ATTACK_NAMES) as NeilAttackKind[]).map(kind=><DevBtn key={kind}
+            disabled={s.stage!=="active"} onClick={()=>startAttack(kind,true)}>{NEIL_ATTACK_NAMES[kind]}</DevBtn>)}
+          <DevBtn onClick={()=>{
+            const health=takeNurseDamage({hp:s.nurseHp,invulnerableUntil:s.invulnerableUntil},CFG.damage.clockInOut,s.t);
+            s.invulnerableUntil=health.invulnerableUntil;adjustNurseHp(health.hp);
+          }}>Test hit</DevBtn>
+          <DevBtn onClick={resetBattle}>Reset battle</DevBtn>
         </DevBossPanel>
       )}
     </div>
@@ -793,7 +866,7 @@ export function BossBattleScreen({ boss, character, dev = false, onExit, onVicto
 
 function DevBossPanel({ children }: { children: ReactNode }) {
   return (
-    <div className="z-20 flex shrink-0 flex-wrap items-center gap-1 border-t-2 border-border bg-card px-2 pb-3 pt-2">
+    <div className="z-20 flex max-h-[28dvh] shrink-0 flex-wrap items-center gap-1 overflow-y-auto border-t-2 border-border bg-card px-2 pb-3 pt-2">
       {children}
     </div>
   );

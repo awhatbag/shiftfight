@@ -48,3 +48,5 @@ Neil's presentation applies config-owned phase scale compensation to both sprite
 Neil's nurse combat (auto-fire, straight-line projectiles, Neil hitbox damage, low-ammo threshold, and zone-based trolley restocking) uses pure helpers in src/game/nurseProjectiles.ts driven exclusively by src/config/bossBattleConfig.ts.
 Boss health bars and the right supply/action column live outside the arena pointer surface; only the arena scales world geometry, keeping future action taps separate from movement.
 Special-attack button feedback uses the existing buzz helper to respect the Haptics setting; supplied-art controls remain presentation-only until attacks are defined.
+
+Neil offense uses pure neilAttacks helpers with a shared safe corridor; its bounded runtime never writes saves or awards Stage 4 rewards.

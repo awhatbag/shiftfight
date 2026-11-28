@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Stage 3: crop supplied Neil attack artwork, implement six warned/fair attack patterns and collision-only nurse damage/invulnerability, preserve Stage 2 and freeze combat at zero HP without progression rewards.
+- [x] Stage 3: configurable random phase scheduling and isolated developer attack/HP/reset controls; 37 focused tests passed, all six actual hits/dodges, 60/25 phase atlas rows, 1200ms invulnerability, two concurrent safe-corridor patterns, unchanged save progress, firing/restocking and 320/390/448 portrait framing verified without page errors; no battle timer or missing assets, Stage 4 outcomes deferred.
+
 - [x] Pixelate the Neil trolley restock timer and add visible independent five-second blue-button cooldowns; 16 focused tests pass, live repeat-tap blocking, reactivation, restocking and portrait/desktop layouts verified without page errors.
 
 - [x] Neil 10.1: life bars above the arena and supplies in an independent right sidebar with empty space for future special moves; seven existing tests passed, live empty/refill/throw, sidebar tap isolation and arena drag checked at 448×877, 390×844, 320×568 and desktop, no page errors, build OK.

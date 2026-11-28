@@ -54,6 +54,7 @@ export const BOSS_BATTLE_CONFIG = {
     pen: 1,
     roster: 5,
     clockInOut: 5,
+    rejected: 5,
     bed: 10,
   },
   /** after taking damage the nurse can't be hurt again for this long */
@@ -83,13 +84,44 @@ export const BOSS_BATTLE_CONFIG = {
   /** Independent cooldown after pressing each nurse special button (milliseconds). */
   specialCooldownMs: 5000,
 
-  /* ---------------- Neil's attacks (used by later stages) ---------------- */
-  /** time between attacks and the on-screen warning before each one lands */
+  /* ---------------- Neil's offensive attacks — Stage 3 ---------------- */
+  /** Nurse collision body: centered above her feet, in arena fractions. */
+  nurseHitbox: { width: 0.065, height: 0.085, offsetY: -0.045 },
+  /** Pause NEW attack selection after a phase changes; existing warnings remain valid. */
+  phaseTransitionMs: 500,
+  /** Random weighted selection; beds are exclusive to Phase 3. Overlap shares one safe corridor. */
+  attackPhases: {
+    1: { intervalMs: 3000, speedMultiplier: 1, penCount: 3, overlapChance: 0, maxPatterns: 1,
+      weights: { pen: 30, clockIn: 20, clockOut: 20, roster: 15, rejected: 15, bed: 0 } },
+    2: { intervalMs: 2500, speedMultiplier: 1.18, penCount: 5, overlapChance: 0.25, maxPatterns: 2,
+      weights: { pen: 30, clockIn: 20, clockOut: 20, roster: 15, rejected: 15, bed: 0 } },
+    3: { intervalMs: 2000, speedMultiplier: 1.35, penCount: 7, overlapChance: 0.45, maxPatterns: 2,
+      weights: { pen: 25, clockIn: 15, clockOut: 15, roster: 15, rejected: 10, bed: 20 } },
+  },
+  /** Safe gap exceeds the nurse body; all concurrent lane patterns use the SAME gap. */
+  attackSafeGapWidth: 0.25,
+  /** A new safe corridor shifts left/right by this distance, still reachable within the warning. */
+  attackGapShift: 0.18,
+  /** Spawn attacks this far below Neil's feet. */
+  attackSpawnOffsetY: 0.06,
+  /** Bounds and pool limits prevent lingering attack sprites from accumulating. */
+  attackMaxPatterns: 2,
+  attackExitMargin: 0.15,
   bossAttacks: {
-    pen: { intervalMs: 2200, warningMs: 500 },
-    roster: { intervalMs: 5000, warningMs: 900 },
-    clockInOut: { intervalMs: 7000, warningMs: 1000 },
-    bed: { intervalMs: 9000, warningMs: 1200 },
+    /** Speeds in arena widths/second; hitboxes and sizes in arena fractions. */
+    pen: { warningMs: 600, speed: 0.8, staggerMs: 130, spinDegPerSec: 720,
+      width: 0.055, height: 0.035, visualWidth: 0.085 },
+    clockIn: { warningMs: 1000, speed: 0.85, waves: 2, waveGapMs: 500,
+      width: 0.105, height: 0.085, visualWidth: 0.15 },
+    /** The marker follows for trackMs, then freezes; warningMs is the full telegraph duration. */
+    clockOut: { warningMs: 1200, trackMs: 400, fallMs: 450, impactMs: 220,
+      width: 0.19, height: 0.11, visualWidth: 0.23 },
+    roster: { warningMs: 1200, speed: 0.65, columns: 7,
+      width: 0.12, height: 0.07, visualWidth: 0.15 },
+    rejected: { warningMs: 1500, trackMs: 400, fallMs: 400, impactMs: 350,
+      width: 0.25, height: 0.12, visualWidth: 0.32 },
+    bed: { warningMs: 1500, speed: 0.7, waves: 3, waveGapMs: 650, smokeMs: 600,
+      width: 0.095, height: 0.105, visualWidth: 0.125 },
   },
 
   /* ---------------- presentation ---------------- */
